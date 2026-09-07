@@ -326,10 +326,125 @@ export default {
       }
 
       // -------------------------------------------------------------
+      // Route: POST /api/setup/restore-sample-data (Restore full 841 sample database)
+      // -------------------------------------------------------------
+      if (path === "setup/restore-sample-data" && method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        let sampleTables = body.tables;
+
+        if (!sampleTables || Object.keys(sampleTables).length === 0) {
+          try {
+            const origin = new URL(request.url).origin;
+            const sampleRes = await fetch(`${origin}/sample_database.json`);
+            if (sampleRes.ok) {
+              const sampleJson = await sampleRes.json();
+              sampleTables = sampleJson.tables;
+            }
+          } catch (fetchErr) {
+            console.error("Error fetching static sample_database.json:", fetchErr);
+          }
+        }
+
+        if (!sampleTables || !sampleTables["03_Employees"]) {
+          return jsonResponse({ success: false, message: "Không tìm thấy dữ liệu mẫu hợp lệ để nạp!" }, 400);
+        }
+
+        for (const [tblName, rows] of Object.entries(sampleTables)) {
+          await saveTableToD1(db, tblName, rows);
+        }
+
+        appendAuditLog(sampleTables, {
+          action_type: "RESTORE",
+          module: "Hệ thống",
+          description: `Khôi phục toàn bộ CSDL mẫu chuẩn (${sampleTables["03_Employees"]?.length || 0} nhân sự) vào Cloudflare D1`,
+          user_id: body.operator_id || "TH-1948",
+          user_name: body.operator_name || "Huỳnh Thanh Long",
+          user_role: body.operator_role || "ADMIN",
+          ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+        });
+        await saveTableToD1(db, "12_System_Logs", sampleTables["12_System_Logs"]);
+
+        return jsonResponse({
+          success: true,
+          count: sampleTables["03_Employees"]?.length || 0,
+          message: `Đã nạp thành công toàn bộ ${sampleTables["03_Employees"]?.length || 0} hồ sơ nhân sự mẫu vào Cloudflare D1!`
+        });
+      }
+
+      // -------------------------------------------------------------
       // Route: GET /api/data (Fetch all HRM tables)
       // -------------------------------------------------------------
       if (path === "data" && method === "GET") {
         const data = await loadAllFromD1(db);
+
+        // Tự động đồng bộ / tự sửa lành (auto-heal) bảng phụ nếu nhân sự có dữ liệu nhưng các bảng phụ thiếu
+        const employees = data.tables["03_Employees"] || [];
+        if (employees.length > 0) {
+          // 1. Đồng bộ 10_Contracts
+          let contracts = data.tables["10_Contracts"] || [];
+          if (contracts.length < employees.length) {
+            const contractMap = new Map(contracts.map(c => [c.employee_id, c]));
+            employees.forEach(emp => {
+              if (emp.employee_id && !contractMap.has(emp.employee_id)) {
+                contractMap.set(emp.employee_id, {
+                  contract_id: emp.contract_id || emp.employee_id,
+                  employee_id: emp.employee_id,
+                  full_name: emp.full_name,
+                  contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
+                  trial_start_date: emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
+                  official_date: emp.official_date || emp.start_date || '',
+                  start_date: emp.start_date || '',
+                  end_date: emp.end_date || '',
+                  effective_date: emp.effective_date || emp.start_date || '',
+                  expiry_date: emp.expiry_date || emp.end_date || '',
+                  contract_status: emp.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
+                });
+              }
+            });
+            contracts = Array.from(contractMap.values());
+            data.tables["10_Contracts"] = contracts;
+            await saveTableToD1(db, "10_Contracts", contracts);
+          }
+
+          // 2. Đồng bộ 04_Contacts_Addresses
+          let contacts = data.tables["04_Contacts_Addresses"] || [];
+          if (contacts.length < employees.length) {
+            const contactMap = new Map(contacts.map(c => [c.employee_id, c]));
+            employees.forEach(emp => {
+              if (emp.employee_id && !contactMap.has(emp.employee_id)) {
+                contactMap.set(emp.employee_id, {
+                  employee_id: emp.employee_id,
+                  mobile_phone: emp.mobile_phone || emp['ĐT di động'] || '',
+                  work_email: emp.work_email || emp['Email cơ quan'] || '',
+                  permanent_address_full: emp.permanent_address_full || emp.permanent_address || emp['Hộ khẩu thường trú'] || '',
+                  current_address_full: emp.current_address_full || emp.current_address || emp['Chỗ ở hiện nay'] || ''
+                });
+              }
+            });
+            contacts = Array.from(contactMap.values());
+            data.tables["04_Contacts_Addresses"] = contacts;
+            await saveTableToD1(db, "04_Contacts_Addresses", contacts);
+          }
+
+          // 3. Đồng bộ 05_Identity_Docs
+          let identity = data.tables["05_Identity_Docs"] || [];
+          if (identity.length < employees.length) {
+            const idMap = new Map(identity.map(i => [i.employee_id, i]));
+            employees.forEach(emp => {
+              if (emp.employee_id && !idMap.has(emp.employee_id)) {
+                idMap.set(emp.employee_id, {
+                  employee_id: emp.employee_id,
+                  id_number: emp.id_number || emp.tax_code || emp['Số CMND'] || '',
+                  doc_type: emp.doc_type || emp['Loại giấy tờ'] || 'CCCD'
+                });
+              }
+            });
+            identity = Array.from(idMap.values());
+            data.tables["05_Identity_Docs"] = identity;
+            await saveTableToD1(db, "05_Identity_Docs", identity);
+          }
+        }
+
         return jsonResponse({
           success: true,
           tables: data.tables,
@@ -440,11 +555,63 @@ export default {
         await saveTableToD1(db, "03_Employees", updatedEmployees);
         await saveTableToD1(db, "00_Master_Profiles", updatedEmployees);
 
+        // Đồng bộ vào 10_Contracts
+        const existingContracts = data.tables["10_Contracts"] || [];
+        const contractMap = new Map(existingContracts.map(c => [c.employee_id, c]));
+        employees.forEach(emp => {
+          if (emp.employee_id) {
+            contractMap.set(emp.employee_id, {
+              contract_id: emp.contract_id || emp.employee_id,
+              employee_id: emp.employee_id,
+              full_name: emp.full_name,
+              contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
+              trial_start_date: emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
+              official_date: emp.official_date || emp.start_date || '',
+              start_date: emp.start_date || '',
+              end_date: emp.end_date || '',
+              effective_date: emp.effective_date || emp.start_date || '',
+              expiry_date: emp.expiry_date || emp.end_date || '',
+              contract_status: emp.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
+            });
+          }
+        });
+        await saveTableToD1(db, "10_Contracts", Array.from(contractMap.values()));
+
+        // Đồng bộ vào 04_Contacts_Addresses
+        const existingContacts = data.tables["04_Contacts_Addresses"] || [];
+        const contactMap = new Map(existingContacts.map(c => [c.employee_id, c]));
+        employees.forEach(emp => {
+          if (emp.employee_id) {
+            contactMap.set(emp.employee_id, {
+              employee_id: emp.employee_id,
+              mobile_phone: emp.mobile_phone || emp['ĐT di động'] || '',
+              work_email: emp.work_email || emp['Email cơ quan'] || '',
+              permanent_address_full: emp.permanent_address_full || emp.permanent_address || emp['Hộ khẩu thường trú'] || '',
+              current_address_full: emp.current_address_full || emp.current_address || emp['Chỗ ở hiện nay'] || ''
+            });
+          }
+        });
+        await saveTableToD1(db, "04_Contacts_Addresses", Array.from(contactMap.values()));
+
+        // Đồng bộ vào 05_Identity_Docs
+        const existingIdentity = data.tables["05_Identity_Docs"] || [];
+        const idMap = new Map(existingIdentity.map(i => [i.employee_id, i]));
+        employees.forEach(emp => {
+          if (emp.employee_id) {
+            idMap.set(emp.employee_id, {
+              employee_id: emp.employee_id,
+              id_number: emp.id_number || emp.tax_code || emp['Số CMND'] || '',
+              doc_type: emp.doc_type || emp['Loại giấy tờ'] || 'CCCD'
+            });
+          }
+        });
+        await saveTableToD1(db, "05_Identity_Docs", Array.from(idMap.values()));
+
         return jsonResponse({
           success: true,
           importedCount: employees.length,
           totalCount: updatedEmployees.length,
-          message: `Đã lưu vĩnh viễn ${employees.length} nhân viên vào Cloudflare D1!`
+          message: `Đã lưu vĩnh viễn ${employees.length} nhân viên và dữ liệu liên quan vào Cloudflare D1!`
         });
       }
 
@@ -465,7 +632,63 @@ export default {
           const data = await loadAllFromD1(db);
           const emp = (data.tables["03_Employees"] || []).find(e => e.employee_id === empId);
           if (!emp) return jsonResponse({ success: false, message: "Không tìm thấy nhân viên" }, 404);
-          return jsonResponse({ success: true, employee: emp });
+
+          const depts = data.tables["01_Departments"] || [];
+          const positions = data.tables["02_Positions"] || [];
+          const contacts = data.tables["04_Contacts_Addresses"] || [];
+          const identity = data.tables["05_Identity_Docs"] || [];
+          const emergency = data.tables["06_Emergency_Contacts"] || [];
+          const education = data.tables["07_Education"] || [];
+          const salaries = data.tables["08_Salaries_Banks"] || [];
+          const insurance = data.tables["09_Insurance_Welfare"] || [];
+          const contracts = data.tables["10_Contracts"] || [];
+          const accounts = data.tables["11_System_Accounts"] || [];
+          const masterList = data.tables["00_Master_Profiles"] || [];
+
+          const dept = depts.find(d => d.department_id === emp.department_id) || {};
+          const pos = positions.find(p => p.position_id === emp.position_id) || {};
+          const contact = contacts.find(c => c.employee_id === empId) || {
+            employee_id: empId,
+            mobile_phone: emp.mobile_phone || emp['ĐT di động'] || '',
+            work_email: emp.work_email || emp['Email cơ quan'] || '',
+            permanent_address_full: emp.permanent_address_full || emp.permanent_address || emp['Hộ khẩu thường trú'] || '',
+            current_address_full: emp.current_address_full || emp.current_address || emp['Chỗ ở hiện nay'] || ''
+          };
+          const idDoc = identity.find(i => i.employee_id === empId) || {
+            employee_id: empId,
+            id_number: emp.id_number || emp.tax_code || emp['Số CMND'] || '',
+            doc_type: emp.doc_type || 'CCCD'
+          };
+          const emerg = emergency.filter(em => em.employee_id === empId);
+          const edu = education.filter(ed => ed.employee_id === empId);
+          const sal = salaries.find(s => s.employee_id === empId) || {};
+          const ins = insurance.find(i => i.employee_id === empId) || {};
+          const cont = contracts.filter(c => c.employee_id === empId);
+          const acc = accounts.find(a => a.employee_id === empId) || {};
+          const master = masterList.find(m => (m.employee_id === empId || m['Mã nhân viên'] === empId)) || null;
+
+          const enrichedEmployee = {
+            ...emp,
+            department_name: emp.department_name || dept.department_name || emp.department_id,
+            position_name: emp.position_name || pos.position_name || emp.job_title || emp.position_id
+          };
+
+          return jsonResponse({
+            success: true,
+            employee: enrichedEmployee,
+            data: {
+              employee: enrichedEmployee,
+              contact,
+              identity: idDoc,
+              emergency: emerg,
+              education: edu,
+              salary: sal,
+              insurance: ins,
+              contracts: cont,
+              account: acc,
+              master_profile: master
+            }
+          });
         }
 
         // POST /api/employees (Add or Update)
@@ -573,13 +796,34 @@ export default {
           const toDelete = employees.filter(e => targetIds.has(e.employee_id));
           const remaining = employees.filter(e => !targetIds.has(e.employee_id));
 
-          const trashItems = toDelete.map(target => ({
-            ...target,
-            department_name: target.department_name || deptMap[target.department_id] || target.department_id,
-            position_name: target.position_name || posMap[target.position_id] || target.job_title || target.position_id,
-            deleted_at: now,
-            deleted_by_name: body.operator_name || "Quản trị viên"
-          }));
+          const contacts = data.tables["04_Contacts_Addresses"] || [];
+          const identity = data.tables["05_Identity_Docs"] || [];
+          const emergency = data.tables["06_Emergency_Contacts"] || [];
+          const education = data.tables["07_Education"] || [];
+          const salaries = data.tables["08_Salaries_Banks"] || [];
+          const insurance = data.tables["09_Insurance_Welfare"] || [];
+          const contracts = data.tables["10_Contracts"] || [];
+
+          const trashItems = toDelete.map(target => {
+            const id = target.employee_id;
+            return {
+              ...target,
+              department_name: target.department_name || deptMap[target.department_id] || target.department_id,
+              position_name: target.position_name || posMap[target.position_id] || target.job_title || target.position_id,
+              deleted_at: now,
+              deleted_by_name: body.operator_name || "Quản trị viên",
+              backup_data: JSON.stringify({
+                employee: target,
+                contact: contacts.find(c => c.employee_id === id) || null,
+                identity: identity.find(i => i.employee_id === id) || null,
+                emergency: emergency.filter(em => em.employee_id === id),
+                education: education.filter(ed => ed.employee_id === id),
+                salary: salaries.find(s => s.employee_id === id) || null,
+                insurance: insurance.find(i => i.employee_id === id) || null,
+                contract: contracts.find(c => c.employee_id === id) || null
+              })
+            };
+          });
 
           trash = [...trashItems, ...trash];
           await saveTableToD1(db, "03_Employees", remaining);
@@ -618,12 +862,30 @@ export default {
             const dept = depts.find(d => d.department_id === target.department_id);
             const pos = positions.find(p => p.position_id === target.position_id);
 
+            const contacts = data.tables["04_Contacts_Addresses"] || [];
+            const identity = data.tables["05_Identity_Docs"] || [];
+            const emergency = data.tables["06_Emergency_Contacts"] || [];
+            const education = data.tables["07_Education"] || [];
+            const salaries = data.tables["08_Salaries_Banks"] || [];
+            const insurance = data.tables["09_Insurance_Welfare"] || [];
+            const contracts = data.tables["10_Contracts"] || [];
+
             const trashItem = {
               ...target,
               department_name: target.department_name || dept?.department_name || target.department_id,
               position_name: target.position_name || pos?.position_name || target.job_title || target.position_id,
               deleted_at: new Date().toISOString(),
-              deleted_by_name: body.operator_name || "Quản trị viên"
+              deleted_by_name: body.operator_name || "Quản trị viên",
+              backup_data: JSON.stringify({
+                employee: target,
+                contact: contacts.find(c => c.employee_id === empId) || null,
+                identity: identity.find(i => i.employee_id === empId) || null,
+                emergency: emergency.filter(em => em.employee_id === empId),
+                education: education.filter(ed => ed.employee_id === empId),
+                salary: salaries.find(s => s.employee_id === empId) || null,
+                insurance: insurance.find(i => i.employee_id === empId) || null,
+                contract: contracts.find(c => c.employee_id === empId) || null
+              })
             };
 
             trash.unshift(trashItem);
@@ -669,10 +931,63 @@ export default {
           const item = trash.find(t => t.employee_id === targetId);
           if (item) {
             trash = trash.filter(t => t.employee_id !== targetId);
-            employees.push(item);
+
+            const { deleted_at, deleted_by_name, deleted_by_id, trash_id, backup_data, ...cleanEmp } = item;
+            employees = employees.filter(e => e.employee_id !== targetId);
+            employees.unshift(cleanEmp);
+
+            let masterList = data.tables["00_Master_Profiles"] || [];
+            masterList = masterList.filter(m => (m.employee_id !== targetId && m['Mã nhân viên'] !== targetId));
+            masterList.unshift(cleanEmp);
+
             await saveTableToD1(db, "13_Recycle_Bin", trash);
             await saveTableToD1(db, "03_Employees", employees);
-            await saveTableToD1(db, "00_Master_Profiles", employees);
+            await saveTableToD1(db, "00_Master_Profiles", masterList);
+
+            // Khôi phục các bảng chi tiết nếu có dữ liệu lưu kèm
+            if (backup_data) {
+              try {
+                const backup = typeof backup_data === 'string' ? JSON.parse(backup_data) : backup_data;
+                if (backup.contact) {
+                  let contacts = data.tables["04_Contacts_Addresses"] || [];
+                  contacts = contacts.filter(c => c.employee_id !== targetId);
+                  contacts.unshift(backup.contact);
+                  await saveTableToD1(db, "04_Contacts_Addresses", contacts);
+                }
+                if (backup.identity) {
+                  let idDocs = data.tables["05_Identity_Docs"] || [];
+                  idDocs = idDocs.filter(i => i.employee_id !== targetId);
+                  idDocs.unshift(backup.identity);
+                  await saveTableToD1(db, "05_Identity_Docs", idDocs);
+                }
+                if (backup.contract) {
+                  let contracts = data.tables["10_Contracts"] || [];
+                  contracts = contracts.filter(c => c.employee_id !== targetId);
+                  contracts.unshift(backup.contract);
+                  await saveTableToD1(db, "10_Contracts", contracts);
+                }
+                if (backup.salary) {
+                  let salaries = data.tables["08_Salaries_Banks"] || [];
+                  salaries = salaries.filter(s => s.employee_id !== targetId);
+                  salaries.unshift(backup.salary);
+                  await saveTableToD1(db, "08_Salaries_Banks", salaries);
+                }
+                if (backup.education && Array.isArray(backup.education)) {
+                  let edu = data.tables["07_Education"] || [];
+                  edu = edu.filter(e => e.employee_id !== targetId);
+                  edu.unshift(...backup.education);
+                  await saveTableToD1(db, "07_Education", edu);
+                }
+                if (backup.insurance) {
+                  let ins = data.tables["09_Insurance_Welfare"] || [];
+                  ins = ins.filter(i => i.employee_id !== targetId);
+                  ins.unshift(backup.insurance);
+                  await saveTableToD1(db, "09_Insurance_Welfare", ins);
+                }
+              } catch (bErr) {
+                console.warn("Could not restore backup_data:", bErr);
+              }
+            }
 
             appendAuditLog(data.tables, {
               action_type: "RESTORE",
@@ -694,10 +1009,51 @@ export default {
           const ids = new Set(body.employee_ids || []);
           const restored = trash.filter(t => ids.has(t.employee_id));
           trash = trash.filter(t => !ids.has(t.employee_id));
-          employees.push(...restored);
+
+          const cleanRestored = restored.map(r => {
+            const { deleted_at, deleted_by_name, deleted_by_id, trash_id, backup_data, ...clean } = r;
+            return clean;
+          });
+
+          // Filter out any duplicates
+          employees = employees.filter(e => !ids.has(e.employee_id));
+          employees.unshift(...cleanRestored);
+
+          let masterList = data.tables["00_Master_Profiles"] || [];
+          masterList = masterList.filter(m => !ids.has(m.employee_id) && !ids.has(m['Mã nhân viên']));
+          masterList.unshift(...cleanRestored);
+
           await saveTableToD1(db, "13_Recycle_Bin", trash);
           await saveTableToD1(db, "03_Employees", employees);
-          await saveTableToD1(db, "00_Master_Profiles", employees);
+          await saveTableToD1(db, "00_Master_Profiles", masterList);
+
+          // Khôi phục sub-tables từ backup_data nếu có
+          for (const item of restored) {
+            if (item.backup_data) {
+              try {
+                const b = typeof item.backup_data === 'string' ? JSON.parse(item.backup_data) : item.backup_data;
+                const id = item.employee_id;
+                if (b.contact) {
+                  let contacts = data.tables["04_Contacts_Addresses"] || [];
+                  contacts = contacts.filter(c => c.employee_id !== id);
+                  contacts.unshift(b.contact);
+                  await saveTableToD1(db, "04_Contacts_Addresses", contacts);
+                }
+                if (b.identity) {
+                  let idDocs = data.tables["05_Identity_Docs"] || [];
+                  idDocs = idDocs.filter(i => i.employee_id !== id);
+                  idDocs.unshift(b.identity);
+                  await saveTableToD1(db, "05_Identity_Docs", idDocs);
+                }
+                if (b.contract) {
+                  let contracts = data.tables["10_Contracts"] || [];
+                  contracts = contracts.filter(c => c.employee_id !== id);
+                  contracts.unshift(b.contract);
+                  await saveTableToD1(db, "10_Contracts", contracts);
+                }
+              } catch (e) {}
+            }
+          }
 
           appendAuditLog(data.tables, {
             action_type: "RESTORE",

@@ -54,6 +54,58 @@ const appData = {
         this.trash = json.tables['13_Recycle_Bin'] || [];
         this.masterProfiles = json.tables['00_Master_Profiles'] || [];
 
+        // Tự động đồng bộ / tự chữa lành (auto-heal) danh bạ liên hệ nếu thiếu
+        if ((this.contacts || []).length < (this.employees || []).length) {
+          const contactMap = new Map((this.contacts || []).map(c => [c.employee_id, c]));
+          this.employees.forEach(e => {
+            if (e.employee_id && !contactMap.has(e.employee_id)) {
+              contactMap.set(e.employee_id, {
+                employee_id: e.employee_id,
+                mobile_phone: e.mobile_phone || e['ĐT di động'] || '',
+                work_email: e.work_email || e['Email cơ quan'] || '',
+                permanent_address_full: e.permanent_address || e['Hộ khẩu thường trú'] || '',
+                current_address_full: e.current_address || e['Chỗ ở hiện nay'] || ''
+              });
+            }
+          });
+          this.contacts = Array.from(contactMap.values());
+        }
+
+        // Tự động đồng bộ giấy tờ tùy thân nếu thiếu
+        if ((this.identity || []).length < (this.employees || []).length) {
+          const idMap = new Map((this.identity || []).map(i => [i.employee_id, i]));
+          this.employees.forEach(e => {
+            if (e.employee_id && !idMap.has(e.employee_id)) {
+              idMap.set(e.employee_id, {
+                employee_id: e.employee_id,
+                id_number: e.id_number || e.tax_code || e['Số CMND'] || '',
+                doc_type: e.doc_type || e['Loại giấy tờ'] || 'CCCD'
+              });
+            }
+          });
+          this.identity = Array.from(idMap.values());
+        }
+
+        // Tự động đồng bộ hợp đồng nếu thiếu
+        const contractsMap = new Map((this.contracts || []).map(c => [c.employee_id, c]));
+        this.contracts = (this.employees || []).map(emp => {
+          const existing = contractsMap.get(emp.employee_id);
+          const isResigned = emp.employment_status === 'Đã nghỉ việc';
+          return {
+            contract_id: existing?.contract_id || emp.contract_id || emp.employee_id,
+            employee_id: emp.employee_id,
+            full_name: emp.full_name,
+            contract_type: existing?.contract_type || emp.contract_type || emp['Loại hợp đồng'] || 'Hợp đồng lao động không xác định thời hạn',
+            trial_start_date: existing?.trial_start_date || emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
+            official_date: existing?.official_date || emp.official_date || emp.start_date || '',
+            start_date: existing?.start_date || emp.start_date || '',
+            end_date: existing?.end_date || emp.end_date || '',
+            effective_date: existing?.effective_date || emp.effective_date || emp.start_date || '',
+            expiry_date: existing?.expiry_date || emp.expiry_date || emp.end_date || '',
+            contract_status: isResigned ? 'HẾT HẠN' : (existing?.contract_status || (emp.employment_status === 'Đang làm việc' ? 'HIỆU LỰC' : 'HẾT HẠN'))
+          };
+        });
+
         // Build lookup maps
         this.buildMaps();
 
@@ -94,8 +146,11 @@ const appData = {
 
     this.masterMap = {};
     (this.masterProfiles || []).forEach(m => {
-      if (m['Mã nhân viên']) {
-        this.masterMap[m['Mã nhân viên']] = m;
+      const id = m['Mã nhân viên'] || m.employee_id;
+      if (id) {
+        this.masterMap[id] = m;
+        if (m['Mã nhân viên']) this.masterMap[m['Mã nhân viên']] = m;
+        if (m.employee_id) this.masterMap[m.employee_id] = m;
       }
     });
   }

@@ -4300,6 +4300,34 @@ app.post('/api/company/upload-logo', (req, res) => {
     }
 });
 
+// RESTORE FULL SAMPLE DATA
+app.post('/api/setup/restore-sample-data', (req, res) => {
+    try {
+        const body = req.body || {};
+        let sampleDb = body.tables ? { tables: body.tables } : null;
+
+        if (!sampleDb) {
+            const samplePath = path.join(__dirname, 'sample_database.json');
+            if (fs.existsSync(samplePath)) {
+                sampleDb = JSON.parse(fs.readFileSync(samplePath, 'utf-8'));
+            }
+        }
+
+        if (sampleDb && sampleDb.tables && sampleDb.tables['03_Employees']) {
+            saveDatabase(sampleDb);
+            const count = sampleDb.tables['03_Employees'].length;
+            return res.json({
+                success: true,
+                count,
+                message: `Đã nạp thành công toàn bộ ${count} hồ sơ nhân sự mẫu vào hệ thống!`
+            });
+        }
+        res.status(404).json({ success: false, message: 'Không tìm thấy dữ liệu sample_database.json' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: 'Lỗi khôi phục CSDL mẫu: ' + e.message });
+    }
+});
+
 // ==========================================
 // SYSTEM STATUS ENDPOINT
 // ==========================================

@@ -439,10 +439,32 @@ const appEmployees = {
     if (!tbody) return;
 
     if (this.filteredList.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 32px; color: var(--text-muted);">
-        <i class="fa-solid fa-folder-open" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
-        Không tìm thấy nhân sự phù hợp với điều kiện lọc.
-      </td></tr>`;
+      if (!appData.employees || appData.employees.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 48px 20px;">
+          <div style="max-width: 480px; margin: 0 auto;">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 16px;">
+              <i class="fa-solid fa-users-slash"></i>
+            </div>
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--primary-navy); margin-bottom: 8px;">Mục nhân sự hiện chưa có dữ liệu</h3>
+            <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
+              Dữ liệu nhân sự có thể đã bị xóa trong quá trình kiểm thử hoặc chưa được nạp vào CSDL. Bạn có thể nạp lại ngay 841 hồ sơ nhân sự chuẩn của Công ty Trung Hải hoặc nhập từ file Excel.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <button type="button" class="btn btn-primary" onclick="appEmployees.restoreSampleData()" style="padding: 8px 18px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-cloud-arrow-down"></i> Nạp Ngay 841 Nhân Sự Mẫu
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="appImport.openModal()" style="padding: 8px 18px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-file-excel"></i> Nhập Từ File Excel
+              </button>
+            </div>
+          </div>
+        </td></tr>`;
+      } else {
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 32px; color: var(--text-muted);">
+          <i class="fa-solid fa-folder-open" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
+          Không tìm thấy nhân sự phù hợp với điều kiện lọc.
+        </td></tr>`;
+      }
       return;
     }
 
@@ -450,13 +472,18 @@ const appEmployees = {
     const paginated = this.filteredList.slice(start, start + this.pageSize);
 
     const contactMap = {};
-    appData.contacts.forEach(c => contactMap[c.employee_id] = c);
+    (appData.contacts || []).forEach(c => contactMap[c.employee_id] = c);
 
     tbody.innerHTML = paginated.map((e, index) => {
       const stt = start + index + 1;
       const c = contactMap[e.employee_id] || {};
       const isChecked = this.selectedEmpIds.has(e.employee_id);
       const rowSelectedClass = isChecked ? 'row-selected' : '';
+
+      const mobilePhone = c.mobile_phone || e.mobile_phone || e['ĐT di động'] || '-';
+      const workEmail = c.work_email || e.work_email || e['Email cơ quan'] || '';
+      const deptDisplay = appData.deptMap[e.department_id] || e.department_name || e['Đơn vị công tác'] || e.department_id || '-';
+      const posDisplay = appData.posMap[e.position_id] || e.position_name || e.job_title || e['Vị trí công việc'] || e.position_id || '-';
 
       const statusBadge = e.employment_status === 'Đang làm việc'
         ? '<span class="badge badge-active"><i class="fa-solid fa-check"></i> Đang làm việc</span>'
@@ -476,16 +503,16 @@ const appEmployees = {
           <td class="col-sticky-stt" style="color: var(--text-muted); font-size: 12px; font-weight: 500;">${stt}</td>
           <td class="col-sticky-id"><strong style="color: var(--primary-navy); cursor: pointer;" onclick="appEmployees.openDetailModal('${e.employee_id}')">${e.employee_id}</strong></td>
           <td class="col-sticky-name">
-            <div style="font-weight: 600; color: var(--text-primary); cursor: pointer;" onclick="appEmployees.openDetailModal('${e.employee_id}')">${e.full_name}</div>
+            <div style="font-weight: 600; color: var(--text-primary); cursor: pointer;" onclick="appEmployees.openDetailModal('${e.employee_id}')">${e.full_name || e['Họ và tên'] || e.employee_id}</div>
             <div style="font-size: 11px; color: var(--text-muted);">${e.time_attendance_code ? 'MCC: ' + e.time_attendance_code : ''}</div>
           </td>
-          <td>${e.gender || '-'}</td>
-          <td>${appData.posMap[e.position_id] || e.position_id || '-'}</td>
-          <td style="max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${appData.deptMap[e.department_id] || e.department_id}">
-            ${appData.deptMap[e.department_id] || e.department_id}
+          <td>${e.gender || e['Giới tính'] || '-'}</td>
+          <td>${posDisplay}</td>
+          <td style="max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${deptDisplay}">
+            ${deptDisplay}
           </td>
-          <td>${c.mobile_phone || '-'}</td>
-          <td>${c.work_email ? `<a href="mailto:${c.work_email}" style="color: var(--primary-navy); text-decoration: none;">${c.work_email}</a>` : '-'}</td>
+          <td>${mobilePhone}</td>
+          <td>${workEmail ? `<a href="mailto:${workEmail}" style="color: var(--primary-navy); text-decoration: none;">${workEmail}</a>` : '-'}</td>
           <td>${natureBadge}</td>
           <td>${statusBadge}</td>
           <td class="col-sticky-action">
@@ -801,21 +828,168 @@ const appEmployees = {
     }
   },
 
+  // Helper: Build comprehensive 115-field profile with multi-source fallback
+  buildFullMasterProfile(empId, serverData = null) {
+    let base = {};
+    if (appData.masterMap && appData.masterMap[empId]) {
+      base = { ...appData.masterMap[empId] };
+    }
+    if (serverData?.data?.master_profile) {
+      base = { ...base, ...serverData.data.master_profile };
+    } else if (serverData?.master_profile) {
+      base = { ...base, ...serverData.master_profile };
+    }
+
+    const emp = serverData?.data?.employee || serverData?.employee || (appData.employees || []).find(e => e.employee_id === empId) || {};
+    const sData = serverData?.data || serverData || {};
+    const contact = sData.contact || (appData.contacts || []).find(c => c.employee_id === empId) || {};
+    const identity = sData.identity || (appData.identity || []).find(i => i.employee_id === empId) || {};
+    const emergency = sData.emergency || (appData.emergencyContacts || []).find(em => em.employee_id === empId) || {};
+    const education = sData.education || (appData.education || []).find(ed => ed.employee_id === empId) || {};
+    const salary = sData.salary || (appData.salaries || []).find(s => s.employee_id === empId) || {};
+    const insurance = sData.insurance || (appData.insurance || []).find(ins => ins.employee_id === empId) || {};
+    const contractList = sData.contracts || (appData.contracts || []).filter(ct => ct.employee_id === empId) || [];
+    const primaryContract = contractList[0] || {};
+    const account = sData.account || (appData.accounts || []).find(a => a.employee_id === empId) || {};
+
+    const pick = (...vals) => {
+      for (const v of vals) {
+        if (v !== undefined && v !== null && v !== '') return v;
+      }
+      return '';
+    };
+
+    return {
+      ...base,
+      'Mã nhân viên': pick(base['Mã nhân viên'], emp.employee_id, empId),
+      'Họ và tên': pick(base['Họ và tên'], emp.full_name, emp['Họ và tên'], empId),
+      'Tên gọi khác': pick(base['Tên gọi khác'], emp.alias),
+      'Giới tính': pick(base['Giới tính'], emp.gender, 'Nam'),
+      'Ngày sinh': pick(base['Ngày sinh'], emp.date_of_birth),
+      'Nơi sinh': pick(base['Nơi sinh'], emp.place_of_birth),
+      'Nguyên quán': pick(base['Nguyên quán'], emp.native_place),
+      'Tình trạng hôn nhân': pick(base['Tình trạng hôn nhân'], emp.marital_status, 'Độc thân'),
+      'Dân tộc': pick(base['Dân tộc'], emp.ethnicity, 'Kinh'),
+      'Tôn giáo': pick(base['Tôn giáo'], emp.religion, 'Không'),
+      'Quốc tịch': pick(base['Quốc tịch'], emp.nationality, 'Việt Nam'),
+      'MST cá nhân': pick(base['MST cá nhân'], emp.personal_tax_code, emp.tax_code),
+
+      'Đơn vị công tác': pick(base['Đơn vị công tác'], appData.deptMap?.[emp.department_id], emp.department_name, emp.department_id),
+      'Mã đơn vị công tác': pick(base['Mã đơn vị công tác'], emp.department_id),
+      'Vị trí công việc': pick(base['Vị trí công việc'], appData.posMap?.[emp.position_id], emp.position_name, emp.job_title, emp.position_id),
+      'Mã vị trí công việc': pick(base['Mã vị trí công việc'], emp.position_id),
+      'Chức danh': pick(base['Chức danh'], emp.job_title, appData.posMap?.[emp.position_id], emp.position_name),
+      'Cấp': pick(base['Cấp'], emp.job_grade),
+      'Bậc': pick(base['Bậc'], emp.job_step),
+      'Mã chấm công': pick(base['Mã chấm công'], emp.time_attendance_code),
+      'Quản lý trực tiếp': pick(base['Quản lý trực tiếp'], emp.direct_manager),
+      'Quản lý gián tiếp': pick(base['Quản lý gián tiếp'], emp.indirect_manager),
+      'Người duyệt': pick(base['Người duyệt'], emp.approver),
+      'Địa điểm làm việc': pick(base['Địa điểm làm việc'], emp.work_location),
+      'Khu vực làm việc': pick(base['Khu vực làm việc'], emp.work_area),
+      'Tính chất lao động': pick(base['Tính chất lao động'], emp.employment_nature, 'Chính thức'),
+      'Trạng thái lao động': pick(base['Trạng thái lao động'], emp.employment_status, 'Đang làm việc'),
+      'Nhân sự khai thác': pick(base['Nhân sự khai thác'], emp.recruiter),
+      'Nguồn ứng viên': pick(base['Nguồn ứng viên'], emp.recruitment_source),
+      'Số sổ QL lao động': pick(base['Số sổ QL lao động'], emp.labor_book_no),
+
+      'Loại hợp đồng': pick(base['Loại hợp đồng'], primaryContract.contract_type, emp.contract_type, 'Hợp đồng lao động không xác định thời hạn'),
+      'Ngày học việc': pick(base['Ngày học việc'], emp.apprenticeship_date),
+      'Ngày thử việc': pick(base['Ngày thử việc'], primaryContract.trial_start_date, emp.trial_start_date, emp.probation_start_date),
+      'Ngày chính thức': pick(base['Ngày chính thức'], primaryContract.official_date, emp.official_date, emp.start_date),
+      'Thâm niên': pick(base['Thâm niên'], emp.seniority),
+      'Ngày có hiệu lực': pick(base['Ngày có hiệu lực'], primaryContract.effective_date, primaryContract.start_date, emp.effective_date, emp.start_date),
+      'Ngày hết hiệu lực': pick(base['Ngày hết hiệu lực'], primaryContract.expiry_date, primaryContract.end_date, emp.expiry_date, emp.end_date),
+      'Nhóm lý do nghỉ': pick(base['Nhóm lý do nghỉ'], emp.resignation_reason_group),
+      'Lý do nghỉ': pick(base['Lý do nghỉ'], emp.resignation_reason),
+      'Ngày nghỉ việc': pick(base['Ngày nghỉ việc'], emp.resignation_date),
+      'Ngày nghỉ hưu dự kiến': pick(base['Ngày nghỉ hưu dự kiến'], emp.expected_retirement_date),
+      'Thuộc danh sách đen': pick(base['Thuộc danh sách đen'], emp.is_blacklisted ? 'Có' : 'Không', 'Không'),
+      'Tham gia công đoàn': pick(base['Tham gia công đoàn'], emp.is_union_member ? 'Có' : 'Không', 'Có'),
+
+      'Loại giấy tờ': pick(base['Loại giấy tờ'], identity.doc_type, emp.doc_type, 'CCCD'),
+      'Số CMND': pick(base['Số CMND'], identity.id_number, emp.id_number, emp.id_card_no),
+      'Ngày cấp giấy tờ': pick(base['Ngày cấp giấy tờ'], identity.issue_date, emp.id_issue_date),
+      'Nơi cấp giấy tờ': pick(base['Nơi cấp giấy tờ'], identity.issue_place, emp.id_issue_place),
+      'Ngày hết hạn giấy tờ': pick(base['Ngày hết hạn giấy tờ'], identity.expiry_date, emp.id_expiry_date),
+      'Số Hộ chiếu': pick(base['Số Hộ chiếu'], identity.passport_number),
+      'Ngày cấp Hộ chiếu': pick(base['Ngày cấp Hộ chiếu'], identity.passport_issue_date),
+      'Nơi cấp Hộ chiếu': pick(base['Nơi cấp Hộ chiếu'], identity.passport_issue_place),
+      'Ngày hết hạn Hộ chiếu': pick(base['Ngày hết hạn Hộ chiếu'], identity.passport_expiry_date),
+
+      'ĐT di động': pick(base['ĐT di động'], contact.mobile_phone, emp.mobile_phone),
+      'ĐT cơ quan': pick(base['ĐT cơ quan'], contact.office_phone),
+      'ĐT nhà riêng': pick(base['ĐT nhà riêng'], contact.home_phone),
+      'ĐT khác': pick(base['ĐT khác'], contact.other_phone),
+      'Email cơ quan': pick(base['Email cơ quan'], contact.work_email, emp.work_email),
+      'Email cá nhân': pick(base['Email cá nhân'], contact.personal_email, emp.personal_email),
+      'Email khác': pick(base['Email khác'], contact.other_email),
+      'Skype': pick(base['Skype'], contact.skype),
+      'Facebook': pick(base['Facebook'], contact.facebook),
+      'Hộ khẩu thường trú': pick(base['Hộ khẩu thường trú'], contact.permanent_address_full, emp.permanent_address),
+      'Quốc gia (Thường trú)': pick(base['Quốc gia (Thường trú)'], contact.permanent_country, 'Việt Nam'),
+      'Tỉnh/Thành phố (Thường trú)': pick(base['Tỉnh/Thành phố (Thường trú)'], contact.permanent_province),
+      'Quận/Huyện (Thường trú)': pick(base['Quận/Huyện (Thường trú)'], contact.permanent_district),
+      'Phường/Xã (Thường trú)': pick(base['Phường/Xã (Thường trú)'], contact.permanent_ward),
+      'Số nhà/Đường phố (Thường trú)': pick(base['Số nhà/Đường phố (Thường trú)'], contact.permanent_street),
+      'Chỗ ở hiện nay': pick(base['Chỗ ở hiện nay'], contact.current_address_full, emp.current_address),
+      'Quốc gia (Hiện nay)': pick(base['Quốc gia (Hiện nay)'], contact.current_country, 'Việt Nam'),
+      'Tỉnh/Thành phố (Hiện nay)': pick(base['Tỉnh/Thành phố (Hiện nay)'], contact.current_province),
+      'Quận/Huyện (Hiện nay)': pick(base['Quận/Huyện (Hiện nay)'], contact.current_district),
+      'Phường/Xã (Hiện nay)': pick(base['Phường/Xã (Hiện nay)'], contact.current_ward),
+      'Số nhà/Đường phố (Hiện nay)': pick(base['Số nhà/Đường phố (Hiện nay)'], contact.current_street),
+
+      'Người liên hệ khẩn cấp': pick(base['Người liên hệ khẩn cấp'], emergency.contact_name),
+      'Mối quan hệ K/C': pick(base['Mối quan hệ K/C'], emergency.relationship),
+      'ĐT di động K/C': pick(base['ĐT di động K/C'], emergency.mobile_phone),
+      'ĐT nhà riêng K/C': pick(base['ĐT nhà riêng K/C'], emergency.home_phone),
+      'Email K/C': pick(base['Email K/C'], emergency.email),
+      'Địa chỉ K/C': pick(base['Địa chỉ K/C'], emergency.address),
+
+      'Trình độ văn hóa': pick(base['Trình độ văn hóa'], education.general_education),
+      'Trình độ đào tạo': pick(base['Trình độ đào tạo'], education.education_level),
+      'Nơi đào tạo': pick(base['Nơi đào tạo'], education.institution),
+      'Khoa': pick(base['Khoa'], education.faculty),
+      'Chuyên ngành': pick(base['Chuyên ngành'], education.major),
+      'Năm tốt nghiệp': pick(base['Năm tốt nghiệp'], education.graduation_year),
+      'Xếp loại': pick(base['Xếp loại'], education.degree_classification),
+
+      'Mức lương': pick(base['Mức lương'], salary.base_salary, salary.gross_salary, 0),
+      'Lương thỏa thuận': pick(base['Lương thỏa thuận'], salary.negotiated_salary, salary.base_salary, 0),
+      'Lương đóng bảo hiểm': pick(base['Lương đóng bảo hiểm'], salary.insurance_salary, 0),
+      'Số tài khoản': pick(base['Số tài khoản'], salary.bank_account_no),
+      'Ngân hàng': pick(base['Ngân hàng'], salary.bank_name),
+      'Chi nhánh ngân hàng': pick(base['Chi nhánh ngân hàng'], salary.bank_branch),
+      'Số người phụ thuộc': pick(base['Số người phụ thuộc'], salary.dependents_count, 0),
+      'Số sổ BHXH': pick(base['Số sổ BHXH'], insurance.social_insurance_no),
+      'Mã số BHXH': pick(base['Mã số BHXH'], insurance.social_insurance_no),
+      'Số thẻ BHYT': pick(base['Số thẻ BHYT'], insurance.health_insurance_no),
+      'Nơi ĐK KCB ban đầu': pick(base['Nơi ĐK KCB ban đầu'], insurance.hospital_registered),
+      'Trạng thái sổ BHXH': pick(base['Trạng thái sổ BHXH'], insurance.status),
+
+      'Tài khoản đăng nhập': pick(base['Tài khoản đăng nhập'], account.username, emp.work_email, emp.employee_id),
+      'Trạng thái tài khoản': pick(base['Trạng thái tài khoản'], account.status, 'Hoạt động')
+    };
+  },
+
   // Open Full 115 Fields Detail Modal
   async openDetailModal(empId) {
     try {
-      let masterData = (appData.masterMap && appData.masterMap[empId]) ? { ...appData.masterMap[empId] } : null;
-      const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        if (json.data.master_profile) {
-          masterData = { ...json.data.master_profile };
-        }
-        this.selectedEmployee = json.data.employee || json.data;
+      let serverJson = null;
+      try {
+        const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
+        serverJson = await res.json();
+      } catch (fe) {
+        console.warn('API detail fetch fallback:', fe);
       }
-      if (!masterData) {
-        masterData = { 'Mã nhân viên': empId };
+
+      if (serverJson && serverJson.success && serverJson.data) {
+        this.selectedEmployee = serverJson.data.employee || serverJson.data;
+      } else {
+        this.selectedEmployee = (appData.employees || []).find(e => e.employee_id === empId) || { employee_id: empId };
       }
+
+      const masterData = this.buildFullMasterProfile(empId, serverJson);
 
       if (typeof fillDetailModalData === 'function') {
         fillDetailModalData(masterData);
@@ -871,17 +1045,15 @@ const appEmployees = {
 
   async openEditModal(empId) {
     try {
-      let masterData = (appData.masterMap && appData.masterMap[empId]) ? { ...appData.masterMap[empId] } : null;
-      const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        if (json.data.master_profile) {
-          masterData = { ...json.data.master_profile };
-        }
+      let serverJson = null;
+      try {
+        const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
+        serverJson = await res.json();
+      } catch (fe) {
+        console.warn('API edit fetch fallback:', fe);
       }
-      if (!masterData) {
-        masterData = { 'Mã nhân viên': empId };
-      }
+
+      const masterData = this.buildFullMasterProfile(empId, serverJson);
 
       document.getElementById('form-is-edit').value = '1';
       const oldInput = document.getElementById('form-old-emp-id');
@@ -905,6 +1077,43 @@ const appEmployees = {
     } catch (e) {
       console.error(e);
       utils.showToast('Lỗi khi mở form chỉnh sửa', 'error');
+    }
+  },
+
+  // 1-Click Restore 841 Sample Employees
+  async restoreSampleData() {
+    if (!confirm('⚠️ Bạn có chắc chắn muốn nạp lại CSDL 841 nhân sự mẫu của Công ty Cổ phần Đầu tư Xây dựng Trung Hải?\\n\\nToàn bộ 841 hồ sơ chuẩn (bao gồm phòng ban, chức vụ, hợp đồng, danh bạ liên hệ, CCCD và lương) sẽ được khôi phục vào hệ thống CSDL.')) {
+      return;
+    }
+
+    const btnAction = document.getElementById('btn-action-restore-sample');
+    if (btnAction) btnAction.disabled = true;
+
+    utils.showToast('Đang nạp 841 hồ sơ nhân sự mẫu vào CSDL...', 'info');
+
+    try {
+      const res = await fetch('/api/setup/restore-sample-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const json = await res.json();
+      if (json.success) {
+        utils.showToast(json.message || 'Khôi phục CSDL 841 nhân sự mẫu thành công!', 'success');
+        await appData.init();
+        this.init();
+        if (typeof appDashboard !== 'undefined' && appDashboard.render) {
+          appDashboard.render();
+        }
+      } else {
+        utils.showToast(json.message || 'Không thể khôi phục CSDL mẫu', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      utils.showToast('Lỗi khi kết nối máy chủ để khôi phục dữ liệu: ' + e.message, 'error');
+    } finally {
+      if (btnAction) btnAction.disabled = false;
+      const dropdown = document.getElementById('emp-action-dropdown');
+      if (dropdown) dropdown.classList.remove('show');
     }
   },
 
