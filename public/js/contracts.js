@@ -109,6 +109,8 @@ const appContracts = {
   currentTerminateContractId: null,
   tempAttachments: [],       // File attachments being added to form
   tempAppendixFile: null,
+  selectedContractIds: new Set(),
+  currentMergeContractId: null,
 
   init() {
     if (this.initialized) return;
@@ -570,12 +572,14 @@ const appContracts = {
     if (pageData.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="10" style="text-align: center; padding: 36px; color: var(--text-muted);">
+          <td colspan="12" style="text-align: center; padding: 36px; color: var(--text-muted);">
             <i class="fa-regular fa-folder-open" style="font-size: 32px; margin-bottom: 10px; display: block; color: #CBD5E1;"></i>
             Không tìm thấy hợp đồng phù hợp với điều kiện tìm kiếm.
           </td>
         </tr>
       `;
+      this.updateMasterCheckboxState();
+      this.updateBatchBar();
       return;
     }
 
@@ -603,6 +607,9 @@ const appContracts = {
 
       return `
         <tr data-contract-id="${c.contract_id}">
+          <td style="text-align: center;">
+            <input type="checkbox" class="contract-row-cb" value="${c.contract_id}" ${this.selectedContractIds.has(c.contract_id) ? 'checked' : ''} onchange="appContracts.onRowSelectChange('${c.contract_id}', this.checked)" style="cursor: pointer;">
+          </td>
           <td style="color: var(--text-muted); font-size: 12px; font-weight: 500; text-align: center;">${startIdx + idx + 1}</td>
           <td>
             <strong style="color: var(--primary-navy); cursor: pointer; font-family: monospace;" onclick="appContracts.openDetailModal('${c.contract_id}')">${c.contract_id}</strong>
@@ -630,6 +637,9 @@ const appContracts = {
           <td>${statusBadge}</td>
           <td style="text-align: center; white-space: nowrap;">
             <div style="display: flex; gap: 4px; justify-content: center;">
+              <button class="btn btn-icon btn-sm" title="In / Trộn HĐ Word" onclick="appContracts.openMergeSingleModal('${c.contract_id}')" style="background: #EFF6FF; color: #2563EB;">
+                <i class="fa-solid fa-file-word"></i>
+              </button>
               <button class="btn btn-icon btn-sm" title="Xem chi tiết HĐ & File đính kèm" onclick="appContracts.openDetailModal('${c.contract_id}')">
                 <i class="fa-solid fa-eye" style="color: var(--primary-navy);"></i>
               </button>
@@ -652,6 +662,9 @@ const appContracts = {
         </tr>
       `;
     }).join('');
+
+    this.updateMasterCheckboxState();
+    this.updateBatchBar();
   },
 
   // Hiển thị dạng lưới thẻ (Card View)
@@ -726,6 +739,7 @@ const appContracts = {
               <span title="Tệp scan"><i class="fa-regular fa-file-lines" style="color: #10B981;"></i> ${attachmentsCount} file</span>
             </div>
             <div style="display: flex; gap: 4px;">
+              <button class="btn btn-sm btn-secondary" onclick="appContracts.openMergeSingleModal('${c.contract_id}')" title="In / Trộn Word"><i class="fa-solid fa-file-word" style="color: #2563EB;"></i> Trộn</button>
               <button class="btn btn-sm btn-secondary" onclick="appContracts.openAppendicesModal('${c.contract_id}')" title="Phụ lục">PL</button>
               <button class="btn btn-sm btn-secondary" onclick="appContracts.openDetailModal('${c.contract_id}')" title="Chi tiết"><i class="fa-solid fa-eye"></i></button>
               <button class="btn btn-sm btn-primary" onclick="appContracts.openEditModal('${c.contract_id}')" title="Sửa"><i class="fa-solid fa-pen"></i></button>
@@ -1881,6 +1895,413 @@ const appContracts = {
     XLSX.utils.book_append_sheet(wb, ws, 'Danh_Sach_Hop_Dong');
     XLSX.writeFile(wb, `Danh_Sach_Hop_Dong_TRUNGHAI_${new Date().toISOString().split('T')[0]}.xlsx`);
     utils.showToast(`Đã xuất ${filtered.length} hợp đồng ra file Excel!`, 'success');
+  },
+
+  // ========================================================================
+  // QUẢN LÝ CHỌN HÀNG LOẠT (BATCH SELECTION)
+  // ========================================================================
+  getCurrentPageContracts() {
+    const filtered = this.getFilteredContracts();
+    const pageSize = this.pageSize || 25;
+    const page = Math.max(1, this.currentPage);
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  },
+
+  toggleSelectAll(masterCb) {
+    const isChecked = masterCb ? masterCb.checked : false;
+    const pageContracts = this.getCurrentPageContracts();
+
+    pageContracts.forEach(c => {
+      if (isChecked) {
+        this.selectedContractIds.add(c.contract_id);
+      } else {
+        this.selectedContractIds.delete(c.contract_id);
+      }
+    });
+
+    document.querySelectorAll('.contract-row-cb').forEach(cb => {
+      cb.checked = isChecked;
+    });
+
+    this.updateMasterCheckboxState();
+    this.updateBatchBar();
+  },
+
+  onRowSelectChange(contractId, isChecked) {
+    if (isChecked) {
+      this.selectedContractIds.add(contractId);
+    } else {
+      this.selectedContractIds.delete(contractId);
+    }
+    this.updateMasterCheckboxState();
+    this.updateBatchBar();
+  },
+
+  updateMasterCheckboxState() {
+    const master = document.getElementById('contract-select-all');
+    if (!master) return;
+
+    const pageContracts = this.getCurrentPageContracts();
+    if (pageContracts.length === 0) {
+      master.checked = false;
+      master.indeterminate = false;
+      return;
+    }
+
+    const selectedOnPage = pageContracts.filter(c => this.selectedContractIds.has(c.contract_id)).length;
+    if (selectedOnPage === 0) {
+      master.checked = false;
+      master.indeterminate = false;
+    } else if (selectedOnPage === pageContracts.length) {
+      master.checked = true;
+      master.indeterminate = false;
+    } else {
+      master.checked = false;
+      master.indeterminate = true;
+    }
+  },
+
+  updateBatchBar() {
+    const batchBar = document.getElementById('contracts-batch-bar');
+    const countEl = document.getElementById('contracts-selected-count');
+    const count = this.selectedContractIds.size;
+
+    if (countEl) countEl.textContent = count;
+    if (batchBar) {
+      batchBar.style.display = count > 0 ? 'flex' : 'none';
+    }
+  },
+
+  clearSelection() {
+    this.selectedContractIds.clear();
+    document.querySelectorAll('.contract-row-cb').forEach(cb => cb.checked = false);
+    const master = document.getElementById('contract-select-all');
+    if (master) {
+      master.checked = false;
+      master.indeterminate = false;
+    }
+    this.updateBatchBar();
+  },
+
+  // ========================================================================
+  // IN VÀ TRỘN TỪNG HỢP ĐỒNG (SINGLE MAIL MERGE)
+  // ========================================================================
+  openMergeFromDetail() {
+    const cId = document.getElementById('contract-detail-id')?.textContent?.trim();
+    if (cId) {
+      this.closeDetailModal();
+      this.openMergeSingleModal(cId);
+    }
+  },
+
+  async openMergeSingleModal(contractId) {
+    let contract = this.contracts.find(c => c.contract_id === contractId);
+    if (!contract && contractId) {
+      contract = this.contracts.find(c => c.employee_id === contractId) || this.contracts[0];
+    }
+    if (!contract) {
+      utils.showToast('Không tìm thấy thông tin hợp đồng để in.', 'warning');
+      return;
+    }
+
+    this.currentMergeContractId = contract.contract_id;
+
+    // Lấy thông tin nhân sự và công ty
+    const employees = (typeof appData !== 'undefined' && appData.employees) ? appData.employees : [];
+    const emp = employees.find(e => e.employee_id === contract.employee_id || e.id === contract.employee_id) || {};
+    const company = (typeof appData !== 'undefined' && appData.company) ? appData.company : {};
+
+    // Điền thông tin vào header modal
+    const empNameEl = document.getElementById('merge-single-emp-name');
+    if (empNameEl) empNameEl.textContent = emp.full_name || contract.full_name || contract.employee_id;
+    const cIdEl = document.getElementById('merge-single-contract-id');
+    if (cIdEl) cIdEl.textContent = contract.contract_id;
+    const empIdEl = document.getElementById('merge-single-emp-id');
+    if (empIdEl) empIdEl.textContent = contract.employee_id;
+    const typeEl = document.getElementById('merge-single-type');
+    if (typeEl) typeEl.textContent = contract.contract_type || '-';
+    const statusEl = document.getElementById('merge-single-status-badge');
+    if (statusEl) statusEl.textContent = contract.contract_status || 'HIỆU LỰC';
+
+    // Tải danh sách mẫu Word
+    await contractTemplateStore.loadAllTemplates();
+    const templates = contractTemplateStore.templates || [];
+    const selectEl = document.getElementById('merge-single-template-select');
+    if (selectEl) {
+      selectEl.innerHTML = templates.map(tpl => `
+        <option value="${tpl.id}" data-type="${tpl.type}">
+          ${tpl.name} (${tpl.type_label || 'Mẫu Word'}${tpl.is_default ? ' - Mặc định' : ''})
+        </option>
+      `).join('');
+
+      // Tự động chọn mẫu phù hợp nhất theo loại hợp đồng
+      const cTypeLower = (contract.contract_type || '').toLowerCase();
+      let matchedTpl = null;
+      if (cTypeLower.includes('thử việc')) {
+        matchedTpl = templates.find(t => t.type === 'probation');
+      } else if (cTypeLower.includes('không xác định')) {
+        matchedTpl = templates.find(t => t.type === 'indefinite');
+      } else if (cTypeLower.includes('phụ lục')) {
+        matchedTpl = templates.find(t => t.type === 'appendix');
+      } else {
+        matchedTpl = templates.find(t => t.type === 'fixed_term');
+      }
+      if (matchedTpl) {
+        selectEl.value = matchedTpl.id;
+      }
+    }
+
+    // Render xem trước các trường trộn thực tế
+    this.renderSingleMergePreview(contract, emp, company);
+
+    const modal = document.getElementById('modal-contract-merge-single');
+    if (modal) modal.classList.add('active');
+  },
+
+  closeMergeSingleModal() {
+    const modal = document.getElementById('modal-contract-merge-single');
+    if (modal) modal.classList.remove('active');
+    this.currentMergeContractId = null;
+  },
+
+  onMergeSingleTemplateChange() {
+    // Tùy chọn làm mới giao diện nếu mẫu đổi
+  },
+
+  renderSingleMergePreview(contract, emp, company) {
+    const tbody = document.getElementById('merge-single-preview-tbody');
+    if (!tbody) return;
+
+    const mergeData = contractMergeEngine.buildMergeData(contract, emp, company);
+
+    const previewFields = [
+      { tag: '<SoHD>', val: mergeData.SoHD },
+      { tag: '<LoaiHD>', val: mergeData.LoaiHD },
+      { tag: '<HoVaTen>', val: mergeData.HoVaTen },
+      { tag: '<HO_VA_TEN>', val: mergeData.HO_VA_TEN },
+      { tag: '<NgaySinh>', val: mergeData.NgaySinh },
+      { tag: '<SoCCCD>', val: mergeData.SoCCCD },
+      { tag: '<NgayCap>', val: mergeData.NgayCap },
+      { tag: '<NoiCap>', val: mergeData.NoiCap },
+      { tag: '<DiaChiThuongTru>', val: mergeData.DiaChiThuongTru },
+      { tag: '<DienThoai>', val: mergeData.DienThoai },
+      { tag: '<PhongBan>', val: mergeData.PhongBan },
+      { tag: '<ChucDanh>', val: mergeData.ChucDanh },
+      { tag: '<MucLuong>', mergeData.MucLuong ? (mergeData.MucLuong + ' VNĐ') : '-' },
+      { tag: '<MucLuongChu>', mergeData.MucLuongChu },
+      { tag: '<PhuCap>', mergeData.PhuCap ? (mergeData.PhuCap + ' VNĐ') : '0 VNĐ' },
+      { tag: '<NgayBatDau>', mergeData.NgayBatDau },
+      { tag: '<NgayKetThuc>', mergeData.NgayKetThuc },
+      { tag: '<TenCongTy>', mergeData.TenCongTy },
+      { tag: '<DaiDienCongTy>', mergeData.DaiDienCongTy },
+      { tag: '<NgayThangNamKy>', mergeData.NgayThangNamKy }
+    ];
+
+    tbody.innerHTML = previewFields.map(f => `
+      <tr>
+        <td style="font-weight: 600; color: #2563EB;">
+          <code style="background: #EFF6FF; padding: 2px 6px; border-radius: 4px; border: 1px solid #BFDBFE;">${f.tag}</code>
+        </td>
+        <td style="color: var(--text-primary); font-weight: ${f.tag.includes('HoVaTen') || f.tag.includes('MucLuong') ? '600' : 'normal'};">
+          ${f.val || '<span style="color: #94A3B8; font-style: italic;">Chưa có dữ liệu</span>'}
+        </td>
+      </tr>
+    `).join('');
+  },
+
+  async executeSingleMerge() {
+    const contract = this.contracts.find(c => c.contract_id === this.currentMergeContractId);
+    if (!contract) {
+      utils.showToast('Không tìm thấy hợp đồng để xuất!', 'error');
+      return;
+    }
+
+    const selectEl = document.getElementById('merge-single-template-select');
+    const templateId = selectEl?.value;
+    if (!templateId) {
+      utils.showToast('Vui lòng chọn một mẫu hợp đồng Word!', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('btn-execute-single-merge');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang trộn dữ liệu...';
+    }
+
+    try {
+      const templateBuffer = await contractTemplateStore.getTemplateBuffer(templateId);
+      const employees = (typeof appData !== 'undefined' && appData.employees) ? appData.employees : [];
+      const emp = employees.find(e => e.employee_id === contract.employee_id || e.id === contract.employee_id) || {};
+      const company = (typeof appData !== 'undefined' && appData.company) ? appData.company : {};
+
+      const mergeData = contractMergeEngine.buildMergeData(contract, emp, company);
+      const docxBlob = await contractMergeEngine.mergeDocx(templateBuffer, mergeData);
+
+      const cleanName = (mergeData.HoVaTen || contract.employee_id || 'NV')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/_+/g, '_');
+      const filename = `Hop_Dong_${contract.contract_id}_${cleanName}.docx`;
+
+      contractMergeEngine.downloadBlob(docxBlob, filename);
+      utils.showToast(`Đã xuất hợp đồng Word "${filename}" thành công!`, 'success');
+      this.closeMergeSingleModal();
+    } catch (err) {
+      console.error('[executeSingleMerge] error:', err);
+      utils.showToast('Lỗi khi trộn hợp đồng Word: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+  },
+
+  // ========================================================================
+  // IN VÀ TRỘN HÀNG LOẠT (BATCH MAIL MERGE & ZIP)
+  // ========================================================================
+  async openMergeBatchModal() {
+    if (this.selectedContractIds.size === 0) {
+      utils.showToast('Vui lòng tích chọn ít nhất 1 hợp đồng trong danh sách để in/trộn!', 'warning');
+      return;
+    }
+
+    const selectedContracts = this.contracts.filter(c => this.selectedContractIds.has(c.contract_id));
+    if (selectedContracts.length === 0) {
+      utils.showToast('Danh sách hợp đồng đã chọn không tồn tại.', 'warning');
+      return;
+    }
+
+    const countEl = document.getElementById('merge-batch-count');
+    if (countEl) countEl.textContent = selectedContracts.length;
+
+    // Tải mẫu vào dropdown
+    await contractTemplateStore.loadAllTemplates();
+    const templates = contractTemplateStore.templates || [];
+    const selectEl = document.getElementById('merge-batch-template-select');
+    if (selectEl) {
+      selectEl.innerHTML = templates.map(tpl => `
+        <option value="${tpl.id}">
+          ${tpl.name} (${tpl.type_label || 'Mẫu Word'}${tpl.is_default ? ' - Mặc định' : ''})
+        </option>
+      `).join('');
+    }
+
+    // Hiển thị danh sách các hợp đồng được chọn
+    const tbody = document.getElementById('merge-batch-selected-tbody');
+    if (tbody) {
+      tbody.innerHTML = selectedContracts.map((c, i) => `
+        <tr>
+          <td style="text-align: center; color: var(--text-muted);">${i + 1}</td>
+          <td><strong style="color: var(--primary-navy); font-family: monospace;">${c.contract_id}</strong></td>
+          <td><span class="badge badge-navy">${c.employee_id}</span></td>
+          <td><strong>${c.full_name || '-'}</strong></td>
+          <td style="font-size: 11.5px; color: var(--text-secondary);">${c.department_name || '-'}</td>
+          <td style="font-size: 11.5px;">${c.job_title || '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Reset thanh tiến trình
+    const progressContainer = document.getElementById('merge-batch-progress-container');
+    if (progressContainer) progressContainer.style.display = 'none';
+
+    const btn = document.getElementById('btn-execute-batch-merge');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Bắt Đầu Trộn & Tải File ZIP';
+    }
+
+    const modal = document.getElementById('modal-contract-merge-batch');
+    if (modal) modal.classList.add('active');
+  },
+
+  closeMergeBatchModal() {
+    const modal = document.getElementById('modal-contract-merge-batch');
+    if (modal) modal.classList.remove('active');
+  },
+
+  async executeBatchMerge() {
+    const selectedContracts = this.contracts.filter(c => this.selectedContractIds.has(c.contract_id));
+    if (selectedContracts.length === 0) {
+      utils.showToast('Không có hợp đồng nào được chọn.', 'warning');
+      return;
+    }
+
+    const selectEl = document.getElementById('merge-batch-template-select');
+    const templateId = selectEl?.value;
+    if (!templateId) {
+      utils.showToast('Vui lòng chọn một mẫu hợp đồng Word!', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('btn-execute-batch-merge');
+    const progressContainer = document.getElementById('merge-batch-progress-container');
+    const progressBar = document.getElementById('merge-batch-progress-bar');
+    const progressText = document.getElementById('merge-batch-progress-text');
+    const progressPercent = document.getElementById('merge-batch-progress-percent');
+
+    if (btn) btn.disabled = true;
+    if (progressContainer) progressContainer.style.display = 'block';
+
+    try {
+      const templateBuffer = await contractTemplateStore.getTemplateBuffer(templateId);
+
+      const zipBlob = await contractMergeEngine.batchMerge(
+        selectedContracts,
+        templateBuffer,
+        (current, total, currentName) => {
+          const percent = Math.round((current / total) * 100);
+          if (progressBar) progressBar.style.width = `${percent}%`;
+          if (progressPercent) progressPercent.textContent = `${percent}%`;
+          if (progressText) progressText.textContent = `Đang xử lý (${current}/${total}): ${currentName}...`;
+        }
+      );
+
+      if (progressText) progressText.textContent = 'Đang đóng gói file nén ZIP...';
+
+      const zipFilename = `Hop_Dong_Hang_Loat_TRUNGHAI_${new Date().toISOString().split('T')[0]}.zip`;
+      contractMergeEngine.downloadBlob(zipBlob, zipFilename);
+
+      utils.showToast(`Đã xuất thành công gói ${selectedContracts.length} hợp đồng Word vào file ZIP!`, 'success');
+      this.closeMergeBatchModal();
+      this.clearSelection();
+    } catch (err) {
+      console.error('[executeBatchMerge] error:', err);
+      utils.showToast('Lỗi khi trộn hàng loạt: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Bắt Đầu Trộn & Tải File ZIP';
+      }
+    }
+  },
+
+  switchTemplateTab(tab) {
+    if (typeof appContractTemplates !== 'undefined' && appContractTemplates.switchTab) {
+      appContractTemplates.switchTab(tab);
+    } else {
+      const isList = tab === 'list';
+      const btnList = document.getElementById('tab-btn-templates-list');
+      const btnCheat = document.getElementById('tab-btn-templates-cheat');
+      const contentList = document.getElementById('tab-content-templates-list');
+      const contentCheat = document.getElementById('tab-content-templates-cheat');
+
+      if (btnList) {
+        btnList.style.borderBottom = isList ? '2px solid #2563EB' : '2px solid transparent';
+        btnList.style.color = isList ? '#2563EB' : 'var(--text-secondary)';
+      }
+      if (btnCheat) {
+        btnCheat.style.borderBottom = !isList ? '2px solid #2563EB' : '2px solid transparent';
+        btnCheat.style.color = !isList ? '#2563EB' : 'var(--text-secondary)';
+      }
+      if (contentList) contentList.style.display = isList ? 'block' : 'none';
+      if (contentCheat) contentCheat.style.display = !isList ? 'block' : 'none';
+    }
   }
 };
 
