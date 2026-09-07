@@ -955,6 +955,9 @@ const appOrganization = {
     
     const sidePosCount = document.getElementById('sidebar-pos-count');
     if (sidePosCount) sidePosCount.textContent = (appData.positions || []).length;
+
+    const sideContractCount = document.getElementById('sidebar-contracts-count');
+    if (sideContractCount) sideContractCount.textContent = (appData.contracts || []).length;
   },
 
   // ========================================================================

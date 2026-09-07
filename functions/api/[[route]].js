@@ -271,6 +271,34 @@ export async function onRequest(context) {
     // -------------------------------------------------------------
     if (path === "data" && method === "GET") {
       const data = await loadAllFromD1(db);
+
+      // Tự động đồng bộ / cập nhật bảng 10_Contracts nếu nhân sự đã nhập nhưng hợp đồng còn thiếu
+      const employees = data.tables["03_Employees"] || [];
+      let contracts = data.tables["10_Contracts"] || [];
+      if (employees.length > 0 && contracts.length < employees.length) {
+        const contractMap = new Map(contracts.map(c => [c.employee_id, c]));
+        employees.forEach(emp => {
+          if (emp.employee_id && !contractMap.has(emp.employee_id)) {
+            contractMap.set(emp.employee_id, {
+              contract_id: emp.contract_id || emp.employee_id,
+              employee_id: emp.employee_id,
+              full_name: emp.full_name,
+              contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
+              trial_start_date: emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
+              official_date: emp.official_date || emp.start_date || '',
+              start_date: emp.start_date || '',
+              end_date: emp.end_date || '',
+              effective_date: emp.effective_date || emp.start_date || '',
+              expiry_date: emp.expiry_date || emp.end_date || '',
+              contract_status: emp.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
+            });
+          }
+        });
+        contracts = Array.from(contractMap.values());
+        data.tables["10_Contracts"] = contracts;
+        await saveTableToD1(db, "10_Contracts", contracts);
+      }
+
       return jsonResponse({
         success: true,
         tables: data.tables,
@@ -381,11 +409,33 @@ export async function onRequest(context) {
       await saveTableToD1(db, "03_Employees", updatedEmployees);
       await saveTableToD1(db, "00_Master_Profiles", updatedEmployees);
 
+      // Đồng bộ vào 10_Contracts
+      const existingContracts = data.tables["10_Contracts"] || [];
+      const contractMap = new Map(existingContracts.map(c => [c.employee_id, c]));
+      employees.forEach(emp => {
+        if (emp.employee_id) {
+          contractMap.set(emp.employee_id, {
+            contract_id: emp.contract_id || emp.employee_id,
+            employee_id: emp.employee_id,
+            full_name: emp.full_name,
+            contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
+            trial_start_date: emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
+            official_date: emp.official_date || emp.start_date || '',
+            start_date: emp.start_date || '',
+            end_date: emp.end_date || '',
+            effective_date: emp.effective_date || emp.start_date || '',
+            expiry_date: emp.expiry_date || emp.end_date || '',
+            contract_status: emp.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
+          });
+        }
+      });
+      await saveTableToD1(db, "10_Contracts", Array.from(contractMap.values()));
+
       return jsonResponse({
         success: true,
         importedCount: employees.length,
         totalCount: updatedEmployees.length,
-        message: `Đã lưu vĩnh viễn ${employees.length} nhân viên vào Cloudflare D1!`
+        message: `Đã lưu vĩnh viễn ${employees.length} nhân viên và hợp đồng vào Cloudflare D1!`
       });
     }
 

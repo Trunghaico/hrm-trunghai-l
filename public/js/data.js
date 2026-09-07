@@ -54,6 +54,26 @@ const appData = {
         this.trash = json.tables['13_Recycle_Bin'] || [];
         this.masterProfiles = json.tables['00_Master_Profiles'] || [];
 
+        // Tự động đồng bộ / bổ sung hợp đồng cho tất cả nhân sự nếu bảng hợp đồng còn thiếu
+        const contractsMap = new Map((this.contracts || []).map(c => [c.employee_id, c]));
+        this.contracts = (this.employees || []).map(emp => {
+          const existing = contractsMap.get(emp.employee_id);
+          const isResigned = emp.employment_status === 'Đã nghỉ việc';
+          return {
+            contract_id: existing?.contract_id || emp.contract_id || emp.employee_id,
+            employee_id: emp.employee_id,
+            full_name: emp.full_name,
+            contract_type: existing?.contract_type || emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
+            trial_start_date: existing?.trial_start_date || emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
+            official_date: existing?.official_date || emp.official_date || emp.start_date || '',
+            start_date: existing?.start_date || emp.start_date || '',
+            end_date: existing?.end_date || emp.end_date || '',
+            effective_date: existing?.effective_date || emp.effective_date || emp.start_date || '',
+            expiry_date: existing?.expiry_date || emp.expiry_date || emp.end_date || '',
+            contract_status: isResigned ? 'HẾT HẠN' : (existing?.contract_status || (emp.employment_status === 'Đang làm việc' ? 'HIỆU LỰC' : 'HẾT HẠN'))
+          };
+        });
+
         // Build lookup maps
         this.buildMaps();
 
