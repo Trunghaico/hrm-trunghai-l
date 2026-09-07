@@ -1025,6 +1025,16 @@ const appEmployees = {
     if (modalEl) modalEl.classList.remove('active');
   },
 
+  openContractMerge(empId) {
+    if (window.appContracts) {
+      const c = (appContracts.contracts || []).find(item => item.employee_id === empId);
+      const contractId = c ? c.contract_id : `HD-${empId}`;
+      appContracts.openMergeSingleModal(contractId);
+    } else {
+      utils.showToast('Module hợp đồng chưa sẵn sàng', 'warning');
+    }
+  },
+
   openAddModal() {
     document.getElementById('form-is-edit').value = '0';
     const oldInput = document.getElementById('form-old-emp-id');

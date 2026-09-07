@@ -18,6 +18,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- SheetJS for client-side Excel export/import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- PizZip, Docxtemplater, JSZip for Word (.docx) Mail Merge -->
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.49.1/build/docxtemplater.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <!-- Core App Stylesheet -->
   <link rel="stylesheet" href="css/main.css">
@@ -714,6 +718,14 @@
                   <i class="fa-solid fa-file-circle-plus"></i>
                   <span>Thêm Hợp Đồng Mới</span>
                 </button>
+                <button type="button" class="btn btn-sm" onclick="appContracts.openMergeStudio()" style="background: #2563EB; color: #FFFFFF; border: 1px solid #1D4ED8; font-weight: 600;" title="Chạy in và trộn hợp đồng Word theo mẫu cho nhân sự">
+                  <i class="fa-solid fa-bolt"></i>
+                  <span>Chạy Hợp Đồng</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="appContracts.openTemplatesModal()" style="background: #F8FAFC; border: 1px solid var(--border-color);" title="Quản lý và tải lên file mẫu hợp đồng Word (.docx)">
+                  <i class="fa-regular fa-file-word" style="color: #2563EB;"></i>
+                  <span>Mẫu HĐ Word</span>
+                </button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="appContracts.openImportModal()">
                   <i class="fa-solid fa-file-import" style="color: #0284C7;"></i>
                   <span>Nhập Excel</span>
@@ -803,17 +815,20 @@
               <table class="data-table">
                 <thead>
                   <tr>
+                    <th style="width: 38px; text-align: center;">
+                      <input type="checkbox" id="contract-select-all" onchange="appContracts.toggleSelectAll(this.checked)" title="Chọn tất cả trên trang này" style="cursor: pointer;">
+                    </th>
                     <th style="width: 45px; text-align: center;">STT</th>
-                    <th style="width: 130px;">Số Hợp Đồng</th>
-                    <th style="width: 100px;">Mã NV</th>
-                    <th style="min-width: 170px;">Họ và Tên</th>
-                    <th style="min-width: 160px;">Loại Hợp Đồng</th>
-                    <th style="width: 110px;">Hiệu Lực Từ</th>
-                    <th style="width: 110px;">Ngày Hết Hạn</th>
-                    <th style="width: 120px;">Lương HĐ</th>
-                    <th style="width: 70px; text-align: center;">Phụ Lục</th>
-                    <th style="width: 135px;">Trạng Thái HĐ</th>
-                    <th style="width: 140px; text-align: center;">Thao Tác</th>
+                    <th style="width: 125px;">Số Hợp Đồng</th>
+                    <th style="width: 95px;">Mã NV</th>
+                    <th style="min-width: 165px;">Họ và Tên</th>
+                    <th style="min-width: 155px;">Loại Hợp Đồng</th>
+                    <th style="width: 105px;">Hiệu Lực Từ</th>
+                    <th style="width: 105px;">Ngày Hết Hạn</th>
+                    <th style="width: 115px;">Lương HĐ</th>
+                    <th style="width: 65px; text-align: center;">Phụ Lục</th>
+                    <th style="width: 130px;">Trạng Thái HĐ</th>
+                    <th style="width: 165px; text-align: center;">Thao Tác</th>
                   </tr>
                 </thead>
                 <tbody id="contracts-tbody">
@@ -2712,26 +2727,345 @@
   </div>
 </div>
 
+<!-- ==========================================================================
+     MODAL: QUẢN LÝ MẪU VĂN BẢN & MẪU HỢP ĐỒNG WORD (.DOCX) - KÈM AI QUÉT
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-contract-templates">
+  <div class="modal-container" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-header" style="background: var(--primary-navy); color: #FFFFFF; padding: 14px 20px;">
+      <div class="modal-title" style="font-size: 16px; font-weight: 700;">
+        <i class="fa-regular fa-file-word"></i> Quản Lý Mẫu Văn Bản & Mẫu Hợp Đồng Word (.docx)
+      </div>
+      <button class="modal-close" style="color: #FFFFFF;" onclick="appContracts.closeTemplatesModal()">&times;</button>
+    </div>
+
+    <!-- Navigation Tabs inside Modal -->
+    <div style="display: flex; border-bottom: 1px solid var(--border-color); background: #F8FAFC; padding: 0 20px;">
+      <button type="button" id="tab-btn-templates-list" class="contract-tab-btn active" style="padding: 12px 16px; border: none; background: transparent; font-weight: 600; cursor: pointer; border-bottom: 2px solid #2563EB; color: #2563EB;" onclick="appContracts.switchTemplateTab('list')">
+        <i class="fa-solid fa-folder-open"></i> Danh Sách Mẫu Hợp Đồng (<span id="templates-count-badge">0</span>)
+      </button>
+      <button type="button" id="tab-btn-templates-upload" class="contract-tab-btn" style="padding: 12px 16px; border: none; background: transparent; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-secondary);" onclick="appContracts.switchTemplateTab('upload')">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Tải Lên Mẫu Mới (Kèm AI Quét)
+      </button>
+      <button type="button" id="tab-btn-templates-cheat" class="contract-tab-btn" style="padding: 12px 16px; border: none; background: transparent; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-secondary);" onclick="appContracts.switchTemplateTab('cheat')">
+        <i class="fa-solid fa-code"></i> Tra Cứu Trường Trộn MISA (Cheat Sheet)
+      </button>
+    </div>
+
+    <div class="modal-body" style="padding: 20px; overflow-y: auto; flex: 1;">
+      <!-- TAB 1: Danh sách mẫu -->
+      <div id="tab-content-templates-list">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 13px; color: var(--text-secondary);">
+            Các mẫu Word dùng chung cho toàn doanh nghiệp để bốc tách & trộn dữ liệu tự động.
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-sm" onclick="appContracts.downloadSampleDocx()" style="background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0;" title="Tải tệp Word mẫu chuẩn có chèn sẵn các trường trộn MISA">
+              <i class="fa-solid fa-file-arrow-down"></i> Tải Mẫu Word MISA Chuẩn
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="appContracts.switchTemplateTab('upload')" style="background: var(--primary-navy); border-color: var(--primary-navy);">
+              <i class="fa-solid fa-plus"></i> Tải Lên Mẫu Mới
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 6px;">
+          <table class="data-table" style="margin: 0;">
+            <thead>
+              <tr style="background: #F8FAFC;">
+                <th style="width: 40px; text-align: center;">STT</th>
+                <th>Tên Mẫu Văn Bản</th>
+                <th style="width: 150px;">Phân Loại</th>
+                <th style="width: 100px;">Dung Lượng</th>
+                <th style="width: 120px;">Nguồn Gốc</th>
+                <th style="width: 150px; text-align: center;">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="templates-list-tbody">
+              <!-- Render via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: Tải lên mẫu mới kèm AI nhận diện trường trộn -->
+      <div id="tab-content-templates-upload" style="display: none;">
+        <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px;">
+          <div style="font-size: 13px; font-weight: 700; color: #1E40AF;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Tự Động Nhận Diện & Thiết Lập Trường Trộn
+          </div>
+          <div style="font-size: 12px; color: #1E3A8A; margin-top: 4px;">
+            Khi bạn chọn file Word (.docx), công nghệ AI sẽ tự động phân tích văn bản để bốc tách các trường trộn như &lt;HoVaTen&gt;, &lt;NgaySinh&gt;, &lt;MucLuong&gt;, &lt;ChucDanh&gt;... và hiển thị dữ liệu đối soát thực tế.
+          </div>
+        </div>
+
+        <form id="form-upload-contract-template" onsubmit="appContracts.handleUploadTemplateSubmit(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+            <div class="form-group">
+              <label style="font-size: 12.5px; font-weight: 600; display: block; margin-bottom: 4px;">
+                Loại Văn Bản <span style="color: var(--accent-red);">*</span>
+              </label>
+              <select id="template-upload-type" class="filter-select" style="width: 100%; height: 38px;" required>
+                <option value="Hợp đồng lao động">Hợp đồng lao động</option>
+                <option value="Hợp đồng thử việc">Hợp đồng thử việc</option>
+                <option value="Phụ lục hợp đồng">Phụ lục hợp đồng</option>
+                <option value="Quyết định tiếp nhận">Quyết định tiếp nhận</option>
+                <option value="Quyết định bổ nhiệm">Quyết định bổ nhiệm</option>
+                <option value="Văn bản khác">Văn bản khác</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label style="font-size: 12.5px; font-weight: 600; display: block; margin-bottom: 4px;">
+                Tên Mẫu Văn Bản <span style="color: var(--accent-red);">*</span>
+              </label>
+              <input type="text" id="template-upload-name" class="form-control" placeholder="Ví dụ: Hợp đồng lao động xác định thời hạn Trung Hải" required style="height: 38px;">
+            </div>
+          </div>
+
+          <!-- Dropzone chọn file Word .docx -->
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="font-size: 12.5px; font-weight: 600; display: block; margin-bottom: 4px;">
+              Tệp Word Mẫu (.docx) <span style="color: var(--accent-red);">*</span>
+            </label>
+            <div id="template-file-dropzone" style="border: 2px dashed #CBD5E1; border-radius: 8px; padding: 24px; text-align: center; background: #FFFFFF; cursor: pointer; transition: all 0.2s;" onclick="document.getElementById('template-upload-file-input').click()">
+              <i class="fa-regular fa-file-word" style="font-size: 40px; color: #2563EB; margin-bottom: 8px;"></i>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);" id="template-dropzone-label">
+                Kéo thả tệp .docx vào đây hoặc bấm để chọn tệp từ máy tính
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                Hỗ trợ định dạng Microsoft Word (.docx). Dung lượng tối đa 10MB.
+              </div>
+            </div>
+            <input type="file" id="template-upload-file-input" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display: none;" onchange="appContracts.onTemplateFileSelected(this.files[0])">
+          </div>
+
+          <!-- Khu vực hiển thị kết quả AI Quét trường trộn -->
+          <div id="template-ai-analysis-result" style="display: none; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; background: #FFFFFF;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="font-size: 13px; font-weight: 700; color: var(--primary-navy);">
+                <i class="fa-solid fa-circle-check" style="color: #10B981;"></i> Kết Quả Nhận Diện Trường Trộn: <span id="template-ai-stats"></span>
+              </div>
+              <span class="badge" id="template-ai-score-badge" style="background: #ECFDF5; color: #059669; font-weight: 700;">100% Khớp</span>
+            </div>
+
+            <!-- Bảng đối soát trường -->
+            <div style="max-height: 180px; overflow-y: auto; border: 1px solid #E2E8F0; border-radius: 4px;">
+              <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #F8FAFC; text-align: left; border-bottom: 1px solid #E2E8F0;">
+                    <th style="padding: 6px 10px;">Trường trong Word</th>
+                    <th style="padding: 6px 10px;">Ý nghĩa dữ liệu</th>
+                    <th style="padding: 6px 10px;">Dữ liệu mẫu đối soát</th>
+                  </tr>
+                </thead>
+                <tbody id="template-ai-fields-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" class="btn btn-secondary" onclick="appContracts.switchTemplateTab('list')">Hủy</button>
+            <button type="submit" id="btn-save-template" class="btn btn-primary" style="background: var(--primary-navy); border-color: var(--primary-navy);" disabled>
+              <i class="fa-solid fa-floppy-disk"></i> Lưu Mẫu Dùng Chung Toàn Doanh Nghiệp
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TAB 3: Cheat Sheet tra cứu trường trộn MISA -->
+      <div id="tab-content-templates-cheat" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 13px; color: var(--text-secondary);">
+            Sao chép mã trường bên dưới và dán vào file Word của bạn. Hệ thống tự động bốc tách dữ liệu tương ứng.
+          </div>
+          <button type="button" class="btn btn-sm" onclick="appContracts.downloadSampleDocx()" style="background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE;">
+            <i class="fa-solid fa-download"></i> Tải File Mẫu Word Chuẩn MISA (.docx)
+          </button>
+        </div>
+
+        <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 6px; max-height: 380px; overflow-y: auto;">
+          <table class="data-table" style="margin: 0; font-size: 12px;">
+            <thead>
+              <tr style="background: #F8FAFC; position: sticky; top: 0; z-index: 1;">
+                <th style="width: 180px;">Mã Trường MISA</th>
+                <th style="width: 220px;">Ý Nghĩa Trường Dữ Liệu</th>
+                <th>Ví Dụ Dữ Liệu Thực Tế</th>
+                <th style="width: 90px; text-align: center;">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="cheat-sheet-tbody">
+              <!-- Dynamic render -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: CHẠY HỢP ĐỒNG & IN TRỘN HÀNG LOẠT (MAIL MERGE)
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-contract-merge-batch">
+  <div class="modal-container" style="max-width: 780px; max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-header" style="background: #2563EB; color: #FFFFFF; padding: 14px 20px;">
+      <div class="modal-title" style="font-size: 16px; font-weight: 700;">
+        <i class="fa-solid fa-bolt"></i> Chạy Hợp Đồng & In Trộn Dữ Liệu Nhân Sự (Mail Merge)
+      </div>
+      <button class="modal-close" style="color: #FFFFFF;" onclick="appContracts.closeMergeBatchModal()">&times;</button>
+    </div>
+
+    <div class="modal-body" style="padding: 20px; overflow-y: auto; flex: 1;">
+      <!-- 1. Chọn Mẫu Hợp Đồng -->
+      <div class="form-group" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="font-size: 13px; font-weight: 700; color: var(--text-primary);">
+            1. Chọn Mẫu Hợp Đồng Word (.docx) <span style="color: var(--accent-red);">*</span>
+          </label>
+          <a href="javascript:void(0)" onclick="appContracts.openTemplatesModal()" style="font-size: 12px; color: #2563EB; font-weight: 600; text-decoration: none;">
+            <i class="fa-solid fa-gear"></i> Quản lý mẫu / Tải lên mẫu mới
+          </a>
+        </div>
+        <select id="merge-batch-template-select" class="filter-select" style="width: 100%; height: 40px; font-size: 13px;">
+          <!-- Options populated dynamically -->
+        </select>
+      </div>
+
+      <!-- 2. Phạm vi nhân sự -->
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 6px;">
+          2. Phạm Vi Nhân Sự Cần Chạy Hợp Đồng
+        </label>
+        <div style="display: flex; gap: 14px; flex-wrap: wrap; background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px;">
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin: 0;">
+            <input type="radio" name="merge-scope" value="selected" id="scope-selected" onchange="appContracts.onMergeScopeChange('selected')">
+            <span>Các nhân sự đã tích chọn (<strong id="merge-scope-selected-count" style="color: #2563EB;">0</strong>)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin: 0;">
+            <input type="radio" name="merge-scope" value="all" id="scope-all" checked onchange="appContracts.onMergeScopeChange('all')">
+            <span>Toàn bộ nhân sự đang hiệu lực (<strong id="merge-scope-all-count" style="color: #059669;">0</strong>)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin: 0;">
+            <input type="radio" name="merge-scope" value="dept" id="scope-dept" onchange="appContracts.onMergeScopeChange('dept')">
+            <span>Lọc theo phòng ban...</span>
+          </label>
+        </div>
+
+        <div id="merge-dept-selector-wrapper" style="display: none; margin-top: 10px;">
+          <select id="merge-dept-select" class="filter-select" style="width: 100%; height: 36px;" onchange="appContracts.onMergeDeptChange()">
+            <option value="">-- Chọn phòng ban cần chạy --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 3. Danh sách nhân sự được chọn để bốc tách -->
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">
+            3. Danh Sách Nhân Sự Chuẩn Bị Bốc Tách (<span id="merge-batch-count" style="color: #2563EB;">0</span> hợp đồng)
+          </label>
+          <small style="color: var(--text-muted);">Tự động bốc tách từ 115 trường hồ sơ nhân sự</small>
+        </div>
+
+        <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px;">
+          <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #F8FAFC; text-align: left; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1;">
+                <th style="padding: 6px 10px; width: 35px; text-align: center;">STT</th>
+                <th style="padding: 6px 10px; width: 120px;">Số Hợp Đồng</th>
+                <th style="padding: 6px 10px; width: 85px;">Mã NV</th>
+                <th style="padding: 6px 10px;">Họ và Tên</th>
+                <th style="padding: 6px 10px;">Phòng Ban</th>
+                <th style="padding: 6px 10px;">Chức Danh</th>
+              </tr>
+            </thead>
+            <tbody id="merge-batch-selected-tbody">
+              <!-- Render via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div id="merge-batch-progress-container" style="display: none; margin-bottom: 16px; background: #F8FAFC; border: 1px solid #BFDBFE; border-radius: 6px; padding: 12px 16px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; font-weight: 600;">
+          <span id="merge-batch-progress-text" style="color: #1E40AF;">Đang chuẩn bị dữ liệu...</span>
+          <span id="merge-batch-progress-percent" style="color: #1E40AF;">0%</span>
+        </div>
+        <div style="width: 100%; height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden;">
+          <div id="merge-batch-progress-bar" style="width: 0%; height: 100%; background: #2563EB; transition: width 0.15s ease;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="appContracts.previewFirstMergePrint()" title="Xem thử văn bản trước khi in ấn">
+          <i class="fa-solid fa-eye" style="color: var(--primary-navy);"></i> Xem Bản In & Xuất PDF
+        </button>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="appContracts.closeMergeBatchModal()">Hủy Bỏ</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-execute-batch-merge" onclick="appContracts.executeBatchMerge()" style="background: #2563EB; border-color: #1D4ED8; font-weight: 700; padding: 0 16px;">
+          <i class="fa-solid fa-bolt"></i> Bắt Đầu Chạy Hợp Đồng
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: XEM BẢN IN HỢP ĐỒNG & LƯU PDF
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-contract-print-preview">
+  <div class="modal-container" style="max-width: 900px; max-height: 95vh; display: flex; flex-direction: column;">
+    <div class="modal-header" style="background: var(--primary-navy); color: #FFFFFF; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div class="modal-title" style="font-size: 15px; font-weight: 700;">
+        <i class="fa-solid fa-print"></i> Xem Bản In Hợp Đồng Lao Động & Lưu PDF
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button type="button" class="btn btn-sm" onclick="appContracts.downloadCurrentPreviewDocx()" style="background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; font-size: 12px;">
+          <i class="fa-solid fa-file-word"></i> Tải File Word (.docx)
+        </button>
+        <button type="button" class="btn btn-sm" onclick="appContracts.printCurrentPreviewDoc()" style="background: #FFFFFF; color: var(--primary-navy); font-weight: 700; border: none; font-size: 12px;">
+          <i class="fa-solid fa-print"></i> In Hợp Đồng / Lưu PDF
+        </button>
+        <button class="modal-close" style="color: #FFFFFF; margin-left: 8px;" onclick="appContracts.closePrintPreviewModal()">&times;</button>
+      </div>
+    </div>
+
+    <div class="modal-body" style="padding: 24px; overflow-y: auto; background: #E5E7EB; flex: 1;">
+      <div id="contract-print-preview-content" style="box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+        <!-- Rendered Contract HTML Page -->
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast Container -->
 <div class="toast-container" id="toast-container"></div>
 
 <!-- JavaScript Application Modules -->
-<script src="js/data.js?v=3.0.0"></script>
-<script src="js/auth.js?v=3.0.0"></script>
-<script src="js/company.js?v=3.0.0"></script>
-<script src="js/dashboard.js?v=3.0.0"></script>
-<script src="js/profile-fields.js?v=3.0.0"></script>
-<script src="js/employees.js?v=3.0.0"></script>
-<script src="js/import.js?v=3.0.0"></script>
-<script src="js/resigned.js?v=3.0.0"></script>
-<script src="js/contracts.js?v=3.0.0"></script>
-<script src="js/organization.js?v=3.0.0"></script>
-<script src="js/org-import.js?v=3.0.0"></script>
-<script src="js/reports.js?v=3.0.0"></script>
-<script src="js/accounts.js?v=3.0.0"></script>
-<script src="js/logs.js?v=3.0.0"></script>
-<script src="js/trash.js?v=3.0.0"></script>
-<script src="js/app.js?v=3.0.0"></script>
+<script src="js/data.js?v=3.1.0"></script>
+<script src="js/auth.js?v=3.1.0"></script>
+<script src="js/company.js?v=3.1.0"></script>
+<script src="js/dashboard.js?v=3.1.0"></script>
+<script src="js/profile-fields.js?v=3.1.0"></script>
+<script src="js/employees.js?v=3.1.0"></script>
+<script src="js/import.js?v=3.1.0"></script>
+<script src="js/resigned.js?v=3.1.0"></script>
+<script src="js/contract-merge.js?v=3.1.0"></script>
+<script src="js/contracts.js?v=3.1.0"></script>
+<script src="js/organization.js?v=3.1.0"></script>
+<script src="js/org-import.js?v=3.1.0"></script>
+<script src="js/reports.js?v=3.1.0"></script>
+<script src="js/accounts.js?v=3.1.0"></script>
+<script src="js/logs.js?v=3.1.0"></script>
+<script src="js/trash.js?v=3.1.0"></script>
+<script src="js/app.js?v=3.1.0"></script>
 
 </body>
 </html>
