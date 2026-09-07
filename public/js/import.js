@@ -148,8 +148,178 @@ const appImport = {
   },
 
   downloadTemplate() {
-    window.location.href = '/api/employees/template';
+    try {
+      if (typeof XLSX === 'undefined') {
+        utils.showToast('Đang tải thư viện xử lý Excel, vui lòng thử lại sau giây lát...', 'warning');
+        return;
+      }
+
+      const depts = (window.appData && appData.departments) || [];
+      const positions = (window.appData && appData.positions) || [];
+
+      const wb = XLSX.utils.book_new();
+
+      const sampleHeaders = [
+        'Mã nhân viên', 'Họ và tên', 'Giới tính', 'Ngày sinh', 'ĐT di động', 'Email cơ quan',
+        'Vị trí công việc', 'Đơn vị công tác', 'Ngày thử việc', 'Ngày chính thức', 'Loại hợp đồng',
+        'Trạng thái lao động', 'Thâm niên', 'Tham gia bảo hiểm', 'ĐT tài khoản', 'Tên gọi khác',
+        'Nhóm lý do nghỉ', 'Ngày nghỉ hưu dự kiến', 'Tính chất lao động', 'Bậc lương', 'Tổng lương',
+        'Tham gia công đoàn', 'Nơi sinh', 'Nguyên quán', 'Tình trạng hôn nhân', 'MST cá nhân',
+        'TP gia đình', 'TP bản thân', 'Dân tộc', 'Tôn giáo', 'Quốc tịch', 'Số CMND',
+        'Ngày cấp giấy tờ', 'Nơi cấp giấy tờ', 'Ngày hết hạn giấy tờ', 'Loại giấy tờ', 'Số Hộ chiếu',
+        'Ngày cấp Hộ chiếu', 'Nơi cấp Hộ chiếu', 'Ngày hết hạn Hộ chiếu', 'Trình độ văn hóa',
+        'Trình độ đào tạo', 'Nơi đào tạo', 'Khoa', 'Chuyên ngành', 'Năm tốt nghiệp', 'Xếp loại',
+        'ĐT cơ quan', 'ĐT nhà riêng', 'ĐT khác', 'Email cá nhân', 'Email khác', 'Skype', 'Facebook',
+        'Hộ khẩu thường trú', 'Quốc gia (Thường trú)', 'Tỉnh/Thành phố (Thường trú)', 'Quận/Huyện (Thường trú)',
+        'Phường/Xã (Thường trú)', 'Số nhà, đường phố (Thường trú)', 'Số sổ hộ khẩu', 'Mã số hộ gia đình',
+        'Là chủ hộ', 'Chỗ ở hiện nay', 'Quốc gia (Hiện nay)', 'Tỉnh/Thành phố (Hiện nay)',
+        'Quận/Huyện (Hiện nay)', 'Phường/Xã (Hiện nay)', 'Số nhà, đường phố (Hiện nay)', 'Họ và tên (LHKC)',
+        'Quan hệ (LHKC)', 'ĐT di động (LHKC)', 'ĐT nhà riêng (LHKC)', 'Email (LHKC)', 'Địa chỉ (LHKC)',
+        'Email tài khoản', 'Trạng thái tài khoản', 'Trạng thái chữ ký số', 'Trạng thái hồ sơ cấp CKS',
+        'Ngày có hiệu lực', 'Ngày hết hiệu lực', 'Chức danh', 'Mã chấm công', 'Cấp', 'Bậc',
+        'Lý do nghỉ', 'Ngày nghỉ việc', 'Thuộc danh sách đen', 'Người duyệt', 'Địa điểm làm việc',
+        'Số sổ QL lao động', 'Hệ số lương', 'Ngày học việc', 'Quản lý trực tiếp', 'Quản lý gián tiếp',
+        'Lương cơ bản', 'Lương đóng BH', 'TK ngân hàng', 'Ngân hàng', 'Chi nhánh', 'Ngày tham gia BH',
+        'Tỷ lệ đóng BH', 'Tỷ lệ đóng BHXH', 'Tỷ lệ đóng BHYT', 'Tỷ lệ đóng BHTN', 'Nhân sự khai thác',
+        'Số sổ BHXH', 'Nguồn ứng viên', 'Mã số BHXH', 'Mã tỉnh cấp', 'Số thẻ BHYT', 'Nơi đăng ký KCB',
+        'Khu vực làm việc', 'Mã vị trí công việc', 'Mã đơn vị công tác'
+      ];
+
+      const sampleRows = [
+        sampleHeaders,
+        [
+          'TH-2001', 'Nguyễn Văn An', 'Nam', '15/08/1992', '0987654321', 'an.nv@trunghaico.vn',
+          positions[0]?.position_name || 'Chuyên viên Nhân sự', depts[0]?.department_name || 'Phòng Hành Chính Nhân Sự',
+          '01/03/2026', '01/05/2026', 'Hợp đồng lao động không xác định thời hạn', 'Đang làm việc',
+          '3 năm', 'Có', '0987654321', '', '', '15/08/2054', 'Chính thức', '3', 20000000,
+          'Có', 'Hà Nội', 'Nam Định', 'Đã kết hôn', '8456123890', 'Cán bộ công chức', 'Công nhân viên chức',
+          'Kinh', 'Không', 'Việt Nam', '001092012345', '10/05/2021', 'Cục Cảnh sát Quản lý hành chính về trật tự xã hội',
+          '15/08/2032', 'CCCD', 'P01234567', '12/04/2022', 'Cục Quản lý Xuất nhập cảnh', '12/04/2032',
+          '12/12', 'Đại học', 'Đại học Kinh Tế Quốc Dân', 'Quản trị Kinh doanh', 'Quản trị Nhân lực',
+          2014, 'Giỏi', '02438888999', '02437654321', '', 'annguyen92@gmail.com', '', 'an.nguyen.hr',
+          'facebook.com/annv92', 'Số 12 Phố Huế, P. Hàng Bài, Q. Hoàn Kiếm, Hà Nội', 'Việt Nam',
+          'Hà Nội', 'Hoàn Kiếm', 'Hàng Bài', 'Số 12 Phố Huế', 'HK-001928', 'HGD-019283', 'Có',
+          'Tòa nhà Trung Hải, Cầu Giấy, Hà Nội', 'Việt Nam', 'Hà Nội', 'Cầu Giấy', 'Dịch Vọng Hậu',
+          'Phố Duy Tân', 'Nguyễn Thị Bình', 'Vợ', '0912345678', '02437654321', 'binhnt@gmail.com',
+          'Số 12 Phố Huế, P. Hàng Bài, Q. Hoàn Kiếm, Hà Nội', 'an.nv@trunghaico.vn', 'Kích hoạt',
+          'Đã kích hoạt', 'Hợp lệ', '01/05/2026', '', 'Chuyên viên Nhân sự cấp cao', '2001', 'Cấp 3',
+          'Bậc 3', '', '', 'Không', 'Huỳnh Thanh Long', 'Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội',
+          'LD-00123', 2.34, '01/01/2026', 'Huỳnh Thanh Long', 'Trần Minh Đức', 16000000, 16000000,
+          '1903456789012', 'Vietcombank', 'Chi nhánh Hà Nội', '01/03/2026', '32%', '25.5%', '4.5%', '2%',
+          'Lê Thị Thu', '0123456789', 'VietnamWorks', '0123456789', '001', 'DN4010123456789',
+          'Bệnh viện Bạch Mai - Hà Nội', 'Khối Văn phòng Tổng công ty', positions[0]?.position_id || 'POS-01',
+          depts[0]?.department_id || 'HR'
+        ],
+        [
+          'TH-2002', 'Trần Thị Mai', 'Nữ', '20/11/1995', '0912987654', 'mai.tt@trunghaico.vn',
+          positions[1]?.position_name || 'Kế toán viên', depts[1]?.department_name || 'Phòng Kế Toán Tài Chính',
+          '15/02/2026', '15/04/2026', 'Hợp đồng thử việc', 'Đang làm việc', '1 năm', 'Có',
+          '0912987654', '', '', '20/11/2055', 'Thử việc', '2', 15000000, 'Có', 'Đà Nẵng',
+          'Quảng Nam', 'Độc thân', '8590123456', 'Công chức', 'Nhân viên', 'Kinh', 'Không',
+          'Việt Nam', '034195009876', '15/12/2022', 'Cục Cảnh sát Quản lý hành chính về trật tự xã hội',
+          '20/11/2035', 'CCCD', '', '', '', '', '12/12', 'Đại học', 'Đại học Kinh Tế - ĐH Đà Nẵng',
+          'Tài chính Kế toán', 'Kế toán Tổng hợp', 2017, 'Khá', '02363888999', '', '',
+          'maitt95@yahoo.com', '', 'mai.tran.acc', 'facebook.com/maitt95',
+          'Số 45 Lê Duẩn, P. Hải Châu 1, Q. Hải Châu, TP. Đà Nẵng', 'Việt Nam', 'Đà Nẵng', 'Hải Châu',
+          'Hải Châu 1', 'Số 45 Lê Duẩn', 'HK-048123', 'HGD-048567', 'Không',
+          'Số 45 Lê Duẩn, P. Hải Châu 1, Q. Hải Châu, TP. Đà Nẵng', 'Việt Nam', 'Đà Nẵng', 'Hải Châu',
+          'Hải Châu 1', 'Số 45 Lê Duẩn', 'Trần Văn Cường', 'Bố', '0905123456', '02363888999',
+          'cuongtv@gmail.com', 'Số 45 Lê Duẩn, P. Hải Châu 1, Q. Hải Châu, TP. Đà Nẵng',
+          'mai.tt@trunghaico.vn', 'Kích hoạt', 'Chưa kích hoạt', 'Chờ duyệt', '15/02/2026', '15/04/2026',
+          'Chuyên viên Kế toán Tổng hợp', '2002', 'Cấp 3', 'Bậc 2', '', '', 'Không', 'Huỳnh Thanh Long',
+          'Chi nhánh Miền Trung - Đà Nẵng', 'LD-00124', 2.10, '', 'Huỳnh Thanh Long', '', 12000000, 12000000,
+          '1029384756', 'Techcombank', 'Chi nhánh Đà Nẵng', '15/02/2026', '32%', '25.5%', '4.5%', '2%',
+          'Lê Thị Thu', '0481234567', 'TopCV', '0481234567', '048', 'DN4480481234567',
+          'Bệnh viện Đa khoa Đà Nẵng', 'Khối Kế toán Tài chính', positions[1]?.position_id || 'POS-02',
+          depts[1]?.department_id || 'KT'
+        ]
+      ];
+
+      const ws1 = XLSX.utils.aoa_to_sheet(sampleRows);
+      ws1['!cols'] = sampleHeaders.map(() => ({ wch: 20 }));
+      ws1['!cols'][0] = { wch: 16 };  // Mã NV
+      ws1['!cols'][1] = { wch: 24 };  // Họ tên
+      ws1['!cols'][5] = { wch: 28 };  // Email
+      ws1['!cols'][54] = { wch: 40 }; // Thường trú
+      ws1['!cols'][63] = { wch: 40 }; // Nơi ở
+      ws1['!cols'][31] = { wch: 18 }; // CMND
+
+      XLSX.utils.book_append_sheet(wb, ws1, 'Danh_Sach_Nhan_Su');
+
+      // Sheet 2: Danh_Muc_Tham_Chieu
+      const refData = [
+        ['=== DANH MỤC THAM CHIẾU HỆ THỐNG QUẢN TRỊ NHÂN SỰ TRUNG HẢI ===', ''],
+        ['(Sử dụng các giá trị chuẩn trong sheet này để tra cứu thông tin)', ''],
+        ['', ''],
+        ['1. DANH SÁCH MÃ ĐƠN VỊ CÔNG TÁC (*)', 'TÊN ĐƠN VỊ CÔNG TÁC'],
+        ...(depts.length > 0 ? depts.map(d => [d.department_id, d.department_name]) : [['HR', 'Phòng Hành Chính Nhân Sự'], ['KT', 'Phòng Kế Toán Tài Chính']]),
+        ['', ''],
+        ['2. DANH SÁCH MÃ VỊ TRÍ CÔNG VIỆC (*)', 'TÊN VỊ TRÍ CÔNG VIỆC'],
+        ...(positions.length > 0 ? positions.map(p => [p.position_id, p.position_name]) : [['POS-01', 'Chuyên viên Nhân sự'], ['POS-02', 'Kế toán viên']]),
+        ['', ''],
+        ['3. CẤP BẬC NHÂN SỰ', 'MÔ TẢ CẤP BẬC'],
+        ['Cấp 1', 'Ban Lãnh đạo / Giám đốc'],
+        ['Cấp 2', 'Quản lý Cấp trung / Trưởng phòng'],
+        ['Cấp 3', 'Chuyên viên / Nhân viên Nghiệp vụ'],
+        ['Cấp 4', 'Nhân viên Sơ cấp / Tập sự'],
+        ['Cấp 5', 'Công nhân / Lao động trực tiếp'],
+        ['', ''],
+        ['4. TÍNH CHẤT LAO ĐỘNG HỢP LỆ (*)', 'GHI CHÚ ÁP DỤNG'],
+        ['Chính thức', 'Đã ký hợp đồng lao động chính thức'],
+        ['Thử việc', 'Đang trong thời gian thử việc'],
+        ['Học việc', 'Đang trong thời gian học việc'],
+        ['Thực tập', 'Sinh viên thực tập tốt nghiệp'],
+        ['Thời vụ', 'Hợp đồng theo mùa vụ / dự án ngắn hạn'],
+        ['', ''],
+        ['5. TRẠNG THÁI LAO ĐỘNG (*)', 'Ý NGHĨA'],
+        ['Đang làm việc', 'Đang công tác hoạt động bình thường'],
+        ['Đã nghỉ việc', 'Đã thôi việc, thanh lý hợp đồng lao động'],
+        ['Nghỉ thai sản', 'Đang nghỉ chế độ thai sản'],
+        ['Nghỉ không lương', 'Đang tạm hoãn hợp đồng lao động'],
+        ['', ''],
+        ['6. LOẠI HỢP ĐỒNG LAO ĐỘNG (*)', 'GHI CHÚ'],
+        ['Hợp đồng lao động không xác định thời hạn', 'Hợp đồng không thời hạn'],
+        ['Hợp đồng lao động xác định thời hạn (12 tháng)', 'Hợp đồng 12 tháng'],
+        ['Hợp đồng lao động xác định thời hạn (24 tháng)', 'Hợp đồng 24 tháng'],
+        ['Hợp đồng lao động xác định thời hạn (36 tháng)', 'Hợp đồng 36 tháng'],
+        ['Hợp đồng thử việc', 'Hợp đồng thử việc 1 - 2 tháng'],
+        ['Hợp đồng lao động thời vụ', 'Hợp đồng ngắn hạn dưới 12 tháng'],
+        ['', ''],
+        ['7. TRÌNH ĐỘ ĐÀO TẠO & HÌNH THỨC', 'HÌNH THỨC'],
+        ['Đại học', 'Chính quy'],
+        ['Thạc sĩ', 'Tại chức'],
+        ['Tiến sĩ', 'Liên thông'],
+        ['Cao đẳng', 'Từ xa / Vừa học vừa làm'],
+        ['Trung cấp', ''],
+        ['THPT', ''],
+        ['', ''],
+        ['8. DANH SÁCH NGÂN HÀNG PHỔ BIẾN', ''],
+        ['Vietcombank', 'MBBank'],
+        ['Techcombank', 'BIDV'],
+        ['VietinBank', 'ACB'],
+        ['Agribank', 'VPBank'],
+        ['TPBank', 'Sacombank'],
+        ['', ''],
+        ['9. QUAN HỆ KHẨN CẤP', ''],
+        ['Vợ', 'Chồng'],
+        ['Bố', 'Mẹ'],
+        ['Anh trai', 'Chị gái'],
+        ['Em trai', 'Em gái'],
+        ['Người thân khác', '']
+      ];
+
+      const ws2 = XLSX.utils.aoa_to_sheet(refData);
+      ws2['!cols'] = [{ wch: 45 }, { wch: 55 }];
+      XLSX.utils.book_append_sheet(wb, ws2, 'Danh_Muc_Tham_Chieu');
+
+      XLSX.writeFile(wb, 'Mau_Nhap_Lieu_Nhan_Su_TRUNGHAI.xlsx');
+      utils.showToast('Đã tải xuống file mẫu Excel thành công!', 'success');
+    } catch (err) {
+      console.error('Lỗi tải file mẫu:', err);
+      utils.showToast('Không thể tải file mẫu Excel: ' + err.message, 'error');
+    }
   },
+
 
   handleFileSelect(e) {
     const file = e.target.files && e.target.files[0];

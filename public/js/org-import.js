@@ -119,8 +119,60 @@ const appOrgImport = {
   },
 
   downloadTemplate() {
-    window.location.href = '/api/organization/template-excel';
+    try {
+      if (typeof XLSX === 'undefined') {
+        utils.showToast('Đang tải thư viện Excel, vui lòng thử lại sau giây lát...', 'warning');
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: Companies (01_Cong_Ty)
+      const companiesData = [
+        ['Mã công ty (*)', 'Tên công ty (*)'],
+        ['TH-CORP', 'Tổng Công Ty Cổ Phần Trung Hải'],
+        ['TP', 'Công Ty Cổ Phần Xây Dựng Cầu Đường Thành Phát'],
+        ['TH-TECH', 'Công Ty TNHH Công Nghệ & Giải Pháp Số Trung Hải']
+      ];
+      const wsComp = XLSX.utils.aoa_to_sheet(companiesData);
+      wsComp['!cols'] = [{ wch: 18 }, { wch: 45 }];
+      XLSX.utils.book_append_sheet(wb, wsComp, '01_Cong_Ty');
+
+      // Sheet 2: Departments (02_Phong_Ban)
+      const deptsData = [
+        ['Mã phòng ban (*)', 'Tên phòng ban (*)', 'Mã công ty (* BẮT BUỘC)'],
+        ['BGD', 'Ban Giám Đốc', 'TH-CORP'],
+        ['HR', 'Phòng Hành Chính Nhân Sự', 'TH-CORP'],
+        ['TP-KT', 'Phòng Kế Toán', 'TP'],
+        ['TP-KTTH', 'Ban Kỹ Thuật Dự Án', 'TP'],
+        ['TECH-DEV', 'Trung Tâm Phát Triển Phần Mềm', 'TH-TECH']
+      ];
+      const wsDept = XLSX.utils.aoa_to_sheet(deptsData);
+      wsDept['!cols'] = [{ wch: 20 }, { wch: 38 }, { wch: 25 }];
+      XLSX.utils.book_append_sheet(wb, wsDept, '02_Phong_Ban');
+
+      // Sheet 3: Positions (03_Vi_Tri)
+      const posData = [
+        ['Mã vị trí (*)', 'Tên vị trí công việc / Chức danh (*)'],
+        ['POS-TGD', 'Tổng Giám Đốc'],
+        ['POS-TP-HR', 'Trưởng Phòng Nhân Sự'],
+        ['TP-KTTH', 'Kế Toán Tổng Hợp'],
+        ['TECH-LEAD', 'Trưởng Nhóm Kỹ Thuật (Tech Lead)'],
+        ['DEV-SR', 'Kỹ Sư Phần Mềm Cao Cấp'],
+        ['CHUYEN-VIEN', 'Chuyên Viên Nghiệp Vụ']
+      ];
+      const wsPos = XLSX.utils.aoa_to_sheet(posData);
+      wsPos['!cols'] = [{ wch: 18 }, { wch: 42 }];
+      XLSX.utils.book_append_sheet(wb, wsPos, '03_Vi_Tri');
+
+      XLSX.writeFile(wb, 'Mau_Co_Cau_To_Chuc_TRUNGHAI.xlsx');
+      utils.showToast('Đã tải xuống file mẫu cơ cấu tổ chức thành công!', 'success');
+    } catch (err) {
+      console.error('Lỗi tải file mẫu tổ chức:', err);
+      utils.showToast('Không thể tạo file mẫu: ' + err.message, 'error');
+    }
   },
+
 
   handleFileSelect(e) {
     const file = e.target.files && e.target.files[0];

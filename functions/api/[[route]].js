@@ -398,6 +398,12 @@ export async function onRequest(context) {
 
       // GET /api/employees/:id
       if (method === "GET" && empId) {
+        if (empId === "template") {
+          return jsonResponse({
+            success: false,
+            message: "Vui lòng bấm nút 'Tải file mẫu' trực tiếp trên giao diện để tải file mẫu Excel mới nhất."
+          }, 400);
+        }
         const data = await loadAllFromD1(db);
         const emp = (data.tables["03_Employees"] || []).find(e => e.employee_id === empId);
         if (!emp) return jsonResponse({ success: false, message: "Không tìm thấy nhân viên" }, 404);
