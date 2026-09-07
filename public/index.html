@@ -87,7 +87,6 @@
       <button class="nav-item" data-view="contracts">
         <i class="fa-solid fa-file-contract"></i>
         <span>Hợp đồng</span>
-        <span class="badge-count" id="sidebar-contracts-count">...</span>
       </button>
 
       <button class="nav-item" data-view="resigned">
@@ -1136,29 +1135,38 @@
            VIEW: RECYCLE BIN (THÙNG RÁC)
            ========================================== -->
       <section class="view-panel" id="view-trash">
-        <!-- KPI Cards for Trash -->
+        <!-- KPI Cards for Trash (Interactive Filter Tabs) -->
         <div class="kpi-grid">
-          <div class="kpi-card accent-red">
+          <div class="kpi-card accent-red kpi-card-clickable active" id="trash-tab-total" role="button" tabindex="0" title="Nhấn để xem toàn bộ nhân sự trong thùng rác" aria-pressed="true">
             <div class="kpi-info">
-              <span class="kpi-label">Nhân Sự Trong Thùng Rác</span>
+              <div style="display: flex; align-items: center;">
+                <span class="kpi-label">Nhân Sự Trong Thùng Rác</span>
+                <span class="kpi-active-badge" id="badge-tab-total"><i class="fa-solid fa-check"></i> Đang xem</span>
+              </div>
               <span class="kpi-value" id="kpi-trash-total" style="color: var(--accent-red);">0</span>
               <span class="kpi-subtext" style="color: var(--accent-red);"><i class="fa-solid fa-trash-can"></i> Chờ khôi phục hoặc xóa</span>
             </div>
             <div class="kpi-icon-box" style="background: var(--accent-red-soft); color: var(--accent-red);"><i class="fa-solid fa-trash-can"></i></div>
           </div>
 
-          <div class="kpi-card accent-amber">
+          <div class="kpi-card accent-amber kpi-card-clickable" id="trash-tab-recent" role="button" tabindex="0" title="Nhấn để lọc các nhân sự bị xóa trong 7 ngày gần nhất" aria-pressed="false">
             <div class="kpi-info">
-              <span class="kpi-label">Đã Xóa 7 Ngày Qua</span>
+              <div style="display: flex; align-items: center;">
+                <span class="kpi-label">Đã Xóa 7 Ngày Qua</span>
+                <span class="kpi-active-badge" id="badge-tab-recent" style="display: none;"><i class="fa-solid fa-filter"></i> Đang lọc</span>
+              </div>
               <span class="kpi-value" id="kpi-trash-recent">0</span>
               <span class="kpi-subtext" style="color: #D97706;"><i class="fa-regular fa-clock"></i> Mới xóa gần đây</span>
             </div>
             <div class="kpi-icon-box" style="background: #FEF3C7; color: #D97706;"><i class="fa-solid fa-clock-rotate-left"></i></div>
           </div>
 
-          <div class="kpi-card">
+          <div class="kpi-card kpi-card-clickable" id="trash-tab-top-dept" role="button" tabindex="0" title="Nhấn để lọc theo phòng ban/khối có nhiều nhân sự bị xóa nhất" aria-pressed="false">
             <div class="kpi-info">
-              <span class="kpi-label">Phòng Ban / Khối Nhiều Nhất</span>
+              <div style="display: flex; align-items: center;">
+                <span class="kpi-label">Phòng Ban / Khối Nhiều Nhất</span>
+                <span class="kpi-active-badge" id="badge-tab-top-dept" style="display: none;"><i class="fa-solid fa-filter"></i> Đang lọc</span>
+              </div>
               <span class="kpi-value" id="kpi-trash-top-dept" style="font-size: 14.5px;">-</span>
               <span class="kpi-subtext"><i class="fa-solid fa-building"></i> Theo đơn vị công tác</span>
             </div>
@@ -1204,6 +1212,9 @@
                 </button>
               </div>
             </div>
+
+            <!-- Active Tab Filter Banner (displayed when filtering by recent 7 days or top dept) -->
+            <div id="trash-tab-filter-banner" class="trash-active-filter-banner" style="display: none;"></div>
 
             <!-- Trash Data Table -->
             <div class="table-responsive">

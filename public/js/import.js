@@ -426,35 +426,17 @@ const appImport = {
   },
 
   formatDate(val) {
-    if (!val || val === '-' || val === 'null' || val === 'undefined') return '';
-    
-    // 1. Xử lý số serial ngày của Excel (số hoặc chuỗi số: ví dụ 44972 -> 15/02/2023)
-    const num = Number(val);
-    if (!isNaN(num) && num > 10000 && num < 90000) {
-      const d = new Date(Math.round((num - 25569) * 86400 * 1000));
+    if (!val) return '';
+    if (typeof val === 'number') {
+      const d = new Date(Math.round((val - 25569) * 86400 * 1000));
       if (!isNaN(d.getTime())) {
-        const day = String(d.getUTCDate()).padStart(2, '0');
-        const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-        const year = d.getUTCFullYear();
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
         return `${day}/${month}/${year}`;
       }
     }
-
-    const str = String(val).trim();
-
-    // 2. Chuỗi dạng DD/MM/YYYY hoặc D/M/YYYY
-    const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-    if (dmy) {
-      return `${dmy[1].padStart(2, '0')}/${dmy[2].padStart(2, '0')}/${dmy[3]}`;
-    }
-
-    // 3. Chuỗi dạng YYYY-MM-DD hoặc YYYY/MM/DD
-    const ymd = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if (ymd) {
-      return `${ymd[3].padStart(2, '0')}/${ymd[2].padStart(2, '0')}/${ymd[1]}`;
-    }
-
-    return str;
+    return String(val).trim();
   },
 
   onSheetChange(newSheetName) {

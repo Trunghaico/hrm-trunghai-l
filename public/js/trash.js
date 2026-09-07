@@ -8,6 +8,10 @@ const appTrash = {
   selectedIds: new Set(),
   currentPage: 1,
   pageSize: 25,
+  activeTab: 'all', // 'all' | 'recent7' | 'top-dept'
+  topDeptName: '',
+  topDeptId: '',
+  topDeptCount: 0,
 
   init() {
     if (!this.initialized) {
@@ -27,6 +31,40 @@ const appTrash = {
   },
 
   attachEventListeners() {
+    // 1. KPI Filter Tabs
+    const tabTotal = document.getElementById('trash-tab-total');
+    if (tabTotal) {
+      tabTotal.addEventListener('click', () => this.setActiveTab('all'));
+      tabTotal.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.setActiveTab('all');
+        }
+      });
+    }
+
+    const tabRecent = document.getElementById('trash-tab-recent');
+    if (tabRecent) {
+      tabRecent.addEventListener('click', () => this.setActiveTab('recent7'));
+      tabRecent.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.setActiveTab('recent7');
+        }
+      });
+    }
+
+    const tabTopDept = document.getElementById('trash-tab-top-dept');
+    if (tabTopDept) {
+      tabTopDept.addEventListener('click', () => this.setActiveTab('top-dept'));
+      tabTopDept.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.setActiveTab('top-dept');
+        }
+      });
+    }
+
     // Search input
     const searchInput = document.getElementById('trash-search-input');
     if (searchInput) {
@@ -40,6 +78,10 @@ const appTrash = {
     const deptFilter = document.getElementById('trash-filter-dept');
     if (deptFilter) {
       deptFilter.addEventListener('change', () => {
+        // If user manually changes dropdown while on top-dept tab and selected dept doesn't match topDept
+        if (this.activeTab === 'top-dept' && deptFilter.value && deptFilter.value !== this.topDeptId) {
+          this.activeTab = 'all';
+        }
         this.currentPage = 1;
         this.applyFilters();
       });
@@ -51,6 +93,7 @@ const appTrash = {
       resetBtn.addEventListener('click', () => {
         if (searchInput) searchInput.value = '';
         if (deptFilter) deptFilter.value = '';
+        this.activeTab = 'all';
         this.currentPage = 1;
         this.applyFilters();
       });
@@ -102,6 +145,23 @@ const appTrash = {
     }
   },
 
+  setActiveTab(tabName) {
+    if (this.activeTab === tabName && tabName !== 'all') {
+      // Toggle off back to 'all'
+      this.activeTab = 'all';
+    } else {
+      if (tabName === 'top-dept' && (!this.topDeptName || this.topDeptName === 'Không có')) {
+        if (typeof utils !== 'undefined' && utils.showToast) {
+          utils.showToast('Không có phòng ban nào trong thùng rác', 'info');
+        }
+        return;
+      }
+      this.activeTab = tabName;
+    }
+    this.currentPage = 1;
+    this.applyFilters();
+  },
+
   async fetchTrashData() {
     try {
       const res = await fetch('/api/trash');
@@ -133,11 +193,30 @@ const appTrash = {
   },
 
   applyFilters() {
+    // 1. Calculate fresh KPIs & top department first
+    this.renderKPIs();
+
     const searchVal = (document.getElementById('trash-search-input')?.value || '').toLowerCase().trim();
     const deptVal = document.getElementById('trash-filter-dept')?.value || '';
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     this.filteredList = (this.trashList || []).filter(item => {
-      // Search match
+      // 1. Tab filter
+      if (this.activeTab === 'recent7') {
+        if (!item.deleted_at || new Date(item.deleted_at) < sevenDaysAgo) {
+          return false;
+        }
+      } else if (this.activeTab === 'top-dept') {
+        const itemDeptName = item.department_name || item.department_id || 'Chưa phân bổ';
+        const matchName = this.topDeptName && itemDeptName === this.topDeptName;
+        const matchId = this.topDeptId && item.department_id === this.topDeptId;
+        if (!matchName && !matchId) {
+          return false;
+        }
+      }
+
+      // 2. Search match
       if (searchVal) {
         const matchName = (item.full_name || '').toLowerCase().includes(searchVal);
         const matchId = (item.employee_id || '').toLowerCase().includes(searchVal);
@@ -150,7 +229,7 @@ const appTrash = {
         }
       }
 
-      // Dept match
+      // 3. Dept dropdown match
       if (deptVal && item.department_id !== deptVal) {
         return false;
       }
@@ -158,7 +237,7 @@ const appTrash = {
       return true;
     });
 
-    this.renderKPIs();
+    this.updateTabUI();
     this.renderTable();
     this.renderPagination();
     this.updateBulkActionBar();
@@ -177,9 +256,13 @@ const appTrash = {
 
     // Dept with most deleted
     const deptCounts = {};
+    const deptIdMap = {};
     this.trashList.forEach(item => {
-      const dName = item.department_name || item.department_id || 'Chưa phân bổ';
+      const dName = item.department_name || (typeof appData !== 'undefined' && appData.deptMap && appData.deptMap[item.department_id]) || item.department_id || 'Chưa phân bổ';
       deptCounts[dName] = (deptCounts[dName] || 0) + 1;
+      if (item.department_id) {
+        deptIdMap[dName] = item.department_id;
+      }
     });
 
     let topDept = 'Không có';
@@ -191,6 +274,10 @@ const appTrash = {
       }
     }
 
+    this.topDeptName = total > 0 ? topDept : '';
+    this.topDeptId = total > 0 ? (deptIdMap[topDept] || '') : '';
+    this.topDeptCount = maxDeptCount;
+
     const totalEl = document.getElementById('kpi-trash-total');
     if (totalEl) totalEl.textContent = total;
 
@@ -199,6 +286,65 @@ const appTrash = {
 
     const topDeptEl = document.getElementById('kpi-trash-top-dept');
     if (topDeptEl) topDeptEl.textContent = total > 0 ? `${topDept} (${maxDeptCount})` : '-';
+  },
+
+  updateTabUI() {
+    const tabTotal = document.getElementById('trash-tab-total');
+    const tabRecent = document.getElementById('trash-tab-recent');
+    const tabTopDept = document.getElementById('trash-tab-top-dept');
+
+    const badgeTotal = document.getElementById('badge-tab-total');
+    const badgeRecent = document.getElementById('badge-tab-recent');
+    const badgeTopDept = document.getElementById('badge-tab-top-dept');
+
+    const banner = document.getElementById('trash-tab-filter-banner');
+
+    if (tabTotal) {
+      tabTotal.classList.toggle('active', this.activeTab === 'all');
+      tabTotal.setAttribute('aria-pressed', this.activeTab === 'all');
+    }
+    if (tabRecent) {
+      tabRecent.classList.toggle('active', this.activeTab === 'recent7');
+      tabRecent.setAttribute('aria-pressed', this.activeTab === 'recent7');
+    }
+    if (tabTopDept) {
+      tabTopDept.classList.toggle('active', this.activeTab === 'top-dept');
+      tabTopDept.setAttribute('aria-pressed', this.activeTab === 'top-dept');
+    }
+
+    if (badgeTotal) badgeTotal.style.display = this.activeTab === 'all' ? 'inline-flex' : 'none';
+    if (badgeRecent) badgeRecent.style.display = this.activeTab === 'recent7' ? 'inline-flex' : 'none';
+    if (badgeTopDept) badgeTopDept.style.display = this.activeTab === 'top-dept' ? 'inline-flex' : 'none';
+
+    // Banner message
+    if (banner) {
+      if (this.activeTab === 'recent7') {
+        banner.style.display = 'flex';
+        banner.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-filter" style="color: #D97706;"></i>
+            <span>Đang lọc: <span class="filter-name">Đã xóa 7 ngày qua</span> (<strong style="color: #D97706;">${this.filteredList.length}</strong> kết quả)</span>
+          </div>
+          <button type="button" class="btn-clear-tab-filter" onclick="appTrash.setActiveTab('all')" title="Hủy lọc">
+            <i class="fa-solid fa-xmark"></i> Bỏ lọc tab
+          </button>
+        `;
+      } else if (this.activeTab === 'top-dept') {
+        banner.style.display = 'flex';
+        banner.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-filter" style="color: var(--primary-navy);"></i>
+            <span>Đang lọc theo phòng ban nhiều nhất: <span class="filter-name">${this.topDeptName || 'Đơn vị'}</span> (<strong style="color: var(--primary-navy);">${this.filteredList.length}</strong> kết quả)</span>
+          </div>
+          <button type="button" class="btn-clear-tab-filter" onclick="appTrash.setActiveTab('all')" title="Hủy lọc">
+            <i class="fa-solid fa-xmark"></i> Bỏ lọc tab
+          </button>
+        `;
+      } else {
+        banner.style.display = 'none';
+        banner.innerHTML = '';
+      }
+    }
   },
 
   getCurrentPageItems() {
@@ -213,13 +359,15 @@ const appTrash = {
     const items = this.getCurrentPageItems();
 
     if (items.length === 0) {
+      const isFiltered = this.activeTab !== 'all' || (document.getElementById('trash-search-input')?.value || '') || (document.getElementById('trash-filter-dept')?.value || '');
       tbody.innerHTML = `
         <tr>
           <td colspan="8" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
               <i class="fa-solid fa-trash-can" style="font-size: 36px; color: #CBD5E1;"></i>
-              <span style="font-size: 13.5px; font-weight: 500;">Thùng rác hiện đang trống</span>
-              <small style="color: var(--text-muted); font-size: 11.5px;">Các nhân sự bị xóa sẽ được lưu giữ tại đây để bạn có thể khôi phục hoặc xóa vĩnh viễn.</small>
+              <span style="font-size: 13.5px; font-weight: 500;">${isFiltered ? 'Không tìm thấy nhân sự phù hợp với bộ lọc' : 'Thùng rác hiện đang trống'}</span>
+              <small style="color: var(--text-muted); font-size: 11.5px;">${isFiltered ? 'Thử xóa bộ lọc hoặc chọn tab khác để xem kết quả.' : 'Các nhân sự bị xóa sẽ được lưu giữ tại đây để bạn có thể khôi phục hoặc xóa vĩnh viễn.'}</small>
+              ${this.activeTab !== 'all' ? '<button class="btn btn-sm btn-secondary" onclick="appTrash.setActiveTab(\'all\')" style="margin-top: 6px;"><i class="fa-solid fa-rotate-left"></i> Xem tất cả nhân sự</button>' : ''}
             </div>
           </td>
         </tr>

@@ -209,31 +209,6 @@ async function saveTableToD1(db, tblName, rows) {
     .run();
 }
 
-// Format and sanitize dates from Excel serial numbers, DD/MM/YYYY, or ISO format
-function formatBackendDate(val) {
-  if (!val || val === '-' || val === 'null' || val === 'undefined') return '';
-  const num = Number(val);
-  if (!isNaN(num) && num > 10000 && num < 90000) {
-    const d = new Date(Math.round((num - 25569) * 86400 * 1000));
-    if (!isNaN(d.getTime())) {
-      const day = String(d.getUTCDate()).padStart(2, '0');
-      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-      const year = d.getUTCFullYear();
-      return `${day}/${month}/${year}`;
-    }
-  }
-  const str = String(val).trim();
-  const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (dmy) {
-    return `${dmy[1].padStart(2, '0')}/${dmy[2].padStart(2, '0')}/${dmy[3]}`;
-  }
-  const ymd = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-  if (ymd) {
-    return `${ymd[3].padStart(2, '0')}/${ymd[2].padStart(2, '0')}/${ymd[1]}`;
-  }
-  return str;
-}
-
 export default {
   async fetch(request, env, ctx) {
     try {
@@ -305,66 +280,6 @@ export default {
       // -------------------------------------------------------------
       if (path === "data" && method === "GET") {
         const data = await loadAllFromD1(db);
-
-        // Tự động đồng bộ / cập nhật bảng 10_Contracts nếu nhân sự đã nhập nhưng hợp đồng còn thiếu
-        const employees = data.tables["03_Employees"] || [];
-        let contracts = data.tables["10_Contracts"] || [];
-        let contractsModified = false;
-
-        // Làm sạch số serial Excel cho hợp đồng hiện có
-        if (contracts.length > 0) {
-          contracts = contracts.map(c => {
-            const cleanTrial = formatBackendDate(c.trial_start_date);
-            const cleanOfficial = formatBackendDate(c.official_date);
-            const cleanStart = formatBackendDate(c.start_date);
-            const cleanEnd = formatBackendDate(c.end_date);
-            if (
-              cleanTrial !== (c.trial_start_date || '') ||
-              cleanOfficial !== (c.official_date || '') ||
-              cleanStart !== (c.start_date || '') ||
-              cleanEnd !== (c.end_date || '')
-            ) {
-              contractsModified = true;
-              return {
-                ...c,
-                trial_start_date: cleanTrial,
-                official_date: cleanOfficial,
-                start_date: cleanStart,
-                end_date: cleanEnd
-              };
-            }
-            return c;
-          });
-        }
-
-        if (employees.length > 0 && contracts.length < employees.length) {
-          const contractMap = new Map(contracts.map(c => [c.employee_id, c]));
-          employees.forEach(emp => {
-            if (emp.employee_id && !contractMap.has(emp.employee_id)) {
-              contractMap.set(emp.employee_id, {
-                contract_id: emp.contract_id || emp.employee_id,
-                employee_id: emp.employee_id,
-                full_name: emp.full_name,
-                contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
-                trial_start_date: formatBackendDate(emp.trial_start_date || emp.probation_start_date || emp.start_date || ''),
-                official_date: formatBackendDate(emp.official_date || emp.start_date || ''),
-                start_date: formatBackendDate(emp.start_date || ''),
-                end_date: formatBackendDate(emp.end_date || ''),
-                effective_date: formatBackendDate(emp.effective_date || emp.start_date || ''),
-                expiry_date: formatBackendDate(emp.expiry_date || emp.end_date || ''),
-                contract_status: emp.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
-              });
-              contractsModified = true;
-            }
-          });
-          contracts = Array.from(contractMap.values());
-        }
-
-        if (contractsModified) {
-          data.tables["10_Contracts"] = contracts;
-          await saveTableToD1(db, "10_Contracts", contracts);
-        }
-
         return jsonResponse({
           success: true,
           tables: data.tables,
@@ -475,33 +390,11 @@ export default {
         await saveTableToD1(db, "03_Employees", updatedEmployees);
         await saveTableToD1(db, "00_Master_Profiles", updatedEmployees);
 
-        // Đồng bộ vào 10_Contracts
-        const existingContracts = data.tables["10_Contracts"] || [];
-        const contractMap = new Map(existingContracts.map(c => [c.employee_id, c]));
-        employees.forEach(emp => {
-          if (emp.employee_id) {
-            contractMap.set(emp.employee_id, {
-              contract_id: emp.contract_id || emp.employee_id,
-              employee_id: emp.employee_id,
-              full_name: emp.full_name,
-              contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
-              trial_start_date: formatBackendDate(emp.trial_start_date || emp.probation_start_date || emp.start_date || ''),
-              official_date: formatBackendDate(emp.official_date || emp.start_date || ''),
-              start_date: formatBackendDate(emp.start_date || ''),
-              end_date: formatBackendDate(emp.end_date || ''),
-              effective_date: formatBackendDate(emp.effective_date || emp.start_date || ''),
-              expiry_date: formatBackendDate(emp.expiry_date || emp.end_date || ''),
-              contract_status: emp.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
-            });
-          }
-        });
-        await saveTableToD1(db, "10_Contracts", Array.from(contractMap.values()));
-
         return jsonResponse({
           success: true,
           importedCount: employees.length,
           totalCount: updatedEmployees.length,
-          message: `Đã lưu vĩnh viễn ${employees.length} nhân viên và hợp đồng vào Cloudflare D1!`
+          message: `Đã lưu vĩnh viễn ${employees.length} nhân viên vào Cloudflare D1!`
         });
       }
 

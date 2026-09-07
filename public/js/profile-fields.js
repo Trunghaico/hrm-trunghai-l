@@ -328,10 +328,6 @@ function fillDetailModalData(masterData) {
       el.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
       el.style.color = '#059669';
       el.style.fontWeight = '700';
-    } else if (f.type === 'date' || f.key.toLowerCase().includes('ngày')) {
-      el.textContent = (typeof utils !== 'undefined' && utils.formatDate) ? utils.formatDate(val) : String(val);
-      el.style.color = 'var(--text-primary)';
-      el.style.fontWeight = '500';
     } else {
       el.textContent = String(val);
       el.style.color = 'var(--text-primary)';
@@ -354,8 +350,6 @@ function fillFormModalData(masterData = {}, isEdit = false) {
     if (f.key === 'Mã nhân viên') {
       el.value = val || '';
       el.readOnly = false; // Luôn cho phép điều chỉnh mã
-    } else if (f.type === 'date') {
-      el.value = (typeof utils !== 'undefined' && utils.toInputDate) ? utils.toInputDate(val) : val;
     } else {
       el.value = val;
     }

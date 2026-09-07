@@ -54,26 +54,6 @@ const appData = {
         this.trash = json.tables['13_Recycle_Bin'] || [];
         this.masterProfiles = json.tables['00_Master_Profiles'] || [];
 
-        // Tự động đồng bộ / bổ sung hợp đồng cho tất cả nhân sự nếu bảng hợp đồng còn thiếu
-        const contractsMap = new Map((this.contracts || []).map(c => [c.employee_id, c]));
-        this.contracts = (this.employees || []).map(emp => {
-          const existing = contractsMap.get(emp.employee_id);
-          const isResigned = emp.employment_status === 'Đã nghỉ việc';
-          return {
-            contract_id: existing?.contract_id || emp.contract_id || emp.employee_id,
-            employee_id: emp.employee_id,
-            full_name: emp.full_name,
-            contract_type: existing?.contract_type || emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
-            trial_start_date: utils.formatDate(existing?.trial_start_date || emp.trial_start_date || emp.probation_start_date || emp.start_date || '', ''),
-            official_date: utils.formatDate(existing?.official_date || emp.official_date || emp.start_date || '', ''),
-            start_date: utils.formatDate(existing?.start_date || emp.start_date || '', ''),
-            end_date: utils.formatDate(existing?.end_date || emp.end_date || '', ''),
-            effective_date: utils.formatDate(existing?.effective_date || emp.effective_date || emp.start_date || '', ''),
-            expiry_date: utils.formatDate(existing?.expiry_date || emp.expiry_date || emp.end_date || '', ''),
-            contract_status: isResigned ? 'HẾT HẠN' : (existing?.contract_status || (emp.employment_status === 'Đang làm việc' ? 'HIỆU LỰC' : 'HẾT HẠN'))
-          };
-        });
-
         // Build lookup maps
         this.buildMaps();
 
@@ -133,99 +113,18 @@ const utils = {
     return new Intl.NumberFormat('vi-VN').format(num);
   },
 
-  parseDate(dateVal) {
-    if (!dateVal || dateVal === '-' || dateVal === 'null' || dateVal === 'undefined') return null;
-    const num = Number(dateVal);
-    if (!isNaN(num) && num > 10000 && num < 90000) {
-      const d = new Date(Math.round((num - 25569) * 86400 * 1000));
-      return isNaN(d.getTime()) ? null : d;
-    }
-    const str = String(dateVal).trim();
-    const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-    if (dmy) {
-      return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
-    }
-    const ymd = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if (ymd) {
-      return new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
-    }
+  formatDate(dateStr) {
+    if (!dateStr) return '-';
     try {
-      const d = new Date(str);
-      if (!isNaN(d.getTime())) {
-        const year = d.getFullYear();
-        if (year >= 1900 && year <= 2100) return d;
-      }
-    } catch (e) {}
-    return null;
-  },
-
-  formatDate(dateVal, fallback = '-') {
-    if (!dateVal || dateVal === '-' || dateVal === 'null' || dateVal === 'undefined') return fallback;
-    
-    // 1. Xử lý số serial ngày của Excel (ví dụ: 44972 -> 15/02/2023)
-    const num = Number(dateVal);
-    if (!isNaN(num) && num > 10000 && num < 90000) {
-      const d = new Date(Math.round((num - 25569) * 86400 * 1000));
-      if (!isNaN(d.getTime())) {
-        const day = String(d.getUTCDate()).padStart(2, '0');
-        const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-        const year = d.getUTCFullYear();
-        return `${day}/${month}/${year}`;
-      }
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch (e) {
+      return dateStr;
     }
-
-    const str = String(dateVal).trim();
-
-    // 2. Chuỗi đã có định dạng DD/MM/YYYY hoặc D/M/YYYY
-    const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-    if (dmy) {
-      return `${dmy[1].padStart(2, '0')}/${dmy[2].padStart(2, '0')}/${dmy[3]}`;
-    }
-
-    // 3. Chuỗi định dạng ISO YYYY-MM-DD hoặc YYYY/MM/DD
-    const ymd = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if (ymd) {
-      return `${ymd[3].padStart(2, '0')}/${ymd[2].padStart(2, '0')}/${ymd[1]}`;
-    }
-
-    // 4. Fallback chuyển đổi qua new Date (chỉ nhận năm hợp lý 1900 - 2100 để tránh bug năm 44972)
-    try {
-      const d = new Date(str);
-      if (!isNaN(d.getTime())) {
-        const year = d.getFullYear();
-        if (year >= 1900 && year <= 2100) {
-          const day = String(d.getDate()).padStart(2, '0');
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          return `${day}/${month}/${year}`;
-        }
-      }
-    } catch (e) {}
-
-    return str;
-  },
-
-  toInputDate(dateVal) {
-    if (!dateVal || dateVal === '-' || dateVal === 'null' || dateVal === 'undefined') return '';
-    const num = Number(dateVal);
-    if (!isNaN(num) && num > 10000 && num < 90000) {
-      const d = new Date(Math.round((num - 25569) * 86400 * 1000));
-      if (!isNaN(d.getTime())) {
-        const y = d.getUTCFullYear();
-        const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(d.getUTCDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      }
-    }
-    const str = String(dateVal).trim();
-    const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-    if (dmy) {
-      return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
-    }
-    const ymd = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if (ymd) {
-      return `${ymd[1]}-${ymd[2].padStart(2, '0')}-${ymd[3].padStart(2, '0')}`;
-    }
-    return '';
   },
 
   showToast(message, type = 'info') {
