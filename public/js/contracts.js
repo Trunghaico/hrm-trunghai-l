@@ -2155,10 +2155,10 @@ const appContracts = {
                 <button type="button" class="btn btn-icon btn-sm" title="Đặt làm mẫu mặc định" onclick="appContracts.setDefaultTemplate('${t.id}')" style="background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A;">
                   <i class="fa-regular fa-star"></i>
                 </button>
-                <button type="button" class="btn btn-icon btn-sm" title="Xóa mẫu này" onclick="appContracts.deleteTemplate('${t.id}')" style="background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
               ` : ''}
+              <button type="button" class="btn btn-icon btn-sm" title="Xóa mẫu hợp đồng này" onclick="appContracts.deleteTemplate('${t.id}')" style="background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
             </div>
           </td>
         </tr>
@@ -2360,14 +2360,53 @@ const appContracts = {
   },
 
   async deleteTemplate(id) {
-    if (!confirm('Bạn có chắc chắn muốn xóa mẫu văn bản này không?')) return;
+    if (typeof contractTemplateStore === 'undefined') return;
+    const tpl = await contractTemplateStore.getTemplate(id);
+    const tplName = tpl ? tpl.name : 'này';
+    if (!confirm(`Bạn có chắc chắn muốn xóa mẫu hợp đồng "${tplName}" không?`)) return;
     try {
       await contractTemplateStore.deleteTemplate(id);
-      utils.showToast('Đã xóa mẫu văn bản thành công!', 'info');
+      utils.showToast(`Đã xóa mẫu "${tplName}" thành công!`, 'info');
       await this.loadTemplatesList();
+
+      // Cập nhật lại dropdown chọn mẫu nếu đang mở modal Chạy Hợp Đồng
+      const select = document.getElementById('merge-batch-template-select');
+      if (select) {
+        const templates = await contractTemplateStore.getAllTemplates();
+        if (templates.length > 0) {
+          select.innerHTML = templates.map(t => `<option value="${t.id}" ${t.is_default ? 'selected' : ''}>${t.name} (${t.doc_type || 'HĐLĐ'})</option>`).join('');
+        } else {
+          select.innerHTML = '<option value="">-- Chưa có mẫu văn bản nào --</option>';
+        }
+      }
     } catch (e) {
       console.error(e);
       utils.showToast('Lỗi khi xóa mẫu văn bản', 'error');
+    }
+  },
+
+  async deleteSelectedMergeTemplate() {
+    const select = document.getElementById('merge-batch-template-select');
+    if (!select || !select.value) {
+      utils.showToast('Vui lòng chọn mẫu hợp đồng cần xóa!', 'warning');
+      return;
+    }
+    await this.deleteTemplate(select.value);
+  },
+
+  async restoreDefaultTemplates() {
+    if (!confirm('Bạn có chắc chắn muốn khôi phục lại danh sách tất cả các mẫu hợp đồng mặc định ban đầu không?')) return;
+    if (typeof contractTemplateStore !== 'undefined') {
+      await contractTemplateStore.restoreDefaults();
+      utils.showToast('Đã khôi phục toàn bộ mẫu hợp đồng mặc định thành công!', 'success');
+      await this.loadTemplatesList();
+      const select = document.getElementById('merge-batch-template-select');
+      if (select) {
+        const templates = await contractTemplateStore.getAllTemplates();
+        if (templates.length > 0) {
+          select.innerHTML = templates.map(t => `<option value="${t.id}" ${t.is_default ? 'selected' : ''}>${t.name} (${t.doc_type || 'HĐLĐ'})</option>`).join('');
+        }
+      }
     }
   },
 

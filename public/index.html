@@ -2760,6 +2760,9 @@
             Các mẫu Word dùng chung cho toàn doanh nghiệp để bốc tách & trộn dữ liệu tự động.
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-sm" onclick="appContracts.restoreDefaultTemplates()" style="background: #F8FAFC; border: 1px solid var(--border-color); color: var(--text-secondary);" title="Khôi phục lại danh sách tất cả các mẫu hợp đồng mặc định ban đầu">
+              <i class="fa-solid fa-rotate-left"></i> Khôi Phục Mẫu Mặc Định
+            </button>
             <button type="button" class="btn btn-sm" onclick="appContracts.downloadSampleDocx()" style="background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0;" title="Tải tệp Word mẫu chuẩn định dạng .docx">
               <i class="fa-solid fa-file-arrow-down"></i> Tải Mẫu Word (.docx)
             </button>
@@ -2935,9 +2938,14 @@
             <i class="fa-solid fa-gear"></i> Quản lý mẫu / Tải lên mẫu mới
           </a>
         </div>
-        <select id="merge-batch-template-select" class="filter-select" style="width: 100%; height: 40px; font-size: 13px;">
-          <!-- Options populated dynamically -->
-        </select>
+        <div style="display: flex; gap: 8px;">
+          <select id="merge-batch-template-select" class="filter-select" style="flex: 1; height: 40px; font-size: 13px;">
+            <!-- Options populated dynamically -->
+          </select>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="appContracts.deleteSelectedMergeTemplate()" title="Xóa mẫu hợp đồng đang chọn khỏi danh sách" style="height: 40px; color: #DC2626; border-color: #FECACA; background: #FEF2F2; font-weight: 600; white-space: nowrap; padding: 0 12px;">
+            <i class="fa-solid fa-trash-can"></i> Xóa Mẫu
+          </button>
+        </div>
       </div>
 
       <!-- 2. Phạm vi nhân sự -->
@@ -3089,16 +3097,16 @@
 <script src="js/employees.js?v=3.1.2"></script>
 <script src="js/import.js?v=3.1.2"></script>
 <script src="js/resigned.js?v=3.1.2"></script>
-<script src="js/template-trunghai.js?v=3.1.2"></script>
-<script src="js/contract-merge.js?v=3.1.2"></script>
-<script src="js/contracts.js?v=3.1.2"></script>
-<script src="js/organization.js?v=3.1.2"></script>
-<script src="js/org-import.js?v=3.1.2"></script>
-<script src="js/reports.js?v=3.1.2"></script>
-<script src="js/accounts.js?v=3.1.2"></script>
-<script src="js/logs.js?v=3.1.2"></script>
-<script src="js/trash.js?v=3.1.2"></script>
-<script src="js/app.js?v=3.1.2"></script>
+<script src="js/template-trunghai.js?v=3.1.3"></script>
+<script src="js/contract-merge.js?v=3.1.3"></script>
+<script src="js/contracts.js?v=3.1.3"></script>
+<script src="js/organization.js?v=3.1.3"></script>
+<script src="js/org-import.js?v=3.1.3"></script>
+<script src="js/reports.js?v=3.1.3"></script>
+<script src="js/accounts.js?v=3.1.3"></script>
+<script src="js/logs.js?v=3.1.3"></script>
+<script src="js/trash.js?v=3.1.3"></script>
+<script src="js/app.js?v=3.1.3"></script>
 
 </body>
 </html>

@@ -107,8 +107,13 @@ const contractTemplateStore = {
     } catch (e) {
       console.warn('Lỗi đọc mẫu:', e);
     }
-    // Gộp mẫu tùy chỉnh do người dùng upload lên trước, sau đó là mẫu chuẩn
-    return [...customList, ...defaults];
+    let deletedIds = new Set();
+    try {
+      deletedIds = new Set(JSON.parse(localStorage.getItem('hrm_deleted_template_ids') || '[]'));
+    } catch (_) {}
+
+    // Gộp mẫu tùy chỉnh do người dùng upload lên trước, sau đó là mẫu chuẩn (đã lọc các mẫu bị xóa)
+    return [...customList, ...defaults].filter(t => !deletedIds.has(t.id));
   },
 
   async init() {
@@ -190,6 +195,19 @@ const contractTemplateStore = {
     } catch (e) {
       console.warn('[contractTemplateStore] Lỗi xóa mẫu:', e);
     }
+    try {
+      const deletedIds = JSON.parse(localStorage.getItem('hrm_deleted_template_ids') || '[]');
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem('hrm_deleted_template_ids', JSON.stringify(deletedIds));
+      }
+    } catch (_) {}
+  },
+
+  async restoreDefaults() {
+    try {
+      localStorage.removeItem('hrm_deleted_template_ids');
+    } catch (_) {}
   },
 
   // Lấy dữ liệu nhị phân ArrayBuffer của file .docx
