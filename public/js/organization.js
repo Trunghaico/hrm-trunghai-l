@@ -30,9 +30,8 @@ const appOrganization = {
     this.populateFilterDropdowns();
     this.renderCompaniesTable();
     this.renderDepartmentsTable();
-    if (window.appContracts && typeof appContracts.render === 'function') {
-      appContracts.render();
-    } else {
+    this.renderPositionsTable();
+    if (!window.appContracts) {
       this.renderContractsTable();
     }
     this.renderOrgChart();
@@ -997,7 +996,6 @@ const appOrganization = {
       appContracts.render();
       return;
     }
-
     const tbody = document.getElementById('contracts-tbody');
     if (!tbody) return;
 
@@ -1075,7 +1073,7 @@ const appOrganization = {
     if (pageData.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="12" style="text-align: center; padding: 24px; color: var(--text-muted);">
+          <td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">
             <i class="fa-solid fa-file-excel" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
             Không tìm thấy hợp đồng phù hợp
           </td>
@@ -1084,20 +1082,18 @@ const appOrganization = {
       return;
     }
 
-    tbody.innerHTML = pageData.map((c, idx) => {
-      const contractCode = c.contract_id || c.employee_id || '-';
+    tbody.innerHTML = pageData.map(c => {
+      // Mã hợp đồng chính là mã nhân sự
+      const contractCode = c.employee_id || c.contract_id || '-';
       const empId = c.employee_id || c.contract_id || '-';
       const isOfficial = c.contract_type && (c.contract_type.includes('KXD') || c.contract_type.toLowerCase().includes('không xác định'));
       const badgeType = isOfficial ? 'badge-active' : 'badge-navy';
       const statusBadge = (c.contract_status === 'HIỆU LỰC' || !c.contract_status)
         ? '<span class="badge badge-active"><i class="fa-solid fa-circle-check"></i> HIỆU LỰC</span>'
         : '<span class="badge badge-resigned"><i class="fa-solid fa-ban"></i> HẾT HẠN</span>';
-      const salaryDisplay = c.salary ? utils.formatCurrency(c.salary) : '-';
 
       return `
         <tr>
-          <td style="text-align: center;"><input type="checkbox" disabled></td>
-          <td style="text-align: center; color: var(--text-muted); font-size: 12px;">${start + idx + 1}</td>
           <td><strong style="color: var(--primary-navy); font-family: monospace;">${contractCode}</strong></td>
           <td>
             <span class="badge badge-navy" style="cursor: pointer;" onclick="appEmployees.openDetailModal('${empId}')" title="Xem chi tiết nhân viên">
@@ -1106,16 +1102,9 @@ const appOrganization = {
           </td>
           <td><strong style="color: var(--text-primary); cursor: pointer;" onclick="appEmployees.openDetailModal('${empId}')">${c.full_name || '-'}</strong></td>
           <td><span class="badge ${badgeType}">${c.contract_type || '-'}</span></td>
-          <td>${utils.formatDate(c.effective_date || c.start_date || c.trial_start_date) || '-'}</td>
-          <td>${utils.formatDate(c.expiry_date || c.end_date || c.official_date) || '-'}</td>
-          <td style="font-weight: 600; color: #059669;">${salaryDisplay}</td>
-          <td style="text-align: center;"><span class="badge" style="background: #F8FAFC; border: 1px solid var(--border-color); color: #2563EB;">0 PL</span></td>
+          <td>${utils.formatDate(c.trial_start_date) || '-'}</td>
+          <td>${utils.formatDate(c.official_date) || '-'}</td>
           <td>${statusBadge}</td>
-          <td style="text-align: center;">
-            <button class="btn btn-icon btn-sm" onclick="appContracts ? appContracts.openMergeSingleModal('${contractCode}') : null" title="In / Trộn HĐ Word" style="background: #EFF6FF; color: #2563EB;">
-              <i class="fa-solid fa-file-word"></i>
-            </button>
-          </td>
         </tr>
       `;
     }).join('');

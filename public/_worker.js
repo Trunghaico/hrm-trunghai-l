@@ -1327,6 +1327,35 @@ export default {
         const posMap = Object.fromEntries(positions.map(p => [p.position_id, p.position_name]));
         const empMap = Object.fromEntries(employees.map(e => [e.employee_id, e]));
 
+        // Tự động đồng bộ và bảo toàn 10_Contracts từ danh sách nhân sự nếu còn thiếu
+        if (employees.length > 0 && contracts.length < employees.length) {
+          const contractMap = new Map(contracts.map(c => [c.contract_id || c.employee_id, c]));
+          employees.forEach(emp => {
+            if (emp.employee_id && !contractMap.has(emp.employee_id) && !contractMap.has(emp.contract_id)) {
+              const isResigned = emp.employment_status === 'Đã nghỉ việc';
+              contractMap.set(emp.employee_id, {
+                contract_id: emp.contract_id || emp.employee_id,
+                employee_id: emp.employee_id,
+                full_name: emp.full_name,
+                contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
+                trial_start_date: emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
+                official_date: emp.official_date || emp.start_date || '',
+                start_date: emp.start_date || '',
+                end_date: emp.end_date || '',
+                effective_date: emp.effective_date || emp.start_date || '',
+                expiry_date: emp.expiry_date || emp.end_date || '',
+                salary: emp.base_salary || emp.salary || 0,
+                department_name: deptMap[emp.department_id] || emp.department_name || '',
+                job_title: posMap[emp.position_id] || emp.job_title || '',
+                contract_status: isResigned ? 'HẾT HẠN' : (emp.employment_status === 'Đang làm việc' ? 'HIỆU LỰC' : 'HẾT HẠN')
+              });
+            }
+          });
+          contracts = Array.from(contractMap.values());
+          data.tables["10_Contracts"] = contracts;
+          await saveTableToD1(db, "10_Contracts", contracts);
+        }
+
         // 1. POST /api/contracts/import-excel (Batch import contracts)
         if (contractId === "import-excel" && method === "POST") {
           const body = await request.json().catch(() => ({}));

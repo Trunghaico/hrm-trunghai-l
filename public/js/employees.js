@@ -524,9 +524,6 @@ const appEmployees = {
           <td>${statusBadge}</td>
           <td class="col-sticky-action">
             <div style="display: flex; gap: 4px; justify-content: center;">
-              <button class="btn btn-icon btn-sm" title="In Hợp Đồng Word (Mail Merge)" onclick="appEmployees.openContractMerge('${e.employee_id}')" style="background: #EFF6FF; color: #2563EB;">
-                <i class="fa-solid fa-file-word"></i>
-              </button>
               <button class="btn btn-icon btn-sm" title="Xem Chi Tiết 8 Tab" onclick="appEmployees.openDetailModal('${e.employee_id}')">
                 <i class="fa-solid fa-eye" style="color: var(--primary-navy);"></i>
               </button>
@@ -1568,49 +1565,6 @@ const appEmployees = {
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i> <span>Xóa Toàn Bộ</span>';
       }
-    }
-  },
-
-  // In và trộn hợp đồng Word cho nhân sự (Mail Merge)
-  openContractMerge(empId) {
-    if (typeof appContracts === 'undefined' || !appContracts.openMergeSingleModal) {
-      utils.showToast('Phân hệ Quản lý hợp đồng chưa sẵn sàng.', 'warning');
-      return;
-    }
-
-    const contracts = appContracts.contracts || [];
-    const existingContract = contracts.find(c => c.employee_id === empId);
-    if (existingContract) {
-      appContracts.openMergeSingleModal(existingContract.contract_id);
-    } else {
-      const employees = (typeof appData !== 'undefined' && appData.employees) ? appData.employees : [];
-      const emp = employees.find(e => e.id === empId || e.employee_id === empId) || {};
-      const newContract = {
-        contract_id: `HD-${empId}`,
-        employee_id: empId,
-        full_name: emp.full_name || emp['Họ và tên'] || empId,
-        contract_type: 'Hợp đồng xác định thời hạn (12 tháng)',
-        start_date: emp.hire_date || new Date().toISOString().split('T')[0],
-        effective_date: emp.hire_date || new Date().toISOString().split('T')[0],
-        salary: emp.base_salary || emp.salary || 0,
-        department_name: emp.department_name || '-',
-        job_title: emp.job_title || '-',
-        contract_status: 'HIỆU LỰC'
-      };
-      if (!appContracts.contracts.some(x => x.contract_id === newContract.contract_id)) {
-        appContracts.contracts.push(newContract);
-      }
-      appContracts.openMergeSingleModal(newContract.contract_id);
-    }
-  },
-
-  openContractMergeFromDetail() {
-    const empId = this.selectedEmployee?.employee_id || this.selectedEmployee?.id;
-    if (empId) {
-      this.closeDetailModal();
-      this.openContractMerge(empId);
-    } else {
-      utils.showToast('Không xác định được mã nhân viên.', 'warning');
     }
   }
 };
