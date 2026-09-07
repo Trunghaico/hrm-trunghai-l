@@ -2750,7 +2750,7 @@ app.delete('/api/employees/:id', (req, res) => {
 
     recordLog(db, {
         action_type: 'DELETE',
-        module: 'Thùng rác',
+        module: 'Nhân sự',
         description: `Đã chuyển hồ sơ nhân sự ${id} (${empName}) vào Thùng rác`,
         user_id: req.body?.operator_id || 'TH-1948',
         user_name: req.body?.operator_name || 'Huỳnh Thanh Long',
@@ -2873,7 +2873,7 @@ app.post('/api/trash/restore/:id', (req, res) => {
 
     recordLog(db, {
         action_type: 'RESTORE',
-        module: 'Thùng rác',
+        module: 'Nhân sự',
         description: `Đã khôi phục hồ sơ nhân sự ${id} (${trashItem.full_name}) về danh sách hoạt động`,
         user_id: req.body?.operator_id || 'TH-1948',
         user_name: req.body?.operator_name || 'Huỳnh Thanh Long',
@@ -2968,7 +2968,7 @@ app.post('/api/trash/restore-bulk', (req, res) => {
 
     recordLog(db, {
         action_type: 'RESTORE',
-        module: 'Thùng rác',
+        module: 'Nhân sự',
         description: `Khôi phục hàng loạt ${restoredCount} nhân sự từ Thùng rác`,
         user_id: req.body?.operator_id || 'TH-1948',
         user_name: req.body?.operator_name || 'Huỳnh Thanh Long',
@@ -3001,7 +3001,7 @@ app.delete('/api/trash/permanent/:id', (req, res) => {
 
     recordLog(db, {
         action_type: 'PURGE',
-        module: 'Thùng rác',
+        module: 'Nhân sự',
         description: `Xóa vĩnh viễn hồ sơ nhân sự ${id} (${trashItem.full_name}) khỏi Thùng rác`,
         user_id: req.body?.operator_id || 'TH-1948',
         user_name: req.body?.operator_name || 'Huỳnh Thanh Long',
@@ -3031,7 +3031,7 @@ app.delete('/api/trash/permanent-bulk', (req, res) => {
 
     recordLog(db, {
         action_type: 'PURGE',
-        module: 'Thùng rác',
+        module: 'Nhân sự',
         description: `Xóa vĩnh viễn hàng loạt ${deletedCount} nhân sự khỏi Thùng rác`,
         user_id: req.body?.operator_id || 'TH-1948',
         user_name: req.body?.operator_name || 'Huỳnh Thanh Long',
@@ -3057,7 +3057,7 @@ app.delete('/api/trash/empty', (req, res) => {
 
     recordLog(db, {
         action_type: 'PURGE',
-        module: 'Thùng rác',
+        module: 'Nhân sự',
         description: `Đã dọn sạch toàn bộ Thùng rác (${count} nhân sự)`,
         user_id: req.body?.operator_id || 'TH-1948',
         user_name: req.body?.operator_name || 'Huỳnh Thanh Long',

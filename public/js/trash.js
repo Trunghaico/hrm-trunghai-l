@@ -674,6 +674,8 @@ const appTrash = {
     }
 
     try {
+      const item = (appData.trash || []).find(t => t.employee_id === empId);
+      const name = item ? (item.full_name || item.name || empId) : empId;
       const user = this.getOperatorUser();
       const res = await fetch(`/api/trash/restore/${empId}`, {
         method: 'POST',
@@ -686,9 +688,9 @@ const appTrash = {
       });
       const json = await res.json();
       if (json.success) {
-        utils.showToast(json.message || `Đã khôi phục thành công ${empId}`, 'success');
+        utils.showToast(json.message || `Đã khôi phục thành công ${name} (${empId})`, 'success');
         if (window.recordActivityLog) {
-          window.recordActivityLog('UPDATE', 'Thùng rác', `Khôi phục nhân viên: ${name} (${empId})`);
+          window.recordActivityLog('RESTORE', 'Nhân sự', `Đã khôi phục nhân viên: ${name} (${empId}) từ Thùng rác về danh sách hoạt động`);
         }
         this.hidePopover();
         this.selectedIds.delete(empId);
@@ -719,6 +721,8 @@ const appTrash = {
     }
 
     try {
+      const item = (appData.trash || []).find(t => t.employee_id === empId);
+      const name = item ? (item.full_name || item.name || empId) : empId;
       const user = this.getOperatorUser();
       const res = await fetch(`/api/trash/permanent/${empId}`, {
         method: 'DELETE',
@@ -731,9 +735,9 @@ const appTrash = {
       });
       const json = await res.json();
       if (json.success) {
-        utils.showToast(json.message || `Đã xóa vĩnh viễn ${empId}`, 'success');
+        utils.showToast(json.message || `Đã xóa vĩnh viễn ${name} (${empId})`, 'success');
         if (window.recordActivityLog) {
-          window.recordActivityLog('DELETE', 'Thùng rác', `Xóa vĩnh viễn nhân viên: ${name} (${empId})`);
+          window.recordActivityLog('PURGE', 'Nhân sự', `Đã xóa vĩnh viễn nhân viên: ${name} (${empId}) khỏi Thùng rác`);
         }
         this.hidePopover();
         this.selectedIds.delete(empId);
@@ -779,7 +783,7 @@ const appTrash = {
       if (json.success) {
         utils.showToast(json.message || `Đã khôi phục thành công ${ids.length} nhân sự`, 'success');
         if (window.recordActivityLog) {
-          window.recordActivityLog('UPDATE', 'Thùng rác', `Khôi phục hàng loạt ${ids.length} nhân sự từ thùng rác`);
+          window.recordActivityLog('RESTORE', 'Nhân sự', `Đã khôi phục hàng loạt ${ids.length} nhân sự từ Thùng rác về danh sách hoạt động`);
         }
         this.selectedIds.clear();
         await appData.init();
@@ -818,7 +822,7 @@ const appTrash = {
       if (json.success) {
         utils.showToast(json.message || `Đã xóa vĩnh viễn ${ids.length} nhân sự`, 'success');
         if (window.recordActivityLog) {
-          window.recordActivityLog('DELETE', 'Thùng rác', `Xóa vĩnh viễn hàng loạt ${ids.length} nhân sự khỏi thùng rác`);
+          window.recordActivityLog('PURGE', 'Nhân sự', `Đã xóa vĩnh viễn hàng loạt ${ids.length} nhân sự khỏi Thùng rác`);
         }
         this.selectedIds.clear();
         await appData.init();
@@ -854,7 +858,7 @@ const appTrash = {
       if (json.success) {
         utils.showToast(json.message || 'Đã dọn sạch toàn bộ Thùng rác', 'success');
         if (window.recordActivityLog) {
-          window.recordActivityLog('DELETE', 'Thùng rác', `Dọn sạch toàn bộ ${totalCount} nhân sự trong Thùng rác`);
+          window.recordActivityLog('PURGE', 'Nhân sự', `Đã dọn sạch toàn bộ ${totalCount} nhân sự trong Thùng rác`);
         }
         this.selectedIds.clear();
         await appData.init();

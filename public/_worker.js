@@ -135,7 +135,19 @@ const DEFAULT_TABLES = {
       password: "admin"
     }
   ],
-  "12_System_Logs": [],
+  "12_System_Logs": [
+    {
+      log_id: "LOG-INIT-1001",
+      timestamp: "2026-09-01T08:00:00.000Z",
+      user_id: "TH-1948",
+      user_name: "Huỳnh Thanh Long",
+      user_role: "ADMIN",
+      action_type: "CREATE",
+      module: "Hệ thống",
+      description: "Khởi tạo hệ thống quản trị nhân sự Trung Hải HRM & Kích hoạt kiểm toán bất biến",
+      ip_address: "127.0.0.1"
+    }
+  ],
   "13_Recycle_Bin": []
 };
 
@@ -199,6 +211,23 @@ async function loadAllFromD1(db) {
     if (!tables[tName]) tables[tName] = [];
   }
 
+  // Ensure 12_System_Logs has at least initialization audit log if empty
+  if (!tables["12_System_Logs"] || tables["12_System_Logs"].length === 0) {
+    tables["12_System_Logs"] = [
+      {
+        log_id: "LOG-INIT-1001",
+        timestamp: "2026-09-01T08:00:00.000Z",
+        user_id: "TH-1948",
+        user_name: "Huỳnh Thanh Long",
+        user_role: "ADMIN",
+        action_type: "CREATE",
+        module: "Hệ thống",
+        description: "Khởi tạo hệ thống quản trị nhân sự Trung Hải HRM & Kích hoạt kiểm toán bất biến",
+        ip_address: "127.0.0.1"
+      }
+    ];
+  }
+
   return { tables, company };
 }
 
@@ -207,6 +236,27 @@ async function saveTableToD1(db, tblName, rows) {
   await db.prepare("INSERT OR REPLACE INTO hrm_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
     .bind(`tbl_${tblName}`, JSON.stringify(rows))
     .run();
+}
+
+// Helper: Append system audit log into tables["12_System_Logs"]
+function appendAuditLog(tables, logData) {
+  if (!tables["12_System_Logs"]) tables["12_System_Logs"] = [];
+  const entry = {
+    log_id: `LOG-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    timestamp: new Date().toISOString(),
+    user_id: logData.user_id || "TH-1948",
+    user_name: logData.user_name || "Huỳnh Thanh Long",
+    user_role: logData.user_role || "ADMIN",
+    action_type: logData.action_type || "INFO",
+    module: logData.module || "Nhân sự",
+    description: logData.description || "",
+    ip_address: logData.ip_address || "127.0.0.1"
+  };
+  tables["12_System_Logs"].unshift(entry);
+  if (tables["12_System_Logs"].length > 3000) {
+    tables["12_System_Logs"] = tables["12_System_Logs"].slice(0, 3000);
+  }
+  return entry;
 }
 
 export default {
@@ -436,6 +486,18 @@ export default {
 
           await saveTableToD1(db, "03_Employees", employees);
           await saveTableToD1(db, "00_Master_Profiles", employees);
+
+          appendAuditLog(data.tables, {
+            action_type: index >= 0 ? "UPDATE" : "CREATE",
+            module: "Nhân sự",
+            description: `${index >= 0 ? 'Cập nhật' : 'Thêm mới'} thông tin nhân sự: ${body.full_name || targetId} (${targetId})`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+
           return jsonResponse({ success: true, message: "Lưu thông tin nhân viên thành công!" });
         }
 
@@ -472,6 +534,17 @@ export default {
             const accounts = (data.tables["11_System_Accounts"] || []).filter(a => a.role === "ADMIN" || a.username === "admin");
             await saveTableToD1(db, "11_System_Accounts", accounts);
           }
+
+          appendAuditLog(data.tables, {
+            action_type: isPermanent ? "PURGE" : "DELETE",
+            module: "Nhân sự",
+            description: `Đã xóa toàn bộ ${count} nhân sự khỏi hệ thống (${isPermanent ? 'Xóa vĩnh viễn' : 'Chuyển vào Thùng rác'})`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
 
           return jsonResponse({
             success: true,
@@ -513,6 +586,17 @@ export default {
           await saveTableToD1(db, "00_Master_Profiles", remaining);
           await saveTableToD1(db, "13_Recycle_Bin", trash);
 
+          appendAuditLog(data.tables, {
+            action_type: "DELETE",
+            module: "Nhân sự",
+            description: `Đã chuyển hàng loạt ${toDelete.length} nhân sự vào Thùng rác`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+
           return jsonResponse({
             success: true,
             count: toDelete.length,
@@ -547,6 +631,17 @@ export default {
             await saveTableToD1(db, "03_Employees", newEmps);
             await saveTableToD1(db, "00_Master_Profiles", newEmps);
             await saveTableToD1(db, "13_Recycle_Bin", trash);
+
+            appendAuditLog(data.tables, {
+              action_type: "DELETE",
+              module: "Nhân sự",
+              description: `Đã chuyển nhân viên ${target.full_name || empId} (${empId}) vào Thùng rác`,
+              user_id: body.operator_id || "TH-1948",
+              user_name: body.operator_name || "Huỳnh Thanh Long",
+              user_role: body.operator_role || "ADMIN",
+              ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+            });
+            await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
           }
 
           return jsonResponse({ success: true, message: `Đã chuyển nhân viên ${empId} vào thùng rác!` });
@@ -570,6 +665,7 @@ export default {
 
         // POST /api/trash/restore/:id
         if (action === "restore" && targetId) {
+          const body = await request.json().catch(() => ({}));
           const item = trash.find(t => t.employee_id === targetId);
           if (item) {
             trash = trash.filter(t => t.employee_id !== targetId);
@@ -577,6 +673,17 @@ export default {
             await saveTableToD1(db, "13_Recycle_Bin", trash);
             await saveTableToD1(db, "03_Employees", employees);
             await saveTableToD1(db, "00_Master_Profiles", employees);
+
+            appendAuditLog(data.tables, {
+              action_type: "RESTORE",
+              module: "Nhân sự",
+              description: `Đã khôi phục nhân viên ${item.full_name || targetId} (${targetId}) từ Thùng rác về danh sách hoạt động`,
+              user_id: body.operator_id || "TH-1948",
+              user_name: body.operator_name || "Huỳnh Thanh Long",
+              user_role: body.operator_role || "ADMIN",
+              ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+            });
+            await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
           }
           return jsonResponse({ success: true, message: `Đã khôi phục nhân viên ${targetId}!` });
         }
@@ -591,13 +698,39 @@ export default {
           await saveTableToD1(db, "13_Recycle_Bin", trash);
           await saveTableToD1(db, "03_Employees", employees);
           await saveTableToD1(db, "00_Master_Profiles", employees);
+
+          appendAuditLog(data.tables, {
+            action_type: "RESTORE",
+            module: "Nhân sự",
+            description: `Đã khôi phục hàng loạt ${restored.length} nhân sự từ Thùng rác về danh sách hoạt động`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+
           return jsonResponse({ success: true, message: `Đã khôi phục ${restored.length} nhân viên!` });
         }
 
         // DELETE or POST /api/trash/permanent/:id
         if (action === "permanent" && targetId) {
+          const body = await request.json().catch(() => ({}));
+          const targetEmp = trash.find(t => t.employee_id === targetId);
           trash = trash.filter(t => t.employee_id !== targetId);
           await saveTableToD1(db, "13_Recycle_Bin", trash);
+
+          appendAuditLog(data.tables, {
+            action_type: "PURGE",
+            module: "Nhân sự",
+            description: `Đã xóa vĩnh viễn nhân sự ${targetEmp?.full_name ? `${targetEmp.full_name} (${targetId})` : targetId} khỏi Thùng rác`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+
           return jsonResponse({ success: true, message: `Đã xóa vĩnh viễn nhân viên ${targetId}!` });
         }
 
@@ -605,14 +738,41 @@ export default {
         if (action === "permanent-bulk") {
           const body = await request.json().catch(() => ({}));
           const ids = new Set(body.employee_ids || []);
+          const toDeleteCount = trash.filter(t => ids.has(t.employee_id)).length;
           trash = trash.filter(t => !ids.has(t.employee_id));
           await saveTableToD1(db, "13_Recycle_Bin", trash);
+
+          appendAuditLog(data.tables, {
+            action_type: "PURGE",
+            module: "Nhân sự",
+            description: `Đã xóa vĩnh viễn hàng loạt ${toDeleteCount} nhân sự khỏi Thùng rác`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+
           return jsonResponse({ success: true, message: "Đã xóa vĩnh viễn các nhân viên đã chọn!" });
         }
 
         // DELETE or POST /api/trash/empty
         if (action === "empty") {
+          const body = await request.json().catch(() => ({}));
+          const totalPurged = trash.length;
           await saveTableToD1(db, "13_Recycle_Bin", []);
+
+          appendAuditLog(data.tables, {
+            action_type: "PURGE",
+            module: "Nhân sự",
+            description: `Đã dọn sạch toàn bộ ${totalPurged} nhân sự trong Thùng rác`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+
           return jsonResponse({ success: true, message: "Đã dọn sạch thùng rác!" });
         }
       }

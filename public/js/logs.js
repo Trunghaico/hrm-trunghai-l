@@ -20,13 +20,31 @@ const appLogs = {
   async fetchLogs() {
     try {
       const res = await fetch('/api/logs');
-      const json = await res.json();
+      const json = await res.json().catch(() => null);
+      let loadedLogs = [];
       if (json && json.success !== false) {
-        this.logs = json.data || json.logs || [];
-        this.applyFilters();
+        loadedLogs = json.data || json.logs || [];
       }
+      
+      if (loadedLogs.length === 0 && typeof appData !== 'undefined' && appData.tables && Array.isArray(appData.tables['12_System_Logs']) && appData.tables['12_System_Logs'].length > 0) {
+        loadedLogs = appData.tables['12_System_Logs'];
+      }
+
+      if (loadedLogs.length > 0) {
+        this.logs = loadedLogs;
+        if (typeof appData !== 'undefined' && appData.tables) {
+          appData.tables['12_System_Logs'] = loadedLogs;
+        }
+      } else if (!this.logs || this.logs.length === 0) {
+        this.logs = loadedLogs;
+      }
+      this.applyFilters();
     } catch (err) {
       console.error('Error fetching logs:', err);
+      if (typeof appData !== 'undefined' && appData.tables && Array.isArray(appData.tables['12_System_Logs'])) {
+        this.logs = appData.tables['12_System_Logs'];
+        this.applyFilters();
+      }
     }
   },
 
@@ -48,20 +66,14 @@ const appLogs = {
 
       const payload = {
         action_type: action_type || 'INFO',
-        module: module || 'Hệ thống',
+        module: module || 'Nhân sự',
         description: description || '',
         user_id: user.employee_id || 'TH-1948',
-        user_name: user.full_name || 'Quản trị viên',
+        user_name: user.full_name || 'Huỳnh Thanh Long',
         user_role: user.role || 'ADMIN'
       };
 
-      await fetch('/api/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      // Optimistically prepend to local logs array
+      // Optimistically prepend to local logs array immediately
       const newEntry = {
         ...payload,
         log_id: `LOG-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -69,11 +81,28 @@ const appLogs = {
       };
       this.logs.unshift(newEntry);
       if (this.logs.length > 3000) this.logs = this.logs.slice(0, 3000);
+
+      // Keep appData in sync as well
+      if (typeof appData !== 'undefined' && appData.tables) {
+        if (!Array.isArray(appData.tables['12_System_Logs'])) {
+          appData.tables['12_System_Logs'] = [];
+        }
+        appData.tables['12_System_Logs'].unshift(newEntry);
+      }
+
       if (document.getElementById('view-logs')?.classList.contains('active')) {
         this.applyFilters();
       }
+
+      const res = await fetch('/api/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return await res.json().catch(() => ({ success: true }));
     } catch (e) {
       console.error('Record client log error:', e);
+      return { success: false, error: e.message };
     }
   },
 
@@ -96,14 +125,30 @@ const appLogs = {
         (log.log_id && log.log_id.toLowerCase().includes(q)) ||
         (log.user_id && log.user_id.toLowerCase().includes(q)) ||
         (log.user_name && log.user_name.toLowerCase().includes(q)) ||
+        (log.module && log.module.toLowerCase().includes(q)) ||
+        (log.action_type && log.action_type.toLowerCase().includes(q)) ||
         (log.description && log.description.toLowerCase().includes(q)) ||
         (log.ip_address && log.ip_address.toLowerCase().includes(q));
 
-      // 2. Action Filter
-      const matchAction = !action || log.action_type === action;
+      // 2. Action Filter (DELETE matches both soft DELETE and PURGE)
+      let matchAction = true;
+      if (action) {
+        if (action === 'DELETE') {
+          matchAction = (log.action_type === 'DELETE' || log.action_type === 'PURGE');
+        } else {
+          matchAction = (log.action_type === action);
+        }
+      }
 
-      // 3. Module Filter
-      const matchModule = !mod || log.module === mod;
+      // 3. Module Filter (Nhân sự matches both Nhân sự and Thùng rác)
+      let matchModule = true;
+      if (mod) {
+        if (mod === 'Nhân sự') {
+          matchModule = (log.module === 'Nhân sự' || log.module === 'Thùng rác');
+        } else {
+          matchModule = (log.module === mod);
+        }
+      }
 
       // 4. Date Filter
       let matchDate = true;
@@ -165,6 +210,15 @@ const appLogs = {
           break;
         case 'DELETE':
           actionBadge = '<span class="badge badge-resigned"><i class="fa-solid fa-trash"></i> Xóa dữ liệu</span>';
+          break;
+        case 'RESTORE':
+          actionBadge = '<span class="badge" style="background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD;"><i class="fa-solid fa-rotate-left"></i> Khôi phục</span>';
+          break;
+        case 'PURGE':
+          actionBadge = '<span class="badge" style="background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA;"><i class="fa-solid fa-trash-can-arrow-up"></i> Xóa vĩnh viễn</span>';
+          break;
+        case 'IMPORT':
+          actionBadge = '<span class="badge" style="background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A;"><i class="fa-solid fa-file-import"></i> Nhập dữ liệu</span>';
           break;
         case 'LOGIN':
           actionBadge = '<span class="badge badge-navy"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</span>';
@@ -299,8 +353,8 @@ const appLogs = {
 };
 
 // Global helper for recording activity logs across any module
-window.recordActivityLog = function(action_type, module, description) {
+window.recordActivityLog = async function(action_type, module, description) {
   if (typeof appLogs !== 'undefined' && typeof appLogs.recordClientLog === 'function') {
-    appLogs.recordClientLog(action_type, module, description);
+    return await appLogs.recordClientLog(action_type, module, description);
   }
 };

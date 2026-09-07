@@ -777,6 +777,9 @@ const appEmployees = {
 
         if (successCount > 0) {
           utils.showToast(`Đã chuyển ${successCount} nhân sự vào Thùng rác thành công!`, 'success');
+          if (window.recordActivityLog) {
+            window.recordActivityLog('DELETE', 'Nhân sự', `Đã chuyển hàng loạt ${successCount} nhân sự vào Thùng rác`);
+          }
           this.selectedEmpIds.clear();
           this.closeBulkDeleteModal();
           this.updateSelectionUI();
