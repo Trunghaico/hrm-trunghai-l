@@ -27,6 +27,9 @@ const app = {
     appAccounts.init();
     appLogs.init();
     appTrash.init();
+    if (window.appContracts) {
+      appContracts.init();
+    }
 
     // 4. Update sidebar count badges
     const sideCompCount = document.getElementById('sidebar-company-count');
@@ -37,6 +40,18 @@ const app = {
     if (sidePosCount) sidePosCount.textContent = (appData.positions || []).length;
     const sideResignedCount = document.getElementById('sidebar-resigned-count');
     if (sideResignedCount) sideResignedCount.textContent = (appData.employees || []).filter(e => e.employment_status === 'Đã nghỉ việc').length;
+    const sideContractCount = document.getElementById('sidebar-contract-count');
+    if (sideContractCount) {
+      const expiringCount = (appData.contracts || []).filter(c => {
+        const d = (window.appContracts && appContracts.getDaysRemaining) ? appContracts.getDaysRemaining(c.expiry_date || c.end_date) : null;
+        return d !== null && d >= 0 && d <= 30;
+      }).length;
+      if (expiringCount > 0) {
+        sideContractCount.textContent = expiringCount;
+        sideContractCount.style.display = 'inline-block';
+        sideContractCount.style.background = '#F59E0B';
+      }
+    }
 
     // 5. Navigation setup
     this.setupNavigation();
@@ -130,7 +145,11 @@ const app = {
         } else if (viewId === 'org-chart') {
           appOrganization.renderOrgChart();
         } else if (viewId === 'contracts') {
-          appOrganization.renderContractsTable();
+          if (window.appContracts) {
+            appContracts.render();
+          } else {
+            appOrganization.renderContractsTable();
+          }
         } else if (viewId === 'accounts') {
           appAccounts.init();
         } else if (viewId === 'logs') {

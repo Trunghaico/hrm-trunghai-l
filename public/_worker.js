@@ -1268,6 +1268,317 @@ export default {
       }
 
       // -------------------------------------------------------------
+      // Route: Contracts Management (/api/contracts/*)
+      // -------------------------------------------------------------
+      if (path === "contracts" || path.startsWith("contracts/")) {
+        const parts = path.split("/");
+        const contractId = parts[1] ? decodeURIComponent(parts[1]) : null;
+        const subAction = parts[2] ? decodeURIComponent(parts[2]) : null;
+        const subId = parts[3] ? decodeURIComponent(parts[3]) : null;
+
+        const data = await loadAllFromD1(db);
+        let contracts = data.tables["10_Contracts"] || [];
+        const employees = data.tables["03_Employees"] || [];
+        const depts = data.tables["01_Departments"] || [];
+        const positions = data.tables["02_Positions"] || [];
+        const deptMap = Object.fromEntries(depts.map(d => [d.department_id, d.department_name]));
+        const posMap = Object.fromEntries(positions.map(p => [p.position_id, p.position_name]));
+        const empMap = Object.fromEntries(employees.map(e => [e.employee_id, e]));
+
+        // 1. POST /api/contracts/import-excel (Batch import contracts)
+        if (contractId === "import-excel" && method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          const list = body.contracts || [];
+          if (!Array.isArray(list) || list.length === 0) {
+            return jsonResponse({ success: false, message: "Dữ liệu hợp đồng rỗng!" }, 400);
+          }
+          const contractMap = new Map(contracts.map(c => [c.contract_id || c.employee_id, c]));
+          list.forEach(c => {
+            const id = (c.contract_id || c.employee_id || `HD-${Date.now()}-${Math.floor(Math.random() * 1000)}`).trim();
+            const emp = empMap[c.employee_id] || {};
+            const item = {
+              contract_id: id,
+              employee_id: c.employee_id || id,
+              full_name: c.full_name || emp.full_name || id,
+              contract_type: c.contract_type || emp.contract_type || "Hợp đồng xác định thời hạn",
+              start_date: fixExcelSerialDate(c.start_date || c.effective_date || ""),
+              end_date: fixExcelSerialDate(c.end_date || c.expiry_date || "Không xác định"),
+              trial_start_date: fixExcelSerialDate(c.trial_start_date || ""),
+              official_date: fixExcelSerialDate(c.official_date || ""),
+              effective_date: fixExcelSerialDate(c.effective_date || c.start_date || ""),
+              expiry_date: fixExcelSerialDate(c.expiry_date || c.end_date || null),
+              contract_status: c.contract_status || (c.end_date && new Date(c.end_date) < new Date() ? "HẾT HẠN" : "HIỆU LỰC"),
+              salary: c.salary || emp.base_salary || 0,
+              department_id: c.department_id || emp.department_id || "",
+              department_name: c.department_name || emp.department_name || deptMap[emp.department_id] || "",
+              job_title: c.job_title || emp.job_title || posMap[emp.position_id] || "",
+              signer_name: c.signer_name || "Huỳnh Thanh Long",
+              notes: c.notes || "",
+              appendices: Array.isArray(c.appendices) ? c.appendices : [],
+              attachments: Array.isArray(c.attachments) ? c.attachments : [],
+              updated_at: new Date().toISOString()
+            };
+            contractMap.set(id, { ...(contractMap.get(id) || {}), ...item });
+          });
+          contracts = Array.from(contractMap.values());
+          await saveTableToD1(db, "10_Contracts", contracts);
+          appendAuditLog(data.tables, {
+            action_type: "IMPORT",
+            module: "Hợp đồng",
+            description: `Đã nhập khẩu hàng loạt ${list.length} hợp đồng từ tệp Excel`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+          return jsonResponse({ success: true, count: list.length, message: `Đã nhập ${list.length} hợp đồng thành công!` });
+        }
+
+        // 2. GET /api/contracts or /api/contracts/:id
+        if (method === "GET") {
+          if (contractId) {
+            const item = contracts.find(c => c.contract_id === contractId || c.employee_id === contractId);
+            if (!item) return jsonResponse({ success: false, message: "Không tìm thấy hợp đồng" }, 404);
+            const emp = empMap[item.employee_id] || {};
+            return jsonResponse({
+              success: true,
+              contract: {
+                ...item,
+                department_name: item.department_name || deptMap[item.department_id || emp.department_id] || emp.department_name || "-",
+                job_title: item.job_title || posMap[emp.position_id] || emp.job_title || "-",
+                email: emp.work_email || emp.personal_email || "-",
+                phone: emp.mobile_phone || "-"
+              }
+            });
+          }
+          const enriched = contracts.map(c => {
+            const emp = empMap[c.employee_id] || {};
+            return {
+              ...c,
+              full_name: c.full_name || emp.full_name || c.employee_id || "-",
+              department_name: c.department_name || deptMap[c.department_id || emp.department_id] || emp.department_name || "-",
+              job_title: c.job_title || posMap[emp.position_id] || emp.job_title || "-",
+              email: emp.work_email || emp.personal_email || "-",
+              phone: emp.mobile_phone || "-",
+              appendices_count: Array.isArray(c.appendices) ? c.appendices.length : 0,
+              attachments_count: Array.isArray(c.attachments) ? c.attachments.length : 0
+            };
+          });
+          return jsonResponse({ success: true, contracts: enriched });
+        }
+
+        // 3. POST /api/contracts/:id/appendices (Add appendix)
+        if (contractId && subAction === "appendices" && method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          const idx = contracts.findIndex(c => c.contract_id === contractId || c.employee_id === contractId);
+          if (idx < 0) return jsonResponse({ success: false, message: "Hợp đồng không tồn tại" }, 404);
+
+          if (!Array.isArray(contracts[idx].appendices)) contracts[idx].appendices = [];
+          const appxId = body.appendix_id || `PL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+          const appendixObj = {
+            appendix_id: appxId,
+            appendix_number: body.appendix_number || `PL-${contracts[idx].appendices.length + 1}/${contracts[idx].contract_id}`,
+            sign_date: fixExcelSerialDate(body.sign_date || new Date().toISOString().split('T')[0]),
+            effective_date: fixExcelSerialDate(body.effective_date || new Date().toISOString().split('T')[0]),
+            change_type: body.change_type || "Điều chỉnh lương",
+            old_value: body.old_value || "",
+            new_value: body.new_value || "",
+            content: body.content || "",
+            file_name: body.file_name || "",
+            file_data: body.file_data || "",
+            created_at: new Date().toISOString(),
+            created_by: body.operator_name || "Quản trị viên"
+          };
+          if (body.change_type === "Điều chỉnh lương" && body.new_value) {
+            const numSal = parseFloat(String(body.new_value).replace(/[^\d]/g, ''));
+            if (!isNaN(numSal) && numSal > 0) contracts[idx].salary = numSal;
+          }
+          if (body.change_type === "Gia hạn thời gian" && body.new_value) {
+            contracts[idx].expiry_date = fixExcelSerialDate(body.new_value);
+            contracts[idx].end_date = fixExcelSerialDate(body.new_value);
+          }
+          contracts[idx].appendices.unshift(appendixObj);
+          contracts[idx].updated_at = new Date().toISOString();
+          await saveTableToD1(db, "10_Contracts", contracts);
+          appendAuditLog(data.tables, {
+            action_type: "CREATE",
+            module: "Hợp đồng",
+            description: `Tạo phụ lục ${appendixObj.appendix_number} cho HĐ ${contractId} (${appendixObj.change_type})`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+          return jsonResponse({ success: true, appendix: appendixObj, message: "Thêm phụ lục hợp đồng thành công!" });
+        }
+
+        // 4. DELETE /api/contracts/:id/appendices/:appendixId
+        if (contractId && subAction === "appendices" && subId && method === "DELETE") {
+          const idx = contracts.findIndex(c => c.contract_id === contractId || c.employee_id === contractId);
+          if (idx < 0) return jsonResponse({ success: false, message: "Hợp đồng không tồn tại" }, 404);
+          if (Array.isArray(contracts[idx].appendices)) {
+            contracts[idx].appendices = contracts[idx].appendices.filter(a => a.appendix_id !== subId && a.appendix_number !== subId);
+            contracts[idx].updated_at = new Date().toISOString();
+            await saveTableToD1(db, "10_Contracts", contracts);
+          }
+          return jsonResponse({ success: true, message: "Đã xóa phụ lục hợp đồng!" });
+        }
+
+        // 5. POST /api/contracts/:id/terminate (Terminate contract flow)
+        if (contractId && subAction === "terminate" && method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          const idx = contracts.findIndex(c => c.contract_id === contractId || c.employee_id === contractId);
+          if (idx < 0) return jsonResponse({ success: false, message: "Hợp đồng không tồn tại" }, 404);
+
+          const terminationDate = fixExcelSerialDate(body.termination_date || new Date().toISOString().split('T')[0]);
+          const reasonGroup = body.reason_group || "Thỏa thuận chấm dứt HĐLĐ";
+          const reasonDetail = body.reason_detail || "";
+          const decisionNumber = body.decision_number || `QĐ-CD-${contractId}`;
+
+          contracts[idx].contract_status = "ĐÃ CHẤM DỨT";
+          contracts[idx].end_date = terminationDate;
+          contracts[idx].expiry_date = terminationDate;
+          contracts[idx].termination = {
+            termination_date: terminationDate,
+            reason_group: reasonGroup,
+            reason_detail: reasonDetail,
+            decision_number: decisionNumber,
+            file_name: body.file_name || "",
+            file_data: body.file_data || "",
+            terminated_at: new Date().toISOString(),
+            terminated_by: body.operator_name || "Quản trị viên"
+          };
+          contracts[idx].updated_at = new Date().toISOString();
+          await saveTableToD1(db, "10_Contracts", contracts);
+
+          if (body.update_employee_status !== false) {
+            const empIdx = employees.findIndex(e => e.employee_id === contracts[idx].employee_id);
+            if (empIdx >= 0) {
+              employees[empIdx].employment_status = "Đã nghỉ việc";
+              employees[empIdx].resignation_date = terminationDate;
+              employees[empIdx].resignation_reason_group = reasonGroup;
+              employees[empIdx].resignation_reason = reasonDetail;
+              employees[empIdx].updated_at = new Date().toISOString();
+              await saveTableToD1(db, "03_Employees", employees);
+              let masters = data.tables["00_Master_Profiles"] || [];
+              const mIdx = masters.findIndex(m => m.employee_id === contracts[idx].employee_id || m['Mã nhân viên'] === contracts[idx].employee_id);
+              if (mIdx >= 0) {
+                masters[mIdx]['Trạng thái lao động'] = "Đã nghỉ việc";
+                masters[mIdx]['Ngày nghỉ việc'] = terminationDate;
+                masters[mIdx]['Lý do nghỉ'] = reasonDetail;
+                await saveTableToD1(db, "00_Master_Profiles", masters);
+              }
+            }
+          }
+
+          appendAuditLog(data.tables, {
+            action_type: "TERMINATE",
+            module: "Hợp đồng",
+            description: `Chấm dứt hợp đồng ${contractId} của nhân viên ${contracts[idx].full_name} (${contracts[idx].employee_id})`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+          return jsonResponse({ success: true, message: `Đã chấm dứt hợp đồng ${contractId} thành công!` });
+        }
+
+        // 6. POST /api/contracts (Create or Add)
+        if (method === "POST" && !contractId) {
+          const body = await request.json().catch(() => ({}));
+          const newId = (body.contract_id || `HD-${body.employee_id || Date.now()}`).trim();
+          const emp = empMap[body.employee_id] || {};
+          const newContract = {
+            contract_id: newId,
+            employee_id: body.employee_id || newId,
+            full_name: body.full_name || emp.full_name || body.employee_id,
+            contract_type: body.contract_type || "Hợp đồng xác định thời hạn",
+            sign_date: fixExcelSerialDate(body.sign_date || new Date().toISOString().split('T')[0]),
+            start_date: fixExcelSerialDate(body.start_date || body.effective_date || new Date().toISOString().split('T')[0]),
+            end_date: fixExcelSerialDate(body.end_date || body.expiry_date || "Không xác định"),
+            effective_date: fixExcelSerialDate(body.effective_date || body.start_date || new Date().toISOString().split('T')[0]),
+            expiry_date: fixExcelSerialDate(body.expiry_date || body.end_date || null),
+            trial_start_date: fixExcelSerialDate(body.trial_start_date || ""),
+            official_date: fixExcelSerialDate(body.official_date || ""),
+            salary: parseFloat(body.salary) || emp.base_salary || 0,
+            allowance: parseFloat(body.allowance) || 0,
+            department_id: body.department_id || emp.department_id || "",
+            department_name: body.department_name || emp.department_name || deptMap[body.department_id || emp.department_id] || "",
+            job_title: body.job_title || emp.job_title || posMap[emp.position_id] || "",
+            work_location: body.work_location || emp.work_location || "Trụ sở Tổng công ty",
+            signer_name: body.signer_name || "Huỳnh Thanh Long",
+            contract_status: body.contract_status || "HIỆU LỰC",
+            notes: body.notes || "",
+            appendices: Array.isArray(body.appendices) ? body.appendices : [],
+            attachments: Array.isArray(body.attachments) ? body.attachments : [],
+            created_at: new Date().toISOString()
+          };
+          const existingIdx = contracts.findIndex(c => c.contract_id === newId);
+          if (existingIdx >= 0) {
+            contracts[existingIdx] = { ...contracts[existingIdx], ...newContract, updated_at: new Date().toISOString() };
+          } else {
+            contracts.unshift(newContract);
+          }
+          await saveTableToD1(db, "10_Contracts", contracts);
+          appendAuditLog(data.tables, {
+            action_type: existingIdx >= 0 ? "UPDATE" : "CREATE",
+            module: "Hợp đồng",
+            description: `${existingIdx >= 0 ? 'Cập nhật' : 'Thêm mới'} hợp đồng ${newId} cho nhân viên ${newContract.full_name}`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+          return jsonResponse({ success: true, contract: newContract, message: "Lưu hợp đồng thành công!" });
+        }
+
+        // 7. PUT /api/contracts/:id or POST /api/contracts/:id (Update)
+        if ((method === "PUT" || method === "POST") && contractId) {
+          const body = await request.json().catch(() => ({}));
+          const idx = contracts.findIndex(c => c.contract_id === contractId || c.employee_id === contractId);
+          if (idx < 0) return jsonResponse({ success: false, message: "Không tìm thấy hợp đồng để cập nhật" }, 404);
+
+          if (body.start_date) body.start_date = fixExcelSerialDate(body.start_date);
+          if (body.end_date) body.end_date = fixExcelSerialDate(body.end_date);
+          if (body.effective_date) body.effective_date = fixExcelSerialDate(body.effective_date);
+          if (body.expiry_date) body.expiry_date = fixExcelSerialDate(body.expiry_date);
+          if (body.trial_start_date) body.trial_start_date = fixExcelSerialDate(body.trial_start_date);
+          if (body.official_date) body.official_date = fixExcelSerialDate(body.official_date);
+          if (body.sign_date) body.sign_date = fixExcelSerialDate(body.sign_date);
+
+          contracts[idx] = {
+            ...contracts[idx],
+            ...body,
+            contract_id: body.contract_id || contractId,
+            updated_at: new Date().toISOString()
+          };
+          await saveTableToD1(db, "10_Contracts", contracts);
+          appendAuditLog(data.tables, {
+            action_type: "UPDATE",
+            module: "Hợp đồng",
+            description: `Cập nhật thông tin hợp đồng ${contractId} (${contracts[idx].full_name})`,
+            user_id: body.operator_id || "TH-1948",
+            user_name: body.operator_name || "Huỳnh Thanh Long",
+            user_role: body.operator_role || "ADMIN",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          });
+          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
+          return jsonResponse({ success: true, contract: contracts[idx], message: "Cập nhật hợp đồng thành công!" });
+        }
+
+        // 8. DELETE /api/contracts/:id (Delete contract)
+        if (method === "DELETE" && contractId) {
+          contracts = contracts.filter(c => c.contract_id !== contractId && c.employee_id !== contractId);
+          await saveTableToD1(db, "10_Contracts", contracts);
+          return jsonResponse({ success: true, message: `Đã xóa hợp đồng ${contractId} thành công!` });
+        }
+      }
+
+      // -------------------------------------------------------------
       // Route: Companies CRUD (/api/companies/*)
       // -------------------------------------------------------------
       if (path === "companies" || path.startsWith("companies/")) {
