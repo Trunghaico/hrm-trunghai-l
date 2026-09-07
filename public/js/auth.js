@@ -108,9 +108,15 @@ const appAuth = {
         this.applyUserSession(json.user);
         this.hideLoginScreen();
         utils.showToast(`Chào mừng ${json.user.full_name} (${json.user.role})!`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('LOGIN', 'Bảo mật', `Đăng nhập thành công vào hệ thống (${json.user.full_name} - Quyền: ${json.user.role})`);
+        }
         return true;
       } else {
         utils.showToast(json.message || 'Đăng nhập không thành công', 'error');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('LOGIN_FAIL', 'Bảo mật', `Đăng nhập thất bại cho tài khoản: ${username}`);
+        }
         return false;
       }
     } catch (e) {

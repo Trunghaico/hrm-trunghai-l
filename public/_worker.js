@@ -901,14 +901,31 @@ export default {
         let logs = data.tables["12_System_Logs"] || [];
 
         if (method === "GET") {
-          return jsonResponse({ success: true, logs });
+          return jsonResponse({ success: true, data: logs, logs, total: logs.length });
         }
         if (method === "POST") {
           const body = await request.json().catch(() => ({}));
-          logs.unshift({ ...body, timestamp: new Date().toISOString() });
-          if (logs.length > 200) logs = logs.slice(0, 200);
+          const logEntry = {
+            log_id: `LOG-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            timestamp: new Date().toISOString(),
+            user_id: body.user_id || "TH-1948",
+            user_name: body.user_name || "Quản trị viên",
+            user_role: body.user_role || "ADMIN",
+            action_type: body.action_type || "INFO",
+            module: body.module || "Hệ thống",
+            description: body.description || "",
+            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
+          };
+          logs.unshift(logEntry);
+          if (logs.length > 3000) logs = logs.slice(0, 3000);
           await saveTableToD1(db, "12_System_Logs", logs);
-          return jsonResponse({ success: true });
+          return jsonResponse({ success: true, log: logEntry });
+        }
+        if (method === "DELETE") {
+          return jsonResponse({
+            success: false,
+            message: "Nhật ký hoạt động hệ thống là dữ liệu kiểm toán bất biến, không được phép xóa!"
+          }, 403);
         }
       }
 

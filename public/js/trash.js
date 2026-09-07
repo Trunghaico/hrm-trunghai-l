@@ -687,6 +687,9 @@ const appTrash = {
       const json = await res.json();
       if (json.success) {
         utils.showToast(json.message || `Đã khôi phục thành công ${empId}`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('UPDATE', 'Thùng rác', `Khôi phục nhân viên: ${name} (${empId})`);
+        }
         this.hidePopover();
         this.selectedIds.delete(empId);
         await appData.init();
@@ -729,6 +732,9 @@ const appTrash = {
       const json = await res.json();
       if (json.success) {
         utils.showToast(json.message || `Đã xóa vĩnh viễn ${empId}`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Thùng rác', `Xóa vĩnh viễn nhân viên: ${name} (${empId})`);
+        }
         this.hidePopover();
         this.selectedIds.delete(empId);
         await appData.init();
@@ -772,6 +778,9 @@ const appTrash = {
       const json = await res.json();
       if (json.success) {
         utils.showToast(json.message || `Đã khôi phục thành công ${ids.length} nhân sự`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('UPDATE', 'Thùng rác', `Khôi phục hàng loạt ${ids.length} nhân sự từ thùng rác`);
+        }
         this.selectedIds.clear();
         await appData.init();
         appDashboard.init();
@@ -808,6 +817,9 @@ const appTrash = {
       const json = await res.json();
       if (json.success) {
         utils.showToast(json.message || `Đã xóa vĩnh viễn ${ids.length} nhân sự`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Thùng rác', `Xóa vĩnh viễn hàng loạt ${ids.length} nhân sự khỏi thùng rác`);
+        }
         this.selectedIds.clear();
         await appData.init();
         await this.render();
@@ -826,6 +838,7 @@ const appTrash = {
       return;
     }
 
+    const totalCount = this.trashList.length;
     try {
       const user = this.getOperatorUser();
       const res = await fetch('/api/trash/empty', {
@@ -840,6 +853,9 @@ const appTrash = {
       const json = await res.json();
       if (json.success) {
         utils.showToast(json.message || 'Đã dọn sạch toàn bộ Thùng rác', 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Thùng rác', `Dọn sạch toàn bộ ${totalCount} nhân sự trong Thùng rác`);
+        }
         this.selectedIds.clear();
         await appData.init();
         await this.render();

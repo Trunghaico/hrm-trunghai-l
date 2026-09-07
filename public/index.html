@@ -1088,7 +1088,10 @@
                 </select>
               </div>
 
-              <div style="display: flex; gap: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-size: 11.5px; padding: 5px 10px; border: 1px solid #BFDBFE; display: inline-flex; align-items: center; gap: 5px;" title="Dữ liệu nhật ký kiểm toán được lưu trữ bất biến và không thể xóa">
+                  <i class="fa-solid fa-shield-halved"></i> Kiểm toán bất biến
+                </span>
                 <button class="btn btn-secondary btn-sm" id="btn-refresh-logs" title="Làm mới nhật ký">
                   <i class="fa-solid fa-rotate"></i>
                   <span>Làm Mới</span>
@@ -1096,10 +1099,6 @@
                 <button class="btn btn-outline-navy btn-sm" id="btn-export-logs" title="Xuất lịch sử nhật ký ra file Excel">
                   <i class="fa-solid fa-file-excel"></i>
                   <span>Xuất Excel</span>
-                </button>
-                <button class="btn btn-secondary btn-sm" id="btn-clear-logs" style="color: var(--accent-red);" title="Làm trống nhật ký">
-                  <i class="fa-solid fa-trash-can"></i>
-                  <span>Xóa Lịch Sử</span>
                 </button>
               </div>
             </div>

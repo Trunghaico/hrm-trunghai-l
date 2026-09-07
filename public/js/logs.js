@@ -21,8 +21,8 @@ const appLogs = {
     try {
       const res = await fetch('/api/logs');
       const json = await res.json();
-      if (json.success) {
-        this.logs = json.data || [];
+      if (json && json.success !== false) {
+        this.logs = json.data || json.logs || [];
         this.applyFilters();
       }
     } catch (err) {
@@ -33,22 +33,44 @@ const appLogs = {
   // Record log from client-side
   async recordClientLog(action_type, module, description) {
     try {
-      const user = appAuth.currentUser || { employee_id: 'SYSTEM', full_name: 'Hệ thống', role: 'ADMIN' };
+      let user = null;
+      if (typeof appAuth !== 'undefined' && typeof appAuth.getCurrentUser === 'function') {
+        user = appAuth.getCurrentUser();
+      } else if (typeof appAuth !== 'undefined' && appAuth?.currentUser) {
+        user = appAuth.currentUser;
+      } else {
+        const stored = localStorage.getItem('hrm_trunghai_user_session');
+        if (stored) {
+          try { user = JSON.parse(stored); } catch (e) {}
+        }
+      }
+      user = user || { employee_id: 'TH-1948', full_name: 'Huỳnh Thanh Long', role: 'ADMIN' };
+
+      const payload = {
+        action_type: action_type || 'INFO',
+        module: module || 'Hệ thống',
+        description: description || '',
+        user_id: user.employee_id || 'TH-1948',
+        user_name: user.full_name || 'Quản trị viên',
+        user_role: user.role || 'ADMIN'
+      };
+
       await fetch('/api/logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action_type,
-          module,
-          description,
-          user_id: user.employee_id,
-          user_name: user.full_name,
-          user_role: user.role
-        })
+        body: JSON.stringify(payload)
       });
-      // Silent background fetch to update if on logs view
+
+      // Optimistically prepend to local logs array
+      const newEntry = {
+        ...payload,
+        log_id: `LOG-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString()
+      };
+      this.logs.unshift(newEntry);
+      if (this.logs.length > 3000) this.logs = this.logs.slice(0, 3000);
       if (document.getElementById('view-logs')?.classList.contains('active')) {
-        this.fetchLogs();
+        this.applyFilters();
       }
     } catch (e) {
       console.error('Record client log error:', e);
@@ -250,32 +272,6 @@ const appLogs = {
     utils.showToast('Đã xuất file Excel nhật ký thành công!', 'success');
   },
 
-  async clearAllLogs() {
-    if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử nhật ký hoạt động không?')) {
-      return;
-    }
-
-    try {
-      const user = appAuth.currentUser || {};
-      const res = await fetch('/api/logs', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.employee_id,
-          user_name: user.full_name
-        })
-      });
-      const json = await res.json();
-      if (json.success) {
-        utils.showToast('Đã làm trống toàn bộ nhật ký', 'success');
-        await this.fetchLogs();
-      }
-    } catch (err) {
-      console.error(err);
-      utils.showToast('Lỗi khi xóa nhật ký', 'error');
-    }
-  },
-
   attachEventListeners() {
     const searchInput = document.getElementById('logs-search-input');
     const actionFilter = document.getElementById('logs-filter-action');
@@ -283,7 +279,6 @@ const appLogs = {
     const dateFilter = document.getElementById('logs-filter-date');
     const btnRefresh = document.getElementById('btn-refresh-logs');
     const btnExport = document.getElementById('btn-export-logs');
-    const btnClear = document.getElementById('btn-clear-logs');
 
     if (searchInput) searchInput.addEventListener('input', () => { this.currentPage = 1; this.applyFilters(); });
     if (actionFilter) actionFilter.addEventListener('change', () => { this.currentPage = 1; this.applyFilters(); });
@@ -300,9 +295,12 @@ const appLogs = {
     if (btnExport) {
       btnExport.addEventListener('click', () => this.exportLogsToExcel());
     }
+  }
+};
 
-    if (btnClear) {
-      btnClear.addEventListener('click', () => this.clearAllLogs());
-    }
+// Global helper for recording activity logs across any module
+window.recordActivityLog = function(action_type, module, description) {
+  if (typeof appLogs !== 'undefined' && typeof appLogs.recordClientLog === 'function') {
+    appLogs.recordClientLog(action_type, module, description);
   }
 };

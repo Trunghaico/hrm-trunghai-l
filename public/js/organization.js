@@ -276,6 +276,9 @@ const appOrganization = {
           this.renderOrgChart();
           this.closeCompanyModal();
           utils.showToast('Cập nhật công ty thành công!', 'success');
+          if (window.recordActivityLog) {
+            window.recordActivityLog('UPDATE', 'Cơ cấu', `Cập nhật thông tin công ty: ${name} (${this.selectedCompanyId})`);
+          }
         } else {
           utils.showToast(json.message || 'Lỗi cập nhật công ty', 'error');
         }
@@ -303,6 +306,9 @@ const appOrganization = {
           this.renderOrgChart();
           this.closeCompanyModal();
           utils.showToast(`Thêm mới công ty "${name}" thành công!`, 'success');
+          if (window.recordActivityLog) {
+            window.recordActivityLog('CREATE', 'Cơ cấu', `Thêm mới công ty: ${name} (${id})`);
+          }
         } else {
           utils.showToast(json.message || 'Lỗi tạo công ty', 'error');
         }
@@ -343,6 +349,9 @@ const appOrganization = {
         this.renderCompaniesTable();
         this.renderOrgChart();
         utils.showToast(`Đã xóa công ty "${comp.company_name}"!`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Cơ cấu', `Xóa công ty: ${comp.company_name} (${compId})`);
+        }
       } else {
         utils.showToast(json.message || 'Không thể xóa công ty', 'error');
       }
@@ -512,6 +521,9 @@ const appOrganization = {
           this.renderOrgChart();
           this.closeDeptModal();
           utils.showToast('Cập nhật phòng ban thành công!', 'success');
+          if (window.recordActivityLog) {
+            window.recordActivityLog('UPDATE', 'Cơ cấu', `Cập nhật phòng ban: ${name} (${this.selectedDeptId})`);
+          }
         } else {
           utils.showToast(json.message || 'Lỗi cập nhật phòng ban', 'error');
         }
@@ -540,6 +552,9 @@ const appOrganization = {
           this.renderOrgChart();
           this.closeDeptModal();
           utils.showToast(`Thêm mới phòng ban ${name} thành công!`, 'success');
+          if (window.recordActivityLog) {
+            window.recordActivityLog('CREATE', 'Cơ cấu', `Thêm mới phòng ban: ${name} (${id})`);
+          }
         } else {
           utils.showToast(json.message || 'Lỗi tạo phòng ban', 'error');
         }
@@ -580,6 +595,9 @@ const appOrganization = {
         this.renderDepartmentsTable();
         this.renderOrgChart();
         utils.showToast(`Đã xóa phòng ban "${dept.department_name}"!`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Cơ cấu', `Xóa phòng ban: ${dept.department_name} (${deptId})`);
+        }
       } else {
         utils.showToast(json.message || 'Không thể xóa phòng ban', 'error');
       }
@@ -721,6 +739,9 @@ const appOrganization = {
           this.renderOrgChart();
           this.closePosModal();
           utils.showToast('Cập nhật vị trí thành công!', 'success');
+          if (window.recordActivityLog) {
+            window.recordActivityLog('UPDATE', 'Cơ cấu', `Cập nhật chức vụ/vị trí: ${name} (${this.selectedPosId})`);
+          }
         } else {
           utils.showToast(json.message || 'Lỗi cập nhật vị trí', 'error');
         }
@@ -748,6 +769,9 @@ const appOrganization = {
           this.renderOrgChart();
           this.closePosModal();
           utils.showToast(`Thêm mới vị trí "${name}" thành công!`, 'success');
+          if (window.recordActivityLog) {
+            window.recordActivityLog('CREATE', 'Cơ cấu', `Thêm mới chức vụ/vị trí: ${name} (${id})`);
+          }
         } else {
           utils.showToast(json.message || 'Lỗi tạo vị trí', 'error');
         }
@@ -788,6 +812,9 @@ const appOrganization = {
         this.renderPositionsTable();
         this.renderOrgChart();
         utils.showToast(`Đã xóa vị trí "${pos.position_name}"!`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Cơ cấu', `Xóa chức vụ/vị trí: ${pos.position_name} (${posId})`);
+        }
       } else {
         utils.showToast(json.message || 'Không thể xóa vị trí', 'error');
       }

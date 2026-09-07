@@ -4158,23 +4158,12 @@ app.post('/api/logs', (req, res) => {
     res.status(201).json({ success: true, log: entry });
 });
 
-// CLEAR ALL LOGS (ADMIN ONLY)
+// CLEAR ALL LOGS IS PROHIBITED FOR AUDIT TRAIL INTEGRITY
 app.delete('/api/logs', (req, res) => {
-    const db = loadDatabase();
-    db.tables['12_System_Logs'] = [];
-
-    recordLog(db, {
-        action_type: 'DELETE',
-        module: 'Hệ thống',
-        description: 'Đã xóa toàn bộ lịch sử nhật ký hoạt động',
-        user_id: req.body?.user_id || 'TH-1948',
-        user_name: req.body?.user_name || 'Huỳnh Thanh Long',
-        user_role: 'ADMIN',
-        ip: req.ip
+    return res.status(403).json({
+        success: false,
+        message: 'Nhật ký hoạt động hệ thống là dữ liệu kiểm toán bất biến, không được phép xóa!'
     });
-
-    saveDatabase(db);
-    res.json({ success: true, message: 'Đã làm trống toàn bộ nhật ký' });
 });
 
 // 10. EXPORT EXCEL

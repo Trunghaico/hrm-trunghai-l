@@ -744,6 +744,9 @@ const appEmployees = {
       const result = await res.json().catch(() => ({}));
       if (res.ok && result.success) {
         utils.showToast(result.message || `Đã chuyển ${empIdsArray.length} nhân sự vào Thùng rác thành công!`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Nhân sự', `Đã chuyển ${empIdsArray.length} nhân sự vào Thùng rác`);
+        }
         this.selectedEmpIds.clear();
         this.closeBulkDeleteModal();
         this.updateSelectionUI();
@@ -988,6 +991,13 @@ const appEmployees = {
 
       if (json.success) {
         utils.showToast(isEdit ? 'Cập nhật nhân sự thành công!' : 'Thêm nhân sự mới thành công!', 'success');
+        if (window.recordActivityLog) {
+          const logAction = isEdit ? 'UPDATE' : 'CREATE';
+          const logDesc = isEdit 
+            ? `Cập nhật thông tin nhân viên: ${payload.full_name} (${empId})`
+            : `Thêm mới nhân viên: ${payload.full_name} (${empId})`;
+          window.recordActivityLog(logAction, 'Nhân sự', logDesc);
+        }
         this.closeFormModal();
         await appData.init();
         appDashboard.init();
@@ -1128,6 +1138,11 @@ const appEmployees = {
       const json = await res.json();
       if (json.success) {
         utils.showToast(json.message || `Đã chuyển nhân sự ${empId} vào Thùng rác`, 'success');
+        if (window.recordActivityLog) {
+          const item = (appData.employees || []).find(e => e.employee_id === empId);
+          const name = item ? item.full_name : empId;
+          window.recordActivityLog('DELETE', 'Nhân sự', `Chuyển nhân viên ${name} (${empId}) vào Thùng rác`);
+        }
         this.hideDeletePopover();
         await appData.init();
         appDashboard.init();
@@ -1190,6 +1205,9 @@ const appEmployees = {
     XLSX.utils.book_append_sheet(wb, ws, "DanhSachNhanSu");
     XLSX.writeFile(wb, `Danh_Sach_Nhan_Su_Trung_Hai_${new Date().toISOString().slice(0,10)}.xlsx`);
     utils.showToast('Xuất danh sách nhân sự Excel thành công!', 'success');
+    if (window.recordActivityLog) {
+      window.recordActivityLog('EXPORT', 'Nhân sự', `Xuất danh sách ${exportData.length} nhân sự ra file Excel`);
+    }
   },
 
   openDeleteAllModal() {
@@ -1283,6 +1301,9 @@ const appEmployees = {
 
       if (json.success) {
         utils.showToast(json.message || `Đã xóa thành công ${json.count || ''} nhân sự`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Nhân sự', `Đã thực hiện xóa toàn bộ ${json.count || ''} nhân sự (${isPermanent ? 'Xóa vĩnh viễn' : 'Chuyển vào thùng rác'})`);
+        }
         this.closeDeleteAllModal();
         
         // Reload all cached application data

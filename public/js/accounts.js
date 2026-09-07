@@ -347,6 +347,9 @@ const appAccounts = {
           this.renderKPIs();
           this.applyFilters();
           utils.showToast('Cập nhật phân quyền tài khoản thành công!', 'success');
+          if (window.recordActivityLog) {
+            window.recordActivityLog('UPDATE', 'Tài khoản', `Cập nhật tài khoản: ${email} (Vai trò: ${role}, Trạng thái: ${status})`);
+          }
         } else {
           utils.showToast(json.message || 'Lỗi cập nhật', 'error');
         }
@@ -378,6 +381,9 @@ const appAccounts = {
           this.renderKPIs();
           this.applyFilters();
           utils.showToast('Cấp tài khoản mới thành công!', 'success');
+          if (window.recordActivityLog) {
+            window.recordActivityLog('CREATE', 'Tài khoản', `Cấp tài khoản mới cho nhân viên: ${fullName} (${empId})`);
+          }
         } else {
           utils.showToast(json.message || 'Lỗi cấp tài khoản', 'error');
         }
@@ -424,6 +430,9 @@ const appAccounts = {
       if (json.success) {
         this.closeResetPassModal();
         utils.showToast('Đặt lại mật khẩu thành công!', 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('PASSWORD', 'Tài khoản', `Đặt lại mật khẩu cho tài khoản: ${this.selectedAccountId}`);
+        }
       } else {
         utils.showToast(json.message || 'Lỗi đặt lại mật khẩu', 'error');
       }
@@ -470,6 +479,9 @@ const appAccounts = {
         this.renderKPIs();
         this.applyFilters();
         utils.showToast('Đã xóa tài khoản khỏi hệ thống!', 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Tài khoản', `Xóa tài khoản: ${this.selectedAccountId}`);
+        }
       } else {
         utils.showToast(json.message || 'Lỗi xóa tài khoản', 'error');
       }
@@ -604,6 +616,9 @@ const appAccounts = {
         this.renderKPIs();
         this.applyFilters();
         utils.showToast(json.message || `Đã xóa thành công ${json.count} tài khoản!`, 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('DELETE', 'Tài khoản', `Xóa hàng loạt ${ids.length} tài khoản`);
+        }
       } else {
         utils.showToast(json.message || 'Lỗi khi xóa tài khoản hàng loạt', 'error');
       }

@@ -987,6 +987,9 @@ const appImport = {
       const json = await res.json();
       if (json.success) {
         utils.showToast(json.message || 'Nhập Excel thành công!', 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('CREATE', 'Nhập liệu', `Nhập dữ liệu thành công từ file Excel (${this.cleanData?.length || ''} bản ghi)`);
+        }
         this.closeModal();
 
         // Reload all data
