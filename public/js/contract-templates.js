@@ -89,7 +89,7 @@ const contractTemplateStore = {
       subTitle = "(Theo quy định của Bộ Luật Lao Động)";
     } else if (type === 'appendix') {
       title = "PHỤ LỤC HỢP ĐỒNG LAO ĐỘNG";
-      subTitle = "(Kèm theo Hợp đồng số: <SoHD>)";
+      subTitle = "(Kèm theo Hợp đồng số: &lt;SoHD&gt;)";
     }
 
     const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -106,7 +106,7 @@ const contractTemplateStore = {
     </w:p>
     <w:p>
       <w:pPr><w:jc w:val="right"/><w:spacing w:after="240"/></w:pPr>
-      <w:r><w:rPr><w:i/></w:rPr><w:t><NgayThangNamKy></w:t></w:r>
+      <w:r><w:rPr><w:i/></w:rPr><w:t>&lt;NgayThangNamKy&gt;</w:t></w:r>
     </w:p>
 
     <!-- Tiêu đề Hợp đồng -->
@@ -120,58 +120,58 @@ const contractTemplateStore = {
     </w:p>
     <w:p>
       <w:pPr><w:jc w:val="center"/><w:spacing w:after="280"/></w:pPr>
-      <w:r><w:rPr><w:b/></w:rPr><w:t>Số: <SoHD></w:t></w:r>
+      <w:r><w:rPr><w:b/></w:rPr><w:t>Số: &lt;SoHD&gt;</w:t></w:r>
     </w:p>
 
     <!-- Đoạn mở đầu -->
-    <w:p><w:r><w:t>Hôm nay, ngày <NgayHienTai> tháng <ThangHienTai> năm <NamHienTai>, tại trụ sở <TenCongTy>, chúng tôi gồm có:</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Hôm nay, ngày &lt;NgayHienTai&gt; tháng &lt;ThangHienTai&gt; năm &lt;NamHienTai&gt;, tại trụ sở &lt;TenCongTy&gt;, chúng tôi gồm có:</w:t></w:r></w:p>
 
     <!-- Bên A -->
     <w:p><w:pPr><w:spacing w:before="160"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>BÊN A: NGƯỜI SỬ DỤNG LAO ĐỘNG</w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Tên đơn vị / Doanh nghiệp: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><TenCongTy></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Mã số thuế: <MSTCongTy> &bull; Điện thoại: <DienThoaiCongTy></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Địa chỉ trụ sở chính: <DiaChiCongTy></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Đại diện bởi Ông/Bà: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><DaiDienCongTy></w:t></w:r><w:r><w:t> - Chức vụ: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><ChucVuDaiDien></w:t></w:r><w:r><w:t> (Quốc tịch: <QuocTichDaiDien>)</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Tên đơn vị / Doanh nghiệp: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;TenCongTy&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Mã số thuế: &lt;MSTCongTy&gt; • Điện thoại: &lt;DienThoaiCongTy&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Địa chỉ trụ sở chính: &lt;DiaChiCongTy&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Đại diện bởi Ông/Bà: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;DaiDienCongTy&gt;</w:t></w:r><w:r><w:t> - Chức vụ: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;ChucVuDaiDien&gt;</w:t></w:r><w:r><w:t> (Quốc tịch: &lt;QuocTichDaiDien&gt;)</w:t></w:r></w:p>
 
     <!-- Bên B -->
     <w:p><w:pPr><w:spacing w:before="160"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>BÊN B: NGƯỜI LAO ĐỘNG</w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Họ và tên: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><HO_VA_TEN></w:t></w:r><w:r><w:t> &bull; Giới tính: <GioiTinh></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Ngày sinh: <NgaySinh> &bull; Quốc tịch: <QuocTich> &bull; Dân tộc: <DanToc></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Mã nhân viên: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><MaNV></w:t></w:r><w:r><w:t> &bull; Số CCCD/CMND: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><SoCCCD></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Ngày cấp: <NgayCap> &bull; Nơi cấp: <NoiCap></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Hộ khẩu thường trú: <DiaChiThuongTru></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Chỗ ở hiện nay: <ChoOHienNay></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Số điện thoại liên hệ: <DienThoai> &bull; Email: <Email></w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Tài khoản ngân hàng: <SoTaiKhoan> tại Ngân hàng <NganHang> (<ChiNhanhNganHang>)</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Họ và tên: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;HO_VA_TEN&gt;</w:t></w:r><w:r><w:t> • Giới tính: &lt;GioiTinh&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Ngày sinh: &lt;NgaySinh&gt; • Quốc tịch: &lt;QuocTich&gt; • Dân tộc: &lt;DanToc&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Mã nhân viên: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;MaNV&gt;</w:t></w:r><w:r><w:t> • Số CCCD/CMND: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;SoCCCD&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Ngày cấp: &lt;NgayCap&gt; • Nơi cấp: &lt;NoiCap&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Hộ khẩu thường trú: &lt;DiaChiThuongTru&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Chỗ ở hiện nay: &lt;ChoOHienNay&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Số điện thoại liên hệ: &lt;DienThoai&gt; • Email: &lt;Email&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Tài khoản ngân hàng: &lt;SoTaiKhoan&gt; tại Ngân hàng &lt;NganHang&gt; (&lt;ChiNhanhNganHang&gt;)</w:t></w:r></w:p>
 
     <!-- Điều khoản 1 -->
     <w:p><w:pPr><w:spacing w:before="200"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Hai bên cùng thỏa thuận ký kết Hợp đồng lao động với các điều khoản sau đây:</w:t></w:r></w:p>
 
     <w:p><w:pPr><w:spacing w:before="120"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Điều 1: Thời hạn và công việc hợp đồng</w:t></w:r></w:p>
-    <w:p><w:r><w:t>1. Loại hợp đồng lao động: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><LoaiHD></w:t></w:r></w:p>
-    <w:p><w:r><w:t>2. Thời hạn hợp đồng: Bắt đầu từ ngày </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><NgayBatDau></w:t></w:r><w:r><w:t> đến ngày </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><NgayKetThuc></w:t></w:r><w:r><w:t>.</w:t></w:r></w:p>
-    <w:p><w:r><w:t>3. Đơn vị công tác: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><PhongBan></w:t></w:r></w:p>
-    <w:p><w:r><w:t>4. Chức danh / Vị trí làm việc: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><ChucDanh></w:t></w:r></w:p>
-    <w:p><w:r><w:t>5. Địa điểm làm việc: <DiaDiemLamViec>.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>1. Loại hợp đồng lao động: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;LoaiHD&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>2. Thời hạn hợp đồng: Bắt đầu từ ngày </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;NgayBatDau&gt;</w:t></w:r><w:r><w:t> đến ngày </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;NgayKetThuc&gt;</w:t></w:r><w:r><w:t>.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>3. Đơn vị công tác: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;PhongBan&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>4. Chức danh / Vị trí làm việc: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;ChucDanh&gt;</w:t></w:r></w:p>
+    <w:p><w:r><w:t>5. Địa điểm làm việc: &lt;DiaDiemLamViec&gt;.</w:t></w:r></w:p>
 
     <!-- Điều khoản 2 -->
     <w:p><w:pPr><w:spacing w:before="120"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Điều 2: Chế độ làm việc và nghỉ ngơi</w:t></w:r></w:p>
-    <w:p><w:r><w:t>1. Thời giờ làm việc: <ThoiGioLamViec>.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>1. Thời giờ làm việc: &lt;ThoiGioLamViec&gt;.</w:t></w:r></w:p>
     <w:p><w:r><w:t>2. Thời giờ nghỉ ngơi: Nghỉ hàng tuần theo quy định, nghỉ lễ, tết và ngày nghỉ phép năm hưởng nguyên lương theo quy định hiện hành của Bộ Luật Lao Động.</w:t></w:r></w:p>
 
     <!-- Điều khoản 3 -->
     <w:p><w:pPr><w:spacing w:before="120"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Điều 3: Tiền lương, phụ cấp và các quyền lợi</w:t></w:r></w:p>
-    <w:p><w:r><w:t>1. Mức lương cơ bản thỏa thuận: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><MucLuong> VNĐ/tháng</w:t></w:r></w:p>
-    <w:p><w:r><w:t>(Bằng chữ: </w:t></w:r><w:r><w:rPr><w:i/><w:b/></w:rPr><w:t><MucLuongChu></w:t></w:r><w:r><w:t>)</w:t></w:r></w:p>
-    <w:p><w:r><w:t>2. Phụ cấp lương: <PhuCap> VNĐ/tháng (Bằng chữ: <PhuCapChu>).</w:t></w:r></w:p>
-    <w:p><w:r><w:t>3. Tổng mức thu nhập theo hợp đồng: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><TongLuong> VNĐ/tháng</w:t></w:r><w:r><w:t>.</w:t></w:r></w:p>
-    <w:p><w:r><w:t>4. Hình thức chi trả lương: <HinhThucTraLuong>.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>1. Mức lương cơ bản thỏa thuận: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;MucLuong&gt; VNĐ/tháng</w:t></w:r></w:p>
+    <w:p><w:r><w:t>(Bằng chữ: </w:t></w:r><w:r><w:rPr><w:i/><w:b/></w:rPr><w:t>&lt;MucLuongChu&gt;</w:t></w:r><w:r><w:t>)</w:t></w:r></w:p>
+    <w:p><w:r><w:t>2. Phụ cấp lương: &lt;PhuCap&gt; VNĐ/tháng (Bằng chữ: &lt;PhuCapChu&gt;).</w:t></w:r></w:p>
+    <w:p><w:r><w:t>3. Tổng mức thu nhập theo hợp đồng: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;TongLuong&gt; VNĐ/tháng</w:t></w:r><w:r><w:t>.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>4. Hình thức chi trả lương: &lt;HinhThucTraLuong&gt;.</w:t></w:r></w:p>
     <w:p><w:r><w:t>5. Bảo hiểm: Người lao động được tham gia BHXH, BHYT, BHTN đầy đủ theo quy định của pháp luật lao động.</w:t></w:r></w:p>
 
     <!-- Điều khoản 4 -->
     <w:p><w:pPr><w:spacing w:before="120"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Điều 4: Điều khoản thi hành</w:t></w:r></w:p>
     <w:p><w:r><w:t>1. Hợp đồng này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, Bên A giữ 01 bản, Bên B giữ 01 bản để thực hiện.</w:t></w:r></w:p>
-    <w:p><w:r><w:t>2. Hợp đồng có hiệu lực kể từ ngày </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t><NgayHieuLuc></w:t></w:r><w:r><w:t>.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>2. Hợp đồng có hiệu lực kể từ ngày </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;NgayHieuLuc&gt;</w:t></w:r><w:r><w:t>.</w:t></w:r></w:p>
 
     <!-- Chữ ký 2 bên -->
     <w:p><w:pPr><w:spacing w:before="360"/></w:pPr></w:p>
@@ -196,7 +196,7 @@ const contractTemplateStore = {
           </w:p>
           <w:p>
             <w:pPr><w:jc w:val="center"/></w:pPr>
-            <w:r><w:rPr><w:b/></w:rPr><w:t><HO_VA_TEN></w:t></w:r>
+            <w:r><w:rPr><w:b/></w:rPr><w:t>&lt;HO_VA_TEN&gt;</w:t></w:r>
           </w:p>
         </w:tc>
         <w:tc>
@@ -211,7 +211,7 @@ const contractTemplateStore = {
           </w:p>
           <w:p>
             <w:pPr><w:jc w:val="center"/></w:pPr>
-            <w:r><w:rPr><w:b/></w:rPr><w:t><DaiDienCongTy></w:t></w:r>
+            <w:r><w:rPr><w:b/></w:rPr><w:t>&lt;DaiDienCongTy&gt;</w:t></w:r>
           </w:p>
         </w:tc>
       </w:tr>
@@ -502,7 +502,10 @@ const appContractTemplates = {
           </div>
         </div>
 
-        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+        <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
+          <button type="button" class="btn btn-sm" onclick="appContractTemplates.closeTemplatesModal(); appContracts.openMergeStudio('${tpl.id}')" style="background: #2563EB; color: #FFFFFF; font-weight: 600; border: none; padding: 5px 12px; display: inline-flex; align-items: center; gap: 4px;" title="Chạy trộn dữ liệu nhân sự vào mẫu Word này">
+            <i class="fa-solid fa-bolt"></i> Chạy Trộn HĐ
+          </button>
           <button type="button" class="btn btn-sm btn-secondary" onclick="appContractTemplates.downloadTemplateFile('${tpl.id}')" title="Tải file mẫu .docx này về máy tính để xem và chỉnh sửa trong Word">
             <i class="fa-solid fa-download"></i> Tải Mẫu
           </button>
@@ -601,7 +604,7 @@ const appContractTemplates = {
       const btn = document.getElementById('btn-template-upload-submit');
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tải lên...'; }
 
-      await contractTemplateStore.saveCustomTemplate(name, type, file, desc);
+      const newTemplate = await contractTemplateStore.saveCustomTemplate(name, type, file, desc);
       utils.showToast(`Đã thêm mẫu Word "${name}" thành công!`, 'success');
 
       // Reset form
@@ -613,6 +616,14 @@ const appContractTemplates = {
 
       this.renderTemplatesList();
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Lưu Mẫu Hợp Đồng'; }
+
+      // Gợi ý chuyển ngay sang giao diện Chạy Trộn Hợp Đồng với mẫu vừa tải lên
+      setTimeout(() => {
+        if (confirm(`Đã lưu mẫu "${name}" thành công!\n\nBạn có muốn Chạy Trộn Hợp Đồng (Mail Merge) ngay bằng mẫu này không?`)) {
+          this.closeTemplatesModal();
+          appContracts.openMergeStudio(newTemplate.id);
+        }
+      }, 300);
     } catch (err) {
       console.error(err);
       utils.showToast(err.message || 'Lỗi khi tải lên mẫu Word', 'error');

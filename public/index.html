@@ -719,9 +719,13 @@
                   <i class="fa-solid fa-file-circle-plus"></i>
                   <span>Thêm Hợp Đồng Mới</span>
                 </button>
-                <button type="button" class="btn btn-sm" onclick="appContracts.openMergeBatchModal()" style="background: #2563EB; color: #FFFFFF; border-color: #2563EB; font-weight: 500;" title="In và trộn dữ liệu hợp đồng theo mẫu Word tùy chỉnh">
+                <button type="button" class="btn btn-sm" onclick="appContracts.openMergeStudio()" style="background: #2563EB; color: #FFFFFF; border-color: #2563EB; font-weight: 600;" title="Chạy in và trộn dữ liệu hợp đồng theo mẫu Word tùy chỉnh">
+                  <i class="fa-solid fa-bolt"></i>
+                  <span>Chạy Trộn HĐ (Word)</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="appContracts.openDownloadDocxModal()" title="Tải các file mẫu hợp đồng Word (.docx) chuẩn MISA về máy tính" style="color: #2563EB; border-color: #BFDBFE; background: #EFF6FF; font-weight: 600;">
                   <i class="fa-solid fa-file-word"></i>
-                  <span>In / Trộn Word</span>
+                  <span>Tải Mẫu Word (.docx)</span>
                 </button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="appContractTemplates.openTemplatesModal()" title="Quản lý các file mẫu Word của công ty và tra cứu trường trộn MISA">
                   <i class="fa-solid fa-sliders" style="color: #7C3AED;"></i>
@@ -2940,47 +2944,75 @@
 </div>
 
 <!-- ==========================================================================
-     MODAL 8: IN & TRỘN HỢP ĐỒNG HÀNG LOẠT (BATCH MAIL MERGE & EXPORT ZIP)
+     MODAL 8: CHẠY & TRỘN HỢP ĐỒNG WORD (MAIL MERGE STUDIO)
      ========================================================================== -->
 <div class="modal-backdrop" id="modal-contract-merge-batch">
-  <div class="modal-container" style="max-width: 820px; border-top: 3px solid #2563EB;">
+  <div class="modal-container" style="max-width: 860px; border-top: 3px solid #2563EB;">
     <div class="modal-header" style="background: #FFFFFF; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding: 14px 20px;">
       <div class="modal-title" style="color: #1E40AF; font-size: 15px; font-weight: 700;">
-        <i class="fa-solid fa-file-zipper" style="color: #2563EB;"></i> In & Trộn Hàng Loạt Hợp Đồng Word (Xuất File ZIP)
+        <i class="fa-solid fa-bolt" style="color: #2563EB;"></i> Chạy & Trộn Hợp Đồng Word (Mail Merge Studio)
       </div>
       <button type="button" class="btn-close-modal" onclick="appContracts.closeMergeBatchModal()" style="border: none; background: transparent; font-size: 18px; color: var(--text-muted); cursor: pointer;">&times;</button>
     </div>
 
     <div class="modal-body" style="padding: 16px 20px; max-height: calc(85vh - 120px); overflow-y: auto;">
-      <!-- Batch Summary -->
-      <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <div style="font-weight: 700; color: #1E40AF; font-size: 14px;">
-            Đã chọn <span id="merge-batch-count" style="font-size: 17px; color: #2563EB;">0</span> hợp đồng / nhân sự để trộn dữ liệu
-          </div>
-          <div style="font-size: 12px; color: #3B82F6; margin-top: 2px;">
-            Hệ thống sẽ tự động tạo từng file hợp đồng Word cho mỗi nhân viên và đóng gói toàn bộ vào 1 file .ZIP duy nhất.
-          </div>
+      <!-- Scope Selection -->
+      <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 14px; margin-bottom: 14px;">
+        <div style="font-weight: 600; font-size: 13px; color: var(--text-primary); margin-bottom: 8px;">
+          1. Chọn Phạm Vi Nhân Sự / Hợp Đồng Cần Chạy Trộn:
         </div>
-        <i class="fa-solid fa-users-gear" style="font-size: 32px; color: #93C5FD;"></i>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="radio" name="merge-scope" value="all" id="merge-scope-all" onchange="appContracts.onMergeScopeChange('all')">
+            <span>Tất cả hợp đồng đang hiệu lực (<strong id="merge-count-all" style="color: #059669;">0</strong>)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="radio" name="merge-scope" value="selected" id="merge-scope-selected" onchange="appContracts.onMergeScopeChange('selected')">
+            <span>Các hợp đồng đã tích chọn (<strong id="merge-count-selected" style="color: #2563EB;">0</strong>)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="radio" name="merge-scope" value="dept" id="merge-scope-dept" onchange="appContracts.onMergeScopeChange('dept')">
+            <span>Lọc theo phòng ban</span>
+          </label>
+        </div>
+        <div id="merge-dept-selector-wrapper" style="display: none; margin-top: 10px;">
+          <select id="merge-dept-select" class="form-control" style="font-size: 12.5px; height: 34px;" onchange="appContracts.onMergeDeptChange()">
+            <option value="">-- Chọn phòng ban --</option>
+          </select>
+        </div>
       </div>
 
-      <!-- Select Template -->
-      <div style="margin-bottom: 16px;">
-        <label style="font-weight: 600; font-size: 13px; color: var(--text-primary); margin-bottom: 6px; display: block;">
-          Chọn Mẫu Hợp Đồng Word Áp Dụng Cho Toàn Bộ Danh Sách:
-        </label>
+      <!-- Select Template with Quick Links -->
+      <div style="margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+          <label style="font-weight: 600; font-size: 13px; color: var(--text-primary); margin: 0;">
+            2. Chọn Mẫu Hợp Đồng Word (.docx) Áp Dụng:
+          </label>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <a href="javascript:void(0)" onclick="appContracts.openDownloadDocxModal()" style="font-size: 12px; color: #2563EB; text-decoration: none; font-weight: 600;">
+              <i class="fa-solid fa-download"></i> Tải file mẫu Word chuẩn (.docx)
+            </a>
+            <a href="javascript:void(0)" onclick="appContractTemplates.openTemplatesModal()" style="font-size: 12px; color: #7C3AED; text-decoration: none; font-weight: 600;">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Tải lên mẫu Word khác
+            </a>
+          </div>
+        </div>
         <select id="merge-batch-template-select" class="form-control" style="font-size: 13px; height: 38px;">
           <!-- Populated dynamically -->
         </select>
       </div>
 
       <!-- Selected Contracts Table -->
-      <div style="margin-bottom: 16px;">
-        <div style="font-weight: 600; font-size: 13px; color: var(--text-primary); margin-bottom: 6px;">
-          Danh Sách Hợp Đồng Được Xử Lý:
+      <div style="margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">
+            3. Danh Sách Nhân Sự / Hợp Đồng Sẽ Được Xuất (Tổng cộng: <strong id="merge-batch-count" style="color: #2563EB; font-size: 15px;">0</strong> người):
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-muted);">
+            Nếu chọn 1 người: xuất trực tiếp file .docx &bull; Từ 2 người trở lên: đóng gói vào file .zip
+          </div>
         </div>
-        <div class="table-responsive" style="max-height: 220px; border: 1px solid var(--border-color); border-radius: 4px;">
+        <div class="table-responsive" style="max-height: 200px; border: 1px solid var(--border-color); border-radius: 4px;">
           <table class="data-table" style="font-size: 12px; margin: 0;">
             <thead style="position: sticky; top: 0; background: #F8FAFC;">
               <tr>
@@ -3014,8 +3046,79 @@
     <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
       <button type="button" class="btn btn-secondary" onclick="appContracts.closeMergeBatchModal()">Hủy Bỏ</button>
       <button type="button" class="btn btn-primary" id="btn-execute-batch-merge" onclick="appContracts.executeBatchMerge()" style="background: #2563EB; border-color: #1D4ED8; font-weight: 600; padding: 7px 18px;">
-        <i class="fa-solid fa-file-zipper"></i> Bắt Đầu Trộn & Tải File ZIP
+        <i class="fa-solid fa-play"></i> Bắt Đầu Chạy Trộn Dữ Liệu
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 9: TẢI FILE MẪU HỢP ĐỒNG WORD (.DOCX) CHUẨN MISA
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-download-docx-templates">
+  <div class="modal-container" style="max-width: 660px; border-top: 3px solid #2563EB;">
+    <div class="modal-header" style="background: #FFFFFF; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding: 14px 20px;">
+      <div class="modal-title" style="color: #1E40AF; font-size: 15px; font-weight: 700;">
+        <i class="fa-solid fa-file-word" style="color: #2563EB;"></i> Tải File Mẫu Hợp Đồng Word (.docx) Chuẩn MISA
+      </div>
+      <button type="button" class="btn-close-modal" onclick="appContracts.closeDownloadDocxModal()" style="border: none; background: transparent; font-size: 18px; color: var(--text-muted); cursor: pointer;">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 18px 20px;">
+      <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+        Các file mẫu dưới đây được định dạng chuẩn OpenXML (.docx) theo Bộ Luật Lao Động và chèn sẵn các trường trộn dữ liệu MISA (<code>&lt;HoVaTen&gt;</code>, <code>&lt;ChucDanh&gt;</code>, <code>&lt;MucLuong&gt;</code>, <code>&lt;MucLuongChu&gt;</code>,...). Bạn có thể tải về để mở trực tiếp trong Word hoặc tùy chỉnh thêm theo nhu cầu:
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: 700; color: var(--primary-navy); font-size: 13px;">
+              <i class="fa-solid fa-file-word" style="color: #2563EB; margin-right: 4px;"></i> Hợp Đồng Xác Định Thời Hạn (12 - 36 Tháng)
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">File .docx &bull; Đã chèn sẵn 40+ trường trộn MISA &bull; Mở được trên mọi bản Word</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" onclick="appContracts.downloadDocxTemplate('fixed_term')" style="background: #2563EB; font-weight: 600; white-space: nowrap;">
+            <i class="fa-solid fa-download"></i> Tải .docx
+          </button>
+        </div>
+
+        <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: 700; color: #059669; font-size: 13px;">
+              <i class="fa-solid fa-file-word" style="color: #059669; margin-right: 4px;"></i> Hợp Đồng Không Xác Định Thời Hạn
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">File .docx &bull; Dành cho nhân sự chính thức dài hạn</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" onclick="appContracts.downloadDocxTemplate('indefinite')" style="background: #059669; border-color: #047857; font-weight: 600; white-space: nowrap;">
+            <i class="fa-solid fa-download"></i> Tải .docx
+          </button>
+        </div>
+
+        <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: 700; color: #D97706; font-size: 13px;">
+              <i class="fa-solid fa-file-word" style="color: #D97706; margin-right: 4px;"></i> Hợp Đồng Thử Việc
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">File .docx &bull; Dành cho nhân viên mới trong giai đoạn thử việc</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" onclick="appContracts.downloadDocxTemplate('probation')" style="background: #D97706; border-color: #B45309; font-weight: 600; white-space: nowrap;">
+            <i class="fa-solid fa-download"></i> Tải .docx
+          </button>
+        </div>
+
+        <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: 700; color: #7C3AED; font-size: 13px;">
+              <i class="fa-solid fa-file-word" style="color: #7C3AED; margin-right: 4px;"></i> Phụ Lục Hợp Đồng Lao Động
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">File .docx &bull; Điều chỉnh mức lương, phụ cấp, chức danh, thời hạn</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" onclick="appContracts.downloadDocxTemplate('appendix')" style="background: #7C3AED; border-color: #6D28D9; font-weight: 600; white-space: nowrap;">
+            <i class="fa-solid fa-download"></i> Tải .docx
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+      <button type="button" class="btn btn-secondary" onclick="appContracts.closeDownloadDocxModal()">Đóng</button>
     </div>
   </div>
 </div>
