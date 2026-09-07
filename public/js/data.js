@@ -106,6 +106,40 @@ const appData = {
           };
         });
 
+        // Tự động chuẩn hóa năm sinh & ngày tháng dạng serial Excel (ví dụ: 33317, 28629, "01/01/33317")
+        const fixSerialDate = (val) => {
+          if (val === undefined || val === null || val === '' || val === '-') return val;
+          if (typeof val === 'number' && val >= 10000 && val <= 65000) {
+            return utils.formatDate(val);
+          }
+          if (typeof val === 'string') {
+            const trimmed = val.trim();
+            if (/^\d{5}$/.test(trimmed) || /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{5}$/.test(trimmed) || /^\d{5}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}/.test(trimmed)) {
+              return utils.formatDate(trimmed);
+            }
+          }
+          return val;
+        };
+
+        this.employees.forEach(e => {
+          if (e.date_of_birth) e.date_of_birth = fixSerialDate(e.date_of_birth);
+          if (e['Ngày sinh']) e['Ngày sinh'] = fixSerialDate(e['Ngày sinh']);
+          if (e.start_date) e.start_date = fixSerialDate(e.start_date);
+          if (e.trial_start_date) e.trial_start_date = fixSerialDate(e.trial_start_date);
+          if (e.official_date) e.official_date = fixSerialDate(e.official_date);
+          if (e.effective_date) e.effective_date = fixSerialDate(e.effective_date);
+          if (e.end_date) e.end_date = fixSerialDate(e.end_date);
+          if (e.resignation_date) e.resignation_date = fixSerialDate(e.resignation_date);
+        });
+
+        this.masterProfiles.forEach(m => {
+          for (const k of Object.keys(m)) {
+            if (k.startsWith('Ngày') || k.includes('ngày') || k.includes('Ngày') || k === 'date_of_birth') {
+              m[k] = fixSerialDate(m[k]);
+            }
+          }
+        });
+
         // Build lookup maps
         this.buildMaps();
 
@@ -168,19 +202,26 @@ const utils = {
     return new Intl.NumberFormat('vi-VN').format(num);
   },
 
+  // Helper converting Excel serial number (10000..65000) to UTC Date DD/MM/YYYY
+  excelSerialToDate(serial) {
+    const num = Number(serial);
+    if (isNaN(num) || num < 10000 || num > 65000) return null;
+    const ms = Math.round((num - 25569) * 86400 * 1000);
+    const d = new Date(ms);
+    if (isNaN(d.getTime())) return null;
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    return { day, month, year, str: `${day}/${month}/${year}`, iso: `${year}-${month}-${day}` };
+  },
+
   formatDate(dateStr) {
     if (dateStr === undefined || dateStr === null || dateStr === '' || dateStr === '-') return '-';
 
-    // Handle number (Excel serial date like 44561)
+    // 1. Raw number Excel serial date (e.g. 33317, 28629, 35287, 38335, 31048)
     if (typeof dateStr === 'number') {
-      const d = new Date(Math.round((dateStr - 25569) * 86400 * 1000));
-      if (!isNaN(d.getTime())) {
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${day}/${month}/${year}`;
-      }
-      return String(dateStr);
+      const res = this.excelSerialToDate(dateStr);
+      if (res) return res.str;
     }
 
     if (typeof dateStr === 'string') {
@@ -192,8 +233,27 @@ const utils = {
         return trimmed;
       }
 
-      // Check if already in DD/MM/YYYY or DD-MM-YYYY
-      const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+      // 2. Pure 5-digit string serial (e.g. "33317", "28629")
+      if (/^\d{5}$/.test(trimmed)) {
+        const res = this.excelSerialToDate(trimmed);
+        if (res) return res.str;
+      }
+
+      // 3. String with 5-digit year caused by previous new Date("33317") formatting: e.g. "01/01/33317" or "33317-01-01"
+      const serialYearMatch = trimmed.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{5})$/);
+      if (serialYearMatch) {
+        const res = this.excelSerialToDate(serialYearMatch[3]);
+        if (res) return res.str;
+      }
+
+      const serialYmdMatch = trimmed.match(/^(\d{5})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+      if (serialYmdMatch) {
+        const res = this.excelSerialToDate(serialYmdMatch[1]);
+        if (res) return res.str;
+      }
+
+      // 4. Standard DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY (exactly 4-digit year)
+      const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})(?!\d)/);
       if (dmyMatch) {
         const d = dmyMatch[1].padStart(2, '0');
         const m = dmyMatch[2].padStart(2, '0');
@@ -201,23 +261,33 @@ const utils = {
         return `${d}/${m}/${y}`;
       }
 
-      // Check if in YYYY-MM-DD or YYYY/MM/DD (with optional time)
-      const ymdMatch = trimmed.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+      // 5. Standard YYYY-MM-DD or YYYY/MM/DD (with optional time, exactly 4-digit year)
+      const ymdMatch = trimmed.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})(?!\d)/);
       if (ymdMatch) {
         const y = ymdMatch[1];
         const m = ymdMatch[2].padStart(2, '0');
         const d = ymdMatch[3].padStart(2, '0');
         return `${d}/${m}/${y}`;
       }
+
+      // 6. 4-digit pure year (e.g. "1991")
+      if (/^\d{4}$/.test(trimmed)) {
+        return trimmed;
+      }
     }
 
-    // Fallback using Date object
+    // 7. Fallback using Date object
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return String(dateStr);
+      const year = d.getFullYear();
+      // Guard: if year is 5 digits (e.g. year 33317), treat year itself as Excel serial!
+      if (year > 2100 && year >= 10000 && year <= 65000) {
+        const res = this.excelSerialToDate(year);
+        if (res) return res.str;
+      }
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = d.getFullYear();
       return `${day}/${month}/${year}`;
     } catch (e) {
       return String(dateStr);
@@ -243,13 +313,43 @@ const utils = {
 
   parseToIsoDate(dateStr) {
     if (!dateStr) return '';
+
+    // 1. Raw number Excel serial date
+    if (typeof dateStr === 'number') {
+      const res = this.excelSerialToDate(dateStr);
+      if (res) return res.iso;
+    }
+
     if (typeof dateStr === 'string') {
       const trimmed = dateStr.trim();
-      const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+
+      // 2. Pure 5-digit string serial
+      if (/^\d{5}$/.test(trimmed)) {
+        const res = this.excelSerialToDate(trimmed);
+        if (res) return res.iso;
+      }
+
+      // 3. String with 5-digit year (e.g. "01/01/33317" or "33317-01-01")
+      const serialYearMatch = trimmed.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{5})$/);
+      if (serialYearMatch) {
+        const res = this.excelSerialToDate(serialYearMatch[3]);
+        if (res) return res.iso;
+      }
+
+      const serialYmdMatch = trimmed.match(/^(\d{5})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+      if (serialYmdMatch) {
+        const res = this.excelSerialToDate(serialYmdMatch[1]);
+        if (res) return res.iso;
+      }
+
+      // 4. DD/MM/YYYY or DD-MM-YYYY (4-digit year)
+      const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})(?!\d)/);
       if (dmyMatch) {
         return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
       }
-      const ymdMatch = trimmed.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+
+      // 5. YYYY-MM-DD or YYYY/MM/DD (4-digit year)
+      const ymdMatch = trimmed.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})(?!\d)/);
       if (ymdMatch) {
         return `${ymdMatch[1]}-${ymdMatch[2].padStart(2, '0')}-${ymdMatch[3].padStart(2, '0')}`;
       }

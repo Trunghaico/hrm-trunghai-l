@@ -506,7 +506,11 @@ const appEmployees = {
             <div style="font-weight: 600; color: var(--text-primary); cursor: pointer;" onclick="appEmployees.openDetailModal('${e.employee_id}')">${e.full_name || e['Họ và tên'] || e.employee_id}</div>
             <div style="font-size: 11px; color: var(--text-muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
               ${e.time_attendance_code ? '<span>MCC: ' + e.time_attendance_code + '</span>' : ''}
-              ${(e.date_of_birth || e['Ngày sinh']) ? `<span title="Ngày sinh"><i class="fa-regular fa-calendar" style="font-size: 10px; margin-right: 2px;"></i>${utils.formatDate(e.date_of_birth || e['Ngày sinh'])}</span>` : ''}
+              ${(() => {
+                const dobVal = e.date_of_birth || e['Ngày sinh'];
+                const dobStr = dobVal ? utils.formatDate(dobVal) : '';
+                return (dobStr && dobStr !== '-') ? `<span title="Ngày sinh" style="color: #475569;"><i class="fa-regular fa-calendar" style="font-size: 10px; margin-right: 3px; color: #2563EB;"></i>NS: ${dobStr}</span>` : '';
+              })()}
             </div>
           </td>
           <td>${e.gender || e['Giới tính'] || '-'}</td>

@@ -193,6 +193,34 @@ async function initD1Store(db) {
   }
 }
 
+// Helper: Fix Excel serial numbers (10000..65000) or 5-digit strings to DD/MM/YYYY
+function fixExcelSerialDate(val) {
+  if (val === undefined || val === null || val === '' || val === '-') return val;
+  let num = null;
+  if (typeof val === 'number') {
+    num = val;
+  } else if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (/^\d{5}$/.test(trimmed)) {
+      num = Number(trimmed);
+    } else {
+      const match = trimmed.match(/(?:^|[\/\-\.])(\d{5})(?:$|[\/\-\.])/);
+      if (match) num = Number(match[1]);
+    }
+  }
+  if (num !== null && !isNaN(num) && num >= 10000 && num <= 65000) {
+    const ms = Math.round((num - 25569) * 86400 * 1000);
+    const d = new Date(ms);
+    if (!isNaN(d.getTime())) {
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const year = d.getUTCFullYear();
+      return `${day}/${month}/${year}`;
+    }
+  }
+  return val;
+}
+
 // Load all tables from D1
 async function loadAllFromD1(db) {
   await initD1Store(db);
@@ -212,6 +240,23 @@ async function loadAllFromD1(db) {
   // Ensure all standard tables exist
   for (const tName of Object.keys(DEFAULT_TABLES)) {
     if (!tables[tName]) tables[tName] = [];
+  }
+
+  // Auto-heal dates in 03_Employees and 00_Master_Profiles
+  if (Array.isArray(tables["03_Employees"])) {
+    tables["03_Employees"].forEach(e => {
+      if (e.date_of_birth) e.date_of_birth = fixExcelSerialDate(e.date_of_birth);
+      if (e['Ngày sinh']) e['Ngày sinh'] = fixExcelSerialDate(e['Ngày sinh']);
+      if (e.start_date) e.start_date = fixExcelSerialDate(e.start_date);
+      if (e.trial_start_date) e.trial_start_date = fixExcelSerialDate(e.trial_start_date);
+      if (e.official_date) e.official_date = fixExcelSerialDate(e.official_date);
+    });
+  }
+  if (Array.isArray(tables["00_Master_Profiles"])) {
+    tables["00_Master_Profiles"].forEach(m => {
+      if (m['Ngày sinh']) m['Ngày sinh'] = fixExcelSerialDate(m['Ngày sinh']);
+      if (m.date_of_birth) m.date_of_birth = fixExcelSerialDate(m.date_of_birth);
+    });
   }
 
   // Ensure 12_System_Logs has at least initialization audit log if empty
@@ -540,6 +585,11 @@ export async function onRequest(context) {
 
       employees.forEach(emp => {
         if (emp.employee_id) {
+          if (emp.date_of_birth) emp.date_of_birth = fixExcelSerialDate(emp.date_of_birth);
+          if (emp['Ngày sinh']) emp['Ngày sinh'] = fixExcelSerialDate(emp['Ngày sinh']);
+          if (emp.start_date) emp.start_date = fixExcelSerialDate(emp.start_date);
+          if (emp.trial_start_date) emp.trial_start_date = fixExcelSerialDate(emp.trial_start_date);
+          if (emp.official_date) emp.official_date = fixExcelSerialDate(emp.official_date);
           empMap.set(emp.employee_id, { ...empMap.get(emp.employee_id), ...emp });
         }
       });

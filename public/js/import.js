@@ -431,12 +431,15 @@ const appImport = {
       const res = utils.formatDate(val);
       return (res === '-') ? '' : res;
     }
-    if (typeof val === 'number') {
-      const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    let num = null;
+    if (typeof val === 'number') num = val;
+    else if (typeof val === 'string' && /^\d{5}$/.test(val.trim())) num = Number(val.trim());
+    if (num !== null && !isNaN(num) && num >= 10000 && num <= 65000) {
+      const d = new Date(Math.round((num - 25569) * 86400 * 1000));
       if (!isNaN(d.getTime())) {
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
+        const day = String(d.getUTCDate()).padStart(2, '0');
+        const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const year = d.getUTCFullYear();
         return `${day}/${month}/${year}`;
       }
     }

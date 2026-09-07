@@ -158,10 +158,58 @@ function ensureDefaultAccounts(db) {
     });
 }
 
+// Helper: Fix Excel serial numbers (10000..65000) or 5-digit strings to DD/MM/YYYY
+function fixExcelSerialDate(val) {
+    if (val === undefined || val === null || val === '' || val === '-') return val;
+    let num = null;
+    if (typeof val === 'number') {
+        num = val;
+    } else if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (/^\d{5}$/.test(trimmed)) {
+            num = Number(trimmed);
+        } else {
+            const match = trimmed.match(/(?:^|[\/\-\.])(\d{5})(?:$|[\/\-\.])/);
+            if (match) num = Number(match[1]);
+        }
+    }
+    if (num !== null && !isNaN(num) && num >= 10000 && num <= 65000) {
+        const ms = Math.round((num - 25569) * 86400 * 1000);
+        const d = new Date(ms);
+        if (!isNaN(d.getTime())) {
+            const day = String(d.getUTCDate()).padStart(2, '0');
+            const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const year = d.getUTCFullYear();
+            return `${day}/${month}/${year}`;
+        }
+    }
+    return val;
+}
+
+function sanitizeDates(db) {
+    if (!db || !db.tables) return;
+    if (Array.isArray(db.tables['03_Employees'])) {
+        db.tables['03_Employees'].forEach(e => {
+            if (e.date_of_birth) e.date_of_birth = fixExcelSerialDate(e.date_of_birth);
+            if (e['Ngày sinh']) e['Ngày sinh'] = fixExcelSerialDate(e['Ngày sinh']);
+            if (e.start_date) e.start_date = fixExcelSerialDate(e.start_date);
+            if (e.trial_start_date) e.trial_start_date = fixExcelSerialDate(e.trial_start_date);
+            if (e.official_date) e.official_date = fixExcelSerialDate(e.official_date);
+        });
+    }
+    if (Array.isArray(db.tables['00_Master_Profiles'])) {
+        db.tables['00_Master_Profiles'].forEach(m => {
+            if (m['Ngày sinh']) m['Ngày sinh'] = fixExcelSerialDate(m['Ngày sinh']);
+            if (m.date_of_birth) m.date_of_birth = fixExcelSerialDate(m.date_of_birth);
+        });
+    }
+}
+
 // Helper to load DB (Reads in-memory -> /tmp -> disk)
 function loadDatabase() {
     if (inMemoryDb && inMemoryDb.tables) {
         ensureDefaultAccounts(inMemoryDb);
+        sanitizeDates(inMemoryDb);
         return inMemoryDb;
     }
 
@@ -170,6 +218,7 @@ function loadDatabase() {
             const raw = fs.readFileSync(TMP_DB_PATH, 'utf-8');
             const db = JSON.parse(raw);
             ensureDefaultAccounts(db);
+            sanitizeDates(db);
             inMemoryDb = db;
             return db;
         }
@@ -177,6 +226,7 @@ function loadDatabase() {
             const raw = fs.readFileSync(DB_PATH, 'utf-8');
             const db = JSON.parse(raw);
             ensureDefaultAccounts(db);
+            sanitizeDates(db);
             inMemoryDb = db;
             return db;
         }
