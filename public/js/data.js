@@ -92,6 +92,7 @@ const appData = {
           const existing = contractsMap.get(emp.employee_id);
           const isResigned = emp.employment_status === 'Đã nghỉ việc';
           return {
+            ...(existing || {}),
             contract_id: existing?.contract_id || emp.contract_id || emp.employee_id,
             employee_id: emp.employee_id,
             full_name: emp.full_name,

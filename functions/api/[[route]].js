@@ -221,19 +221,40 @@ function fixExcelSerialDate(val) {
   return val;
 }
 
-// Load all tables from D1
+// Load all tables from D1 with chunk reassembly
 async function loadAllFromD1(db) {
   await initD1Store(db);
   const rows = await db.prepare("SELECT key, value FROM hrm_store").all();
   const tables = {};
   let company = { ...DEFAULT_COMPANY };
+  const rawResults = rows.results || [];
+  const partMap = new Map();
 
-  for (const item of (rows.results || [])) {
+  for (const item of rawResults) {
+    if (item.key.includes("__part_")) {
+      partMap.set(item.key, item.value);
+    }
+  }
+
+  for (const item of rawResults) {
     if (item.key === "company_info") {
       try { company = JSON.parse(item.value); } catch (e) {}
-    } else if (item.key.startsWith("tbl_")) {
+    } else if (item.key.startsWith("tbl_") && !item.key.includes("__part_")) {
       const tblName = item.key.replace("tbl_", "");
-      try { tables[tblName] = JSON.parse(item.value); } catch (e) { tables[tblName] = []; }
+      try {
+        const parsed = JSON.parse(item.value);
+        if (parsed && parsed.__is_chunked && parsed.chunks > 0) {
+          let fullStr = "";
+          for (let i = 0; i < parsed.chunks; i++) {
+            fullStr += partMap.get(`tbl_${tblName}__part_${i}`) || "";
+          }
+          tables[tblName] = JSON.parse(fullStr);
+        } else {
+          tables[tblName] = parsed;
+        }
+      } catch (e) {
+        tables[tblName] = [];
+      }
     }
   }
 
@@ -279,11 +300,32 @@ async function loadAllFromD1(db) {
   return { tables, company };
 }
 
-// Save single table to D1
+// Save single table to D1 with automatic chunking for tables > 60KB
 async function saveTableToD1(db, tblName, rows) {
-  await db.prepare("INSERT OR REPLACE INTO hrm_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
-    .bind(`tbl_${tblName}`, JSON.stringify(rows))
-    .run();
+  const jsonStr = JSON.stringify(rows);
+  const CHUNK_SIZE = 60000;
+
+  if (jsonStr.length <= CHUNK_SIZE) {
+    await db.prepare("INSERT OR REPLACE INTO hrm_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
+      .bind(`tbl_${tblName}`, jsonStr)
+      .run();
+  } else {
+    const totalChunks = Math.ceil(jsonStr.length / CHUNK_SIZE);
+    const statements = [];
+    for (let i = 0; i < totalChunks; i++) {
+      const part = jsonStr.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+      statements.push(
+        db.prepare("INSERT OR REPLACE INTO hrm_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
+          .bind(`tbl_${tblName}__part_${i}`, part)
+      );
+    }
+    const manifest = JSON.stringify({ __is_chunked: true, chunks: totalChunks, totalLength: jsonStr.length });
+    statements.push(
+      db.prepare("INSERT OR REPLACE INTO hrm_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
+        .bind(`tbl_${tblName}`, manifest)
+    );
+    await db.batch(statements);
+  }
 }
 
 // Helper: Append system audit log into tables["12_System_Logs"]
@@ -1534,11 +1576,10 @@ export async function onRequest(context) {
         return jsonResponse({ success: true, contract: newContract, message: "Lưu hợp đồng thành công!" });
       }
 
-      // 7. PUT /api/contracts/:id or POST /api/contracts/:id (Update)
+      // 7. PUT /api/contracts/:id or POST /api/contracts/:id (Update or Auto-Upsert)
       if ((method === "PUT" || method === "POST") && contractId) {
         const body = await request.json().catch(() => ({}));
-        const idx = contracts.findIndex(c => c.contract_id === contractId || c.employee_id === contractId);
-        if (idx < 0) return jsonResponse({ success: false, message: "Không tìm thấy hợp đồng để cập nhật" }, 404);
+        let idx = contracts.findIndex(c => c.contract_id === contractId || c.employee_id === contractId);
 
         if (body.start_date) body.start_date = fixExcelSerialDate(body.start_date);
         if (body.end_date) body.end_date = fixExcelSerialDate(body.end_date);
@@ -1548,12 +1589,44 @@ export async function onRequest(context) {
         if (body.official_date) body.official_date = fixExcelSerialDate(body.official_date);
         if (body.sign_date) body.sign_date = fixExcelSerialDate(body.sign_date);
 
-        contracts[idx] = {
-          ...contracts[idx],
-          ...body,
-          contract_id: body.contract_id || contractId,
-          updated_at: new Date().toISOString()
-        };
+        if (idx >= 0) {
+          contracts[idx] = {
+            ...contracts[idx],
+            ...body,
+            contract_id: body.contract_id || contractId,
+            updated_at: new Date().toISOString()
+          };
+        } else {
+          // Auto-upsert if not yet existing in D1
+          const emp = empMap[body.employee_id || contractId] || {};
+          const newContract = {
+            contract_id: body.contract_id || contractId,
+            employee_id: body.employee_id || contractId,
+            full_name: body.full_name || emp.full_name || contractId,
+            contract_type: body.contract_type || "Hợp đồng xác định thời hạn",
+            start_date: fixExcelSerialDate(body.start_date || body.effective_date || new Date().toISOString().split('T')[0]),
+            effective_date: fixExcelSerialDate(body.effective_date || body.start_date || new Date().toISOString().split('T')[0]),
+            end_date: fixExcelSerialDate(body.end_date || body.expiry_date || "Không xác định"),
+            expiry_date: fixExcelSerialDate(body.expiry_date || body.end_date || null),
+            salary: parseFloat(body.salary) || emp.base_salary || 0,
+            allowance: parseFloat(body.allowance) || 0,
+            department_id: body.department_id || emp.department_id || "",
+            department_name: body.department_name || emp.department_name || deptMap[body.department_id || emp.department_id] || "",
+            job_title: body.job_title || emp.job_title || posMap[emp.position_id] || "",
+            work_location: body.work_location || "Trụ sở Tổng công ty",
+            signer_name: body.signer_name || "Huỳnh Thanh Long",
+            contract_status: body.contract_status || "HIỆU LỰC",
+            notes: body.notes || "",
+            appendices: Array.isArray(body.appendices) ? body.appendices : [],
+            attachments: Array.isArray(body.attachments) ? body.attachments : [],
+            ...body,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          contracts.unshift(newContract);
+          idx = 0;
+        }
+
         await saveTableToD1(db, "10_Contracts", contracts);
         appendAuditLog(data.tables, {
           action_type: "UPDATE",

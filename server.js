@@ -3233,14 +3233,14 @@ app.post('/api/contracts', (req, res) => {
     res.json({ success: true, contract: newContract, message: "Lưu hợp đồng thành công!" });
 });
 
-// UPDATE CONTRACT
+// UPDATE CONTRACT (or Auto-upsert)
 const updateContractEndpoint = (req, res) => {
     const db = loadDatabase();
     const id = req.params.id;
     const body = req.body || {};
-    const contracts = db.tables['10_Contracts'] || [];
-    const idx = contracts.findIndex(c => c.contract_id === id || c.employee_id === id);
-    if (idx < 0) return res.status(404).json({ success: false, message: "Không tìm thấy hợp đồng để cập nhật" });
+    if (!db.tables['10_Contracts']) db.tables['10_Contracts'] = [];
+    const contracts = db.tables['10_Contracts'];
+    let idx = contracts.findIndex(c => c.contract_id === id || c.employee_id === id);
 
     if (body.start_date) body.start_date = fixExcelSerialDate(body.start_date);
     if (body.end_date) body.end_date = fixExcelSerialDate(body.end_date);
@@ -3250,12 +3250,44 @@ const updateContractEndpoint = (req, res) => {
     if (body.official_date) body.official_date = fixExcelSerialDate(body.official_date);
     if (body.sign_date) body.sign_date = fixExcelSerialDate(body.sign_date);
 
-    contracts[idx] = {
-        ...contracts[idx],
-        ...body,
-        contract_id: body.contract_id || id,
-        updated_at: new Date().toISOString()
-    };
+    if (idx >= 0) {
+        contracts[idx] = {
+            ...contracts[idx],
+            ...body,
+            contract_id: body.contract_id || id,
+            updated_at: new Date().toISOString()
+        };
+    } else {
+        const emps = db.tables['03_Employees'] || [];
+        const emp = emps.find(e => e.employee_id === (body.employee_id || id)) || {};
+        const newContract = {
+            contract_id: body.contract_id || id,
+            employee_id: body.employee_id || id,
+            full_name: body.full_name || emp.full_name || id,
+            contract_type: body.contract_type || "Hợp đồng xác định thời hạn",
+            start_date: fixExcelSerialDate(body.start_date || body.effective_date || new Date().toISOString().split('T')[0]),
+            effective_date: fixExcelSerialDate(body.effective_date || body.start_date || new Date().toISOString().split('T')[0]),
+            end_date: fixExcelSerialDate(body.end_date || body.expiry_date || "Không xác định"),
+            expiry_date: fixExcelSerialDate(body.expiry_date || body.end_date || null),
+            salary: parseFloat(body.salary) || emp.base_salary || 0,
+            allowance: parseFloat(body.allowance) || 0,
+            department_id: body.department_id || emp.department_id || "",
+            department_name: body.department_name || emp.department_name || "",
+            job_title: body.job_title || emp.job_title || "",
+            work_location: body.work_location || "Trụ sở Tổng công ty",
+            signer_name: body.signer_name || "Huỳnh Thanh Long",
+            contract_status: body.contract_status || "HIỆU LỰC",
+            notes: body.notes || "",
+            appendices: Array.isArray(body.appendices) ? body.appendices : [],
+            attachments: Array.isArray(body.attachments) ? body.attachments : [],
+            ...body,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        contracts.unshift(newContract);
+        idx = 0;
+    }
+
     saveDatabase(db);
     res.json({ success: true, contract: contracts[idx], message: "Cập nhật hợp đồng thành công!" });
 };
