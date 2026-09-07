@@ -169,17 +169,92 @@ const utils = {
   },
 
   formatDate(dateStr) {
-    if (!dateStr) return '-';
+    if (dateStr === undefined || dateStr === null || dateStr === '' || dateStr === '-') return '-';
+
+    // Handle number (Excel serial date like 44561)
+    if (typeof dateStr === 'number') {
+      const d = new Date(Math.round((dateStr - 25569) * 86400 * 1000));
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+      return String(dateStr);
+    }
+
+    if (typeof dateStr === 'string') {
+      const trimmed = dateStr.trim();
+      if (!trimmed || trimmed === '-' || trimmed.toLowerCase() === 'null' || trimmed.toLowerCase() === 'undefined') {
+        return '-';
+      }
+      if (trimmed.toLowerCase() === 'không xác định' || trimmed.toLowerCase() === 'vô thời hạn' || trimmed.toLowerCase() === 'hiện tại') {
+        return trimmed;
+      }
+
+      // Check if already in DD/MM/YYYY or DD-MM-YYYY
+      const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+      if (dmyMatch) {
+        const d = dmyMatch[1].padStart(2, '0');
+        const m = dmyMatch[2].padStart(2, '0');
+        const y = dmyMatch[3];
+        return `${d}/${m}/${y}`;
+      }
+
+      // Check if in YYYY-MM-DD or YYYY/MM/DD (with optional time)
+      const ymdMatch = trimmed.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+      if (ymdMatch) {
+        const y = ymdMatch[1];
+        const m = ymdMatch[2].padStart(2, '0');
+        const d = ymdMatch[3].padStart(2, '0');
+        return `${d}/${m}/${y}`;
+      }
+    }
+
+    // Fallback using Date object
     try {
       const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
+      if (isNaN(d.getTime())) return String(dateStr);
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
       return `${day}/${month}/${year}`;
     } catch (e) {
-      return dateStr;
+      return String(dateStr);
     }
+  },
+
+  formatDateTime(dateStr) {
+    if (dateStr === undefined || dateStr === null || dateStr === '' || dateStr === '-') return '-';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return String(dateStr);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const mins = String(d.getMinutes()).padStart(2, '0');
+      const secs = String(d.getSeconds()).padStart(2, '0');
+      return `${day}/${month}/${year} ${hours}:${mins}:${secs}`;
+    } catch (e) {
+      return String(dateStr);
+    }
+  },
+
+  parseToIsoDate(dateStr) {
+    if (!dateStr) return '';
+    if (typeof dateStr === 'string') {
+      const trimmed = dateStr.trim();
+      const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+      if (dmyMatch) {
+        return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+      }
+      const ymdMatch = trimmed.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+      if (ymdMatch) {
+        return `${ymdMatch[1]}-${ymdMatch[2].padStart(2, '0')}-${ymdMatch[3].padStart(2, '0')}`;
+      }
+    }
+    return String(dateStr);
   },
 
   showToast(message, type = 'info') {

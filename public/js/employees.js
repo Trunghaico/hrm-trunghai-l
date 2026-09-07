@@ -504,7 +504,10 @@ const appEmployees = {
           <td class="col-sticky-id"><strong style="color: var(--primary-navy); cursor: pointer;" onclick="appEmployees.openDetailModal('${e.employee_id}')">${e.employee_id}</strong></td>
           <td class="col-sticky-name">
             <div style="font-weight: 600; color: var(--text-primary); cursor: pointer;" onclick="appEmployees.openDetailModal('${e.employee_id}')">${e.full_name || e['Họ và tên'] || e.employee_id}</div>
-            <div style="font-size: 11px; color: var(--text-muted);">${e.time_attendance_code ? 'MCC: ' + e.time_attendance_code : ''}</div>
+            <div style="font-size: 11px; color: var(--text-muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              ${e.time_attendance_code ? '<span>MCC: ' + e.time_attendance_code + '</span>' : ''}
+              ${(e.date_of_birth || e['Ngày sinh']) ? `<span title="Ngày sinh"><i class="fa-regular fa-calendar" style="font-size: 10px; margin-right: 2px;"></i>${utils.formatDate(e.date_of_birth || e['Ngày sinh'])}</span>` : ''}
+            </div>
           </td>
           <td>${e.gender || e['Giới tính'] || '-'}</td>
           <td>${posDisplay}</td>
@@ -1398,7 +1401,7 @@ const appEmployees = {
       "Mã nhân viên": e.employee_id,
       "Họ và tên": e.full_name,
       "Giới tính": e.gender,
-      "Ngày sinh": e.date_of_birth,
+      "Ngày sinh": utils.formatDate(e.date_of_birth || e['Ngày sinh']),
       "Vị trí công việc": appData.posMap[e.position_id] || e.position_id,
       "Đơn vị công tác": appData.deptMap[e.department_id] || e.department_id,
       "Quản lý trực tiếp": e.direct_manager_name || '',
@@ -1407,6 +1410,8 @@ const appEmployees = {
       "Số ĐT di động": contactMap[e.employee_id]?.mobile_phone || '',
       "Email công việc": contactMap[e.employee_id]?.work_email || '',
       "Số CMND/CCCD": idMap[e.employee_id]?.id_number || '',
+      "Ngày bắt đầu làm việc": utils.formatDate(e.start_date || e.trial_start_date),
+      "Ngày chính thức": utils.formatDate(e.official_date),
       "Lương cơ bản": salMap[e.employee_id]?.base_salary || 0,
       "Số TK ngân hàng": salMap[e.employee_id]?.bank_account_number || '',
       "Ngân hàng": salMap[e.employee_id]?.bank_name || ''

@@ -300,7 +300,7 @@ const appReports = {
           <td>${item.department_name}</td>
           <td>${item.position_name}</td>
           <td style="text-align: center;">${typeBadge}</td>
-          <td><strong>${item.effective_date}</strong></td>
+          <td><strong>${utils.formatDate(item.effective_date)}</strong></td>
           <td><span class="badge ${isNew ? 'badge-blue' : 'badge-amber'}">${item.status}</span></td>
           <td style="text-align: center;">
             <button class="btn btn-secondary btn-sm" onclick="appEmployees.openDetailModal('${item.employee_id}')" title="Xem chi tiết hồ sơ" style="height: 28px; padding: 0 8px;">
@@ -464,7 +464,7 @@ const appReports = {
         "Phòng Ban / Đơn Vị": item.department_name,
         "Vị Trí Công Việc": item.position_name,
         "Loại Biến Động": item.type_label,
-        "Ngày Hiệu Lực": item.effective_date,
+        "Ngày Hiệu Lực": utils.formatDate(item.effective_date),
         "Trạng Thái / Ghi Chú": item.status
       }));
 
@@ -478,6 +478,78 @@ const appReports = {
     } catch (e) {
       console.error(e);
       utils.showToast('Lỗi khi xuất báo cáo Excel: ' + e.message, 'error');
+    }
+  },
+
+  // Export Complete Workbook (Toàn bộ dữ liệu nhân sự, hợp đồng, biến động)
+  exportCompleteWorkbook() {
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: Danh sách nhân sự đầy đủ
+      const contactMap = {};
+      (appData.contacts || []).forEach(c => contactMap[c.employee_id] = c);
+      const salMap = {};
+      (appData.salaries || []).forEach(s => salMap[s.employee_id] = s);
+      const idMap = {};
+      (appData.identity || []).forEach(i => idMap[i.employee_id] = i);
+
+      const empData = (appData.employees || []).map((e, idx) => ({
+        "STT": idx + 1,
+        "Mã nhân viên": e.employee_id,
+        "Họ và tên": e.full_name,
+        "Giới tính": e.gender || '',
+        "Ngày sinh": utils.formatDate(e.date_of_birth || e['Ngày sinh']),
+        "Vị trí công việc": appData.posMap[e.position_id] || e.position_name || e.position_id,
+        "Đơn vị công tác": appData.deptMap[e.department_id] || e.department_name || e.department_id,
+        "Số ĐT di động": contactMap[e.employee_id]?.mobile_phone || e.mobile_phone || '',
+        "Email công việc": contactMap[e.employee_id]?.work_email || e.work_email || '',
+        "Số CMND/CCCD": idMap[e.employee_id]?.id_number || e.id_number || '',
+        "Ngày bắt đầu làm việc": utils.formatDate(e.start_date || e.trial_start_date),
+        "Ngày chính thức": utils.formatDate(e.official_date),
+        "Tính chất lao động": e.employment_nature || 'Chính thức',
+        "Trạng thái lao động": e.employment_status || 'Đang làm việc'
+      }));
+      const wsEmp = XLSX.utils.json_to_sheet(empData);
+      XLSX.utils.book_append_sheet(wb, wsEmp, "DanhSachNhanSu");
+
+      // Sheet 2: Danh sách hợp đồng
+      const contractData = (appData.contracts || []).map((c, idx) => ({
+        "STT": idx + 1,
+        "Mã hợp đồng": c.contract_id || c.employee_id,
+        "Mã nhân viên": c.employee_id,
+        "Họ và tên": c.full_name || '',
+        "Loại hợp đồng": c.contract_type || '',
+        "Ngày thử việc": utils.formatDate(c.trial_start_date),
+        "Ngày chính thức": utils.formatDate(c.official_date),
+        "Ngày có hiệu lực": utils.formatDate(c.effective_date || c.start_date),
+        "Ngày hết hiệu lực": utils.formatDate(c.expiry_date || c.end_date),
+        "Trạng thái HĐ": c.contract_status || ''
+      }));
+      const wsContracts = XLSX.utils.json_to_sheet(contractData);
+      XLSX.utils.book_append_sheet(wb, wsContracts, "HopDongLaoDong");
+
+      // Sheet 3: Biến động nhân sự
+      const dynamicsData = (this.fluctuationList || []).map((item, idx) => ({
+        "STT": idx + 1,
+        "Mã Nhân Viên": item.employee_id,
+        "Họ và Tên": item.full_name,
+        "Giới Tính": item.gender,
+        "Phòng Ban / Đơn Vị": item.department_name,
+        "Vị Trí Công Việc": item.position_name,
+        "Loại Biến Động": item.type_label,
+        "Ngày Hiệu Lực": utils.formatDate(item.effective_date),
+        "Trạng Thái / Ghi Chú": item.status
+      }));
+      const wsDynamics = XLSX.utils.json_to_sheet(dynamicsData);
+      XLSX.utils.book_append_sheet(wb, wsDynamics, "BienDongNhanSu");
+
+      const fileName = `Bao_Cao_Tong_Hop_HRM_Trung_Hai_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      utils.showToast('Xuất báo cáo tổng hợp HRM thành công!', 'success');
+    } catch (e) {
+      console.error(e);
+      utils.showToast('Lỗi khi xuất báo cáo tổng hợp: ' + e.message, 'error');
     }
   }
 };

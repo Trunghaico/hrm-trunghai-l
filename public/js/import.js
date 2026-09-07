@@ -427,6 +427,10 @@ const appImport = {
 
   formatDate(val) {
     if (!val) return '';
+    if (typeof utils !== 'undefined' && utils.formatDate) {
+      const res = utils.formatDate(val);
+      return (res === '-') ? '' : res;
+    }
     if (typeof val === 'number') {
       const d = new Date(Math.round((val - 25569) * 86400 * 1000));
       if (!isNaN(d.getTime())) {

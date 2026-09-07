@@ -309,7 +309,7 @@ const appLogs = {
     const exportData = this.logs.map((l, idx) => ({
       'STT': idx + 1,
       'Mã Nhật Ký': l.log_id,
-      'Thời Gian': l.timestamp,
+      'Thời Gian': (utils.formatDateTime ? utils.formatDateTime(l.timestamp) : l.timestamp),
       'Mã Nhân Viên': l.user_id,
       'Người Thực Hiện': l.user_name,
       'Vai Trò': l.user_role,
