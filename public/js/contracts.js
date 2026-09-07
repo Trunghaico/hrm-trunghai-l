@@ -389,6 +389,7 @@ const appContracts = {
 
   // Render toàn bộ giao diện Hợp đồng
   async render() {
+    this.closeRowMenu?.();
     await this.fetchContracts();
     this.populateDeptFilterOptions();
     this.renderKPIs();
@@ -684,32 +685,109 @@ const appContracts = {
           </td>
           <td>${statusBadge}</td>
           <td style="text-align: center; white-space: nowrap;">
-            <div style="display: flex; gap: 4px; justify-content: center;">
-              <button class="btn btn-icon btn-sm" title="In / Trộn Hợp Đồng Word (Mail Merge)" onclick="appContracts.openMergeSingleModal('${c.contract_id}')" style="background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE;">
-                <i class="fa-solid fa-file-word"></i>
-              </button>
+            <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
               <button class="btn btn-icon btn-sm" title="Xem chi tiết HĐ & File đính kèm" onclick="appContracts.openDetailModal('${c.contract_id}')">
                 <i class="fa-solid fa-eye" style="color: var(--primary-navy);"></i>
               </button>
               <button class="btn btn-icon btn-sm" title="Chỉnh sửa hợp đồng" onclick="appContracts.openEditModal('${c.contract_id}')">
                 <i class="fa-solid fa-pen-to-square" style="color: #2563EB;"></i>
               </button>
-              <button class="btn btn-icon btn-sm" title="Nhân bản hợp đồng này" onclick="appContracts.openCloneModal('${c.contract_id}')">
-                <i class="fa-solid fa-clone" style="color: #059669;"></i>
-              </button>
-              ${!isTerminated ? `
-                <button class="btn btn-icon btn-sm" title="Chấm dứt hợp đồng" onclick="appContracts.openTerminateModal('${c.contract_id}')">
-                  <i class="fa-solid fa-file-circle-xmark" style="color: #D97706;"></i>
-                </button>
-              ` : ''}
-              <button class="btn btn-icon btn-sm" title="Xóa hợp đồng" onclick="appContracts.deleteContract('${c.contract_id}')">
-                <i class="fa-solid fa-trash" style="color: var(--accent-red);"></i>
+              <button class="btn btn-icon btn-sm btn-contract-row-more" title="Thao tác khác" onclick="appContracts.toggleRowMenu(event, '${c.contract_id}', ${!isTerminated})">
+                <i class="fa-solid fa-ellipsis-vertical" style="color: #64748B;"></i>
               </button>
             </div>
           </td>
         </tr>
       `;
     }).join('');
+  },
+
+  // Đóng Menu thao tác dòng hợp đồng
+  closeRowMenu() {
+    const menu = document.getElementById('contract-row-dropdown');
+    if (menu) {
+      menu.classList.remove('show');
+    }
+    this._activeRowContractId = null;
+  },
+
+  // Bật/tắt Menu thao tác 3 chấm cho từng dòng hợp đồng
+  toggleRowMenu(event, contractId, canTerminate) {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    let menu = document.getElementById('contract-row-dropdown');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'contract-row-dropdown';
+      menu.className = 'action-dropdown-menu';
+      document.body.appendChild(menu);
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#contract-row-dropdown') && !e.target.closest('.btn-contract-row-more')) {
+          this.closeRowMenu();
+        }
+      });
+
+      window.addEventListener('scroll', () => this.closeRowMenu(), true);
+      window.addEventListener('resize', () => this.closeRowMenu());
+    }
+
+    if (this._activeRowContractId === contractId && menu.classList.contains('show')) {
+      this.closeRowMenu();
+      return;
+    }
+
+    this._activeRowContractId = contractId;
+    const escapedId = String(contractId).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+    menu.innerHTML = `
+      <div class="action-dropdown-header" style="font-size: 10.5px; padding: 6px 14px 4px; color: #94A3B8; letter-spacing: 0.5px;">
+        HỢP ĐỒNG: ${contractId}
+      </div>
+      <button type="button" class="action-dropdown-item" onclick="appContracts.closeRowMenu(); appContracts.openMergeSingleModal('${escapedId}');">
+        <i class="fa-solid fa-file-word" style="color: #2563EB; width: 16px;"></i>
+        <span>In / Trộn HĐ Word</span>
+      </button>
+      <button type="button" class="action-dropdown-item" onclick="appContracts.closeRowMenu(); appContracts.openCloneModal('${escapedId}');">
+        <i class="fa-solid fa-clone" style="color: #059669; width: 16px;"></i>
+        <span>Nhân bản hợp đồng</span>
+      </button>
+      ${canTerminate ? `
+        <button type="button" class="action-dropdown-item" onclick="appContracts.closeRowMenu(); appContracts.openTerminateModal('${escapedId}');">
+          <i class="fa-solid fa-file-circle-xmark" style="color: #D97706; width: 16px;"></i>
+          <span>Chấm dứt hợp đồng</span>
+        </button>
+      ` : ''}
+      <div class="action-dropdown-divider"></div>
+      <button type="button" class="action-dropdown-item text-danger" onclick="appContracts.closeRowMenu(); appContracts.deleteContract('${escapedId}');">
+        <i class="fa-solid fa-trash" style="color: #EF4444; width: 16px;"></i>
+        <span>Xóa hợp đồng</span>
+      </button>
+    `;
+
+    const btn = event.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const menuWidth = 215;
+    menu.style.minWidth = `${menuWidth}px`;
+    menu.style.position = 'fixed';
+    menu.style.zIndex = '999999';
+
+    const estimatedHeight = canTerminate ? 170 : 135;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < estimatedHeight && rect.top > estimatedHeight) {
+      menu.style.top = `${rect.top - estimatedHeight - 4}px`;
+    } else {
+      menu.style.top = `${rect.bottom + 4}px`;
+    }
+
+    const rightPos = Math.max(10, window.innerWidth - rect.right);
+    menu.style.right = `${rightPos}px`;
+    menu.style.left = 'auto';
+
+    menu.classList.add('show');
   },
 
   // Hiển thị dạng lưới thẻ (Card View)
