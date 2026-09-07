@@ -239,15 +239,14 @@ export default {
     const parts = rawPath ? rawPath.split("/").map(decodeURIComponent) : [];
     const path = parts.join("/");
 
-    // 4. Resolve D1 & R2 bindings (supporting multiple casing)
+    // 4. Resolve D1 binding (supporting multiple casing)
     const db = env?.DB || env?.db || env?.DATABASE || env?.d1;
-    const r2 = env?.R2 || env?.r2 || env?.STORAGE || env?.bucket;
 
     if (!db) {
       return jsonResponse({
         success: false,
         error: "Cloudflare D1 chưa được liên kết với biến 'DB'!",
-        hint: "Vui lòng vào Cloudflare Dashboard -> Deployments -> Bấm nút 'Retry deployment' của lần deploy gần nhất để kích hoạt D1 & R2.",
+        hint: "Vui lòng vào Cloudflare Dashboard -> Deployments -> Bấm nút 'Retry deployment' của lần deploy gần nhất để kích hoạt D1.",
         availableEnvKeys: Object.keys(env || {})
       }, 500);
     }
@@ -887,97 +886,6 @@ export default {
         }
       }
 
-      // -------------------------------------------------------------
-      // Route: Cloudflare R2 Media Upload & Storage
-      // -------------------------------------------------------------
-      if ((path === "upload" || path === "company/upload-logo" || path === "upload-media") && method === "POST") {
-        if (!r2) {
-          return jsonResponse({
-            success: false,
-            error: "Cloudflare R2 chưa được liên kết! Vui lòng vào Cloudflare Dashboard -> Pages -> Settings -> Functions -> R2 bucket bindings và thêm biến 'R2' trỏ tới 'hrm-media'."
-          }, 500);
-        }
-
-        let fileBuffer = null;
-        let contentType = "image/png";
-        let ext = "png";
-
-        const reqContentType = request.headers.get("content-type") || "";
-
-        if (reqContentType.includes("application/json")) {
-          const body = await request.json().catch(() => ({}));
-          const base64Data = body.image_base64 || body.image || body.logo || body.file;
-          if (!base64Data) {
-            return jsonResponse({ success: false, message: "Không tìm thấy dữ liệu ảnh base64!" }, 400);
-          }
-          let rawBase64 = base64Data;
-          const match = base64Data.match(/^data:([^;]+);base64,(.*)$/);
-          if (match) {
-            contentType = match[1];
-            rawBase64 = match[2];
-            const subType = contentType.split("/")[1];
-            if (subType) ext = subType.replace("+xml", "");
-          }
-          const binaryStr = atob(rawBase64);
-          const bytes = new Uint8Array(binaryStr.length);
-          for (let i = 0; i < binaryStr.length; i++) {
-            bytes[i] = binaryStr.charCodeAt(i);
-          }
-          fileBuffer = bytes.buffer;
-        } else {
-          const formData = await request.formData().catch(() => null);
-          const file = formData ? (formData.get("file") || formData.get("logo") || formData.get("avatar")) : null;
-          if (!file) {
-            return jsonResponse({ success: false, message: "Không tìm thấy file tải lên!" }, 400);
-          }
-          ext = file.name ? file.name.split(".").pop() : "png";
-          contentType = file.type || "application/octet-stream";
-          fileBuffer = await file.arrayBuffer();
-        }
-
-        const key = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-        await r2.put(key, fileBuffer, {
-          httpMetadata: { contentType }
-        });
-
-        const mediaUrl = `/api/media/${key}`;
-
-        if (path === "company/upload-logo") {
-          const data = await loadAllFromD1(db);
-          const updated = { ...data.company, logo_url: mediaUrl };
-          await db.prepare("INSERT OR REPLACE INTO hrm_store (key, value, updated_at) VALUES ('company_info', ?, CURRENT_TIMESTAMP)")
-            .bind(JSON.stringify(updated))
-            .run();
-        }
-
-        return jsonResponse({
-          success: true,
-          url: mediaUrl,
-          logo_url: mediaUrl,
-          key,
-          message: "Đã tải file lên Cloudflare R2 thành công!"
-        });
-      }
-
-      // -------------------------------------------------------------
-      // Route: Serve Media from R2 (/api/media/:key)
-      // -------------------------------------------------------------
-      if (path.startsWith("media/") && method === "GET") {
-        if (!r2) {
-          return new Response("R2 not bound", { status: 500 });
-        }
-        const key = path.replace("media/", "");
-        const object = await r2.get(key);
-        if (!object) {
-          return new Response("Not Found", { status: 404 });
-        }
-
-        const headers = new Headers();
-        object.writeHttpMetadata(headers);
-        headers.set("etag", object.httpEtag);
-        headers.set("Cache-Control", "public, max-age=31536000, immutable");
-        return new Response(object.body, { headers });
-      }
 
       // -------------------------------------------------------------
       // Route: System Logs (/api/logs)

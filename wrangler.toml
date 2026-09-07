@@ -6,8 +6,5 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "hrm-database"
-database_id = "cabcd703-ba92-4b70-bc77-4031c5f3201f"
+database_id = "9b49bd33-e3d9-417c-aa2c-f5b422f6a30f"
 
-[[r2_buckets]]
-binding = "R2"
-bucket_name = "hrm-media"

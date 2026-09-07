@@ -183,7 +183,6 @@ const appAuth = {
     const navLogs = document.querySelector('.nav-item[data-view="logs"]');
     const navTrash = document.querySelector('.nav-item[data-view="trash"]');
     const navReports = document.querySelector('.nav-item[data-view="reports"]');
-    const btnCompany = document.getElementById('btn-company-settings');
     const btnClearLogs = document.getElementById('btn-clear-logs');
 
     if (isAdmin) {
@@ -192,15 +191,13 @@ const appAuth = {
       if (navLogs) navLogs.style.display = 'flex';
       if (navTrash) navTrash.style.display = 'flex';
       if (navReports) navReports.style.display = 'flex';
-      if (btnCompany) btnCompany.style.display = 'inline-flex';
       if (btnClearLogs) btnClearLogs.style.display = 'inline-flex';
     } else {
-      // USER: Không hiển thị Nhật ký, Thùng rác, Phân quyền, Cài đặt Thương hiệu
+      // USER: Không hiển thị Nhật ký, Thùng rác, Phân quyền
       if (navAccounts) navAccounts.style.display = 'none';
       if (navLogs) navLogs.style.display = 'none';
       if (navTrash) navTrash.style.display = 'none';
       if (navReports) navReports.style.display = 'flex';
-      if (btnCompany) btnCompany.style.display = 'none';
       if (btnClearLogs) btnClearLogs.style.display = 'none';
 
       // If user is currently inside a restricted view, redirect back to Dashboard

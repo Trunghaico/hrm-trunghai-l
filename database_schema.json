@@ -120,7 +120,19 @@
         "created_at": "2026-09-04T07:21:41.181Z"
       }
     ],
-    "12_System_Logs": [],
+    "12_System_Logs": [
+      {
+        "log_id": "LOG-1788744799013-527",
+        "timestamp": "2026-09-07T01:33:19.013Z",
+        "user_id": "TH-1948",
+        "user_name": "Huỳnh Thanh Long",
+        "user_role": "ADMIN",
+        "action_type": "LOGIN",
+        "module": "Bảo mật",
+        "description": "Đăng nhập thành công vào hệ thống (Huỳnh Thanh Long - Quyền: ADMIN)",
+        "ip_address": "::1"
+      }
+    ],
     "13_Recycle_Bin": []
   },
   "company_info": {
