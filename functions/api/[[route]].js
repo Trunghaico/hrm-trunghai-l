@@ -404,7 +404,7 @@ export async function onRequest(context) {
     }
 
     // -------------------------------------------------------------
-    // Route: POST /api/setup/restore-sample-data (Restore full 841 sample database)
+    // Route: POST /api/setup/restore-sample-data (Restore full 852 sample database)
     // -------------------------------------------------------------
     if (path === "setup/restore-sample-data" && method === "POST") {
       const body = await request.json().catch(() => ({}));

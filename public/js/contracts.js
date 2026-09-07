@@ -288,7 +288,7 @@ const appContracts = {
       } else if (typeof appData !== 'undefined' && Array.isArray(appData.contracts) && appData.contracts.length > 0) {
         this.contracts = appData.contracts;
       } else if (typeof appData !== 'undefined' && Array.isArray(appData.employees) && appData.employees.length > 0) {
-        // Tự động đồng bộ từ 841 hồ sơ nhân sự
+        // Tự động đồng bộ từ 852 hồ sơ nhân sự
         this.contracts = appData.employees.map(emp => {
           const isResigned = emp.employment_status === 'Đã nghỉ việc';
           return {

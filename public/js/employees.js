@@ -447,11 +447,11 @@ const appEmployees = {
             </div>
             <h3 style="font-size: 16px; font-weight: 700; color: var(--primary-navy); margin-bottom: 8px;">Mục nhân sự hiện chưa có dữ liệu</h3>
             <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
-              Dữ liệu nhân sự có thể đã bị xóa trong quá trình kiểm thử hoặc chưa được nạp vào CSDL. Bạn có thể nạp lại ngay 841 hồ sơ nhân sự chuẩn của Công ty Trung Hải hoặc nhập từ file Excel.
+              Dữ liệu nhân sự có thể đã bị xóa trong quá trình kiểm thử hoặc chưa được nạp vào CSDL. Bạn có thể nạp lại ngay 852 hồ sơ nhân sự chuẩn của Công ty Trung Hải hoặc nhập từ file Excel.
             </p>
             <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
               <button type="button" class="btn btn-primary" onclick="appEmployees.restoreSampleData()" style="padding: 8px 18px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-cloud-arrow-down"></i> Nạp Ngay 841 Nhân Sự Mẫu
+                <i class="fa-solid fa-cloud-arrow-down"></i> Nạp Ngay 852 Nhân Sự Mẫu
               </button>
               <button type="button" class="btn btn-secondary" onclick="appImport.openModal()" style="padding: 8px 18px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-file-excel"></i> Nhập Từ File Excel
@@ -1097,16 +1097,16 @@ const appEmployees = {
     }
   },
 
-  // 1-Click Restore 841 Sample Employees
+  // 1-Click Restore 852 Sample Employees
   async restoreSampleData() {
-    if (!confirm('⚠️ Bạn có chắc chắn muốn nạp lại CSDL 841 nhân sự mẫu của Công ty Cổ phần Đầu tư Xây dựng Trung Hải?\\n\\nToàn bộ 841 hồ sơ chuẩn (bao gồm phòng ban, chức vụ, hợp đồng, danh bạ liên hệ, CCCD và lương) sẽ được khôi phục vào hệ thống CSDL.')) {
+    if (!confirm('⚠️ Bạn có chắc chắn muốn nạp lại CSDL 852 nhân sự chuẩn của Công ty Cổ phần Đầu tư Xây dựng Trung Hải?\\n\\nToàn bộ 852 hồ sơ chuẩn (bao gồm phòng ban, chức vụ, hợp đồng, danh bạ liên hệ, CCCD và lương) sẽ được khôi phục vào hệ thống CSDL.')) {
       return;
     }
 
     const btnAction = document.getElementById('btn-action-restore-sample');
     if (btnAction) btnAction.disabled = true;
 
-    utils.showToast('Đang nạp 841 hồ sơ nhân sự mẫu vào CSDL...', 'info');
+    utils.showToast('Đang nạp 852 hồ sơ nhân sự mẫu vào CSDL...', 'info');
 
     try {
       const res = await fetch('/api/setup/restore-sample-data', {
@@ -1115,7 +1115,7 @@ const appEmployees = {
       });
       const json = await res.json();
       if (json.success) {
-        utils.showToast(json.message || 'Khôi phục CSDL 841 nhân sự mẫu thành công!', 'success');
+        utils.showToast(json.message || 'Khôi phục CSDL 852 nhân sự mẫu thành công!', 'success');
         await appData.init();
         this.init();
         if (typeof appDashboard !== 'undefined' && appDashboard.render) {
