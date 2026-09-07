@@ -475,6 +475,46 @@ export default {
           });
         }
 
+        // POST or DELETE /api/employees/bulk-delete (Bulk Move to Trash)
+        if ((method === "POST" || method === "DELETE") && empId === "bulk-delete") {
+          const body = await request.json().catch(() => ({}));
+          const targetIds = new Set(body.employee_ids || []);
+          if (targetIds.size === 0) {
+            return jsonResponse({ success: false, message: "Không có nhân sự nào được chọn để xóa!" }, 400);
+          }
+          const data = await loadAllFromD1(db);
+          const employees = data.tables["03_Employees"] || [];
+          let trash = data.tables["13_Recycle_Bin"] || [];
+
+          const depts = data.tables["01_Departments"] || [];
+          const positions = data.tables["02_Positions"] || [];
+          const deptMap = Object.fromEntries(depts.map(d => [d.department_id, d.department_name]));
+          const posMap = Object.fromEntries(positions.map(p => [p.position_id, p.position_name]));
+
+          const now = new Date().toISOString();
+          const toDelete = employees.filter(e => targetIds.has(e.employee_id));
+          const remaining = employees.filter(e => !targetIds.has(e.employee_id));
+
+          const trashItems = toDelete.map(target => ({
+            ...target,
+            department_name: target.department_name || deptMap[target.department_id] || target.department_id,
+            position_name: target.position_name || posMap[target.position_id] || target.job_title || target.position_id,
+            deleted_at: now,
+            deleted_by_name: body.operator_name || "Quản trị viên"
+          }));
+
+          trash = [...trashItems, ...trash];
+          await saveTableToD1(db, "03_Employees", remaining);
+          await saveTableToD1(db, "00_Master_Profiles", remaining);
+          await saveTableToD1(db, "13_Recycle_Bin", trash);
+
+          return jsonResponse({
+            success: true,
+            count: toDelete.length,
+            message: `Đã chuyển ${toDelete.length} nhân sự đã chọn vào thùng rác!`
+          });
+        }
+
         // DELETE /api/employees/:id (Move to trash)
         if (method === "DELETE" && empId) {
           const body = await request.json().catch(() => ({}));

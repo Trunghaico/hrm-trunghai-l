@@ -2550,6 +2550,115 @@ app.delete('/api/employees/all', (req, res) => {
     });
 });
 
+// 6.6. BULK SOFT DELETE EMPLOYEES
+app.post('/api/employees/bulk-delete', (req, res) => {
+    const db = loadDatabase();
+    const ids = Array.isArray(req.body?.employee_ids) ? req.body.employee_ids : [];
+
+    if (ids.length === 0) {
+        return res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất 1 nhân sự để xóa' });
+    }
+
+    if (!db.tables['13_Recycle_Bin']) {
+        db.tables['13_Recycle_Bin'] = [];
+    }
+
+    const idSet = new Set(ids);
+    const employees = db.tables['03_Employees'] || [];
+    const toDelete = employees.filter(e => idSet.has(e.employee_id));
+
+    if (toDelete.length === 0) {
+        return res.status(400).json({ success: false, message: 'Không tìm thấy nhân sự phù hợp trong danh sách xóa' });
+    }
+
+    const contacts = db.tables['04_Contacts_Addresses'] || [];
+    const identity = db.tables['05_Identity_Docs'] || [];
+    const emergency = db.tables['06_Emergency_Contacts'] || [];
+    const education = db.tables['07_Education'] || [];
+    const salaries = db.tables['08_Salaries_Banks'] || [];
+    const insurance = db.tables['09_Insurance_Welfare'] || [];
+    const contracts = db.tables['10_Contracts'] || [];
+    const accounts = db.tables['11_System_Accounts'] || [];
+    const masterList = db.tables['00_Master_Profiles'] || [];
+
+    const now = new Date().toISOString();
+    const operatorName = req.body?.operator_name || 'Huỳnh Thanh Long';
+    const operatorId = req.body?.operator_id || 'TH-1948';
+
+    toDelete.forEach(emp => {
+        const id = emp.employee_id;
+        const contact = contacts.find(c => c.employee_id === id) || null;
+        const idDoc = identity.find(i => i.employee_id === id) || null;
+        const emerg = emergency.find(em => em.employee_id === id) || null;
+        const edu = education.find(ed => ed.employee_id === id) || null;
+        const sal = salaries.find(s => s.employee_id === id) || null;
+        const ins = insurance.find(i => i.employee_id === id) || null;
+        const ct = contracts.find(c => c.employee_id === id) || null;
+        const acc = accounts.find(a => a.employee_id === id) || null;
+        const master = masterList.find(m => m['Mã nhân viên'] === id) || null;
+
+        const trashEntry = {
+            trash_id: `TRASH-${id}-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+            employee_id: id,
+            full_name: emp.full_name || id,
+            gender: emp.gender || '',
+            department_id: emp.department_id || '',
+            position_id: emp.position_id || '',
+            job_title: emp.job_title || '',
+            work_email: (contact && contact.work_email) || '',
+            mobile_phone: (contact && contact.mobile_phone) || '',
+            deleted_at: now,
+            deleted_by_name: operatorName,
+            deleted_by_id: operatorId,
+            backup_data: JSON.stringify({
+                employee: emp,
+                contact,
+                identity: idDoc,
+                emergency: emerg,
+                education: edu,
+                salary: sal,
+                insurance: ins,
+                contract: ct,
+                account: acc,
+                master
+            })
+        };
+
+        db.tables['13_Recycle_Bin'].unshift(trashEntry);
+    });
+
+    // Remove from active tables
+    const tableKeysToClean = [
+        '03_Employees',
+        '04_Contacts_Addresses',
+        '05_Identity_Docs',
+        '06_Emergency_Contacts',
+        '07_Education',
+        '08_Salaries_Banks',
+        '09_Insurance_Welfare',
+        '10_Contracts',
+        '11_System_Accounts'
+    ];
+
+    tableKeysToClean.forEach(key => {
+        if (db.tables[key]) {
+            db.tables[key] = db.tables[key].filter(row => !idSet.has(row.employee_id));
+        }
+    });
+
+    if (db.tables['00_Master_Profiles']) {
+        db.tables['00_Master_Profiles'] = db.tables['00_Master_Profiles'].filter(row => !idSet.has(row['Mã nhân viên']));
+    }
+
+    saveDatabase(db);
+
+    res.json({
+        success: true,
+        count: toDelete.length,
+        message: `Đã chuyển ${toDelete.length} nhân sự đã chọn vào Thùng rác!`
+    });
+});
+
 // 7. SOFT DELETE EMPLOYEE (MOVE TO RECYCLE BIN)
 app.delete('/api/employees/:id', (req, res) => {
     const db = loadDatabase();

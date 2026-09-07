@@ -139,7 +139,7 @@
         </button>
         <h1 class="page-heading" id="current-page-title">
           <i class="fa-solid fa-chart-pie"></i>
-          <span>Dashboard Thống Kê Nhân Sự</span>
+          <span>Dashboard</span>
         </h1>
       </div>
 
@@ -163,11 +163,6 @@
           <i class="fa-solid fa-building" style="color: var(--primary-navy);"></i>
           <span>Thương hiệu</span>
         </button>
-
-        <div class="badge" style="background: rgba(243, 128, 32, 0.12); color: #f38020; border: 1px solid rgba(243, 128, 32, 0.25); font-weight: 600; padding: 6px 12px; border-radius: 6px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;" title="Cơ sở dữ liệu đám mây Cloudflare D1 & R2 Storage">
-          <i class="fa-brands fa-cloudflare"></i>
-          <span>Cloudflare D1 & R2</span>
-        </div>
 
         <!-- User Profile Badge & Logout -->
         <div class="topbar-user-badge">
@@ -343,49 +338,79 @@
         <div class="card">
           <div class="card-body">
             <!-- Filter Controls -->
-            <div class="table-controls">
-              <div class="search-filter-group">
-                <div style="position: relative; width: 260px;">
-                  <i class="fa-solid fa-search" style="position: absolute; left: 10px; top: 12px; color: var(--text-muted);"></i>
-                  <input type="text" id="emp-search-input" class="form-control" style="padding-left: 32px; width: 100%;" placeholder="Tìm theo tên, mã NV, SĐT, CCCD...">
+            <div class="table-controls" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px;">
+              <div class="search-filter-group" style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; flex: 1; min-width: 0;">
+                <div style="position: relative; min-width: 140px; max-width: 210px; flex: 1 1 160px;">
+                  <i class="fa-solid fa-search" style="position: absolute; left: 9px; top: 10px; color: var(--text-muted); font-size: 11px;"></i>
+                  <input type="text" id="emp-search-input" class="form-control" style="padding-left: 28px; width: 100%; font-size: 11px;" placeholder="Tìm tên, mã, SĐT, CCCD...">
                 </div>
 
-                <select id="emp-filter-dept" class="filter-select" style="max-width: 220px;">
+                <select id="emp-filter-dept" class="filter-select" style="width: 180px; flex-shrink: 0; font-size: 11px; padding: 0 4px 0 6px;">
                   <option value="">-- Tất cả Đơn vị / Phòng ban --</option>
                 </select>
 
-                <select id="emp-filter-pos" class="filter-select" style="max-width: 200px;">
+                <select id="emp-filter-pos" class="filter-select" style="width: 140px; flex-shrink: 0; font-size: 11px; padding: 0 4px 0 6px;">
                   <option value="">-- Tất cả Vị trí --</option>
                 </select>
 
-                <select id="emp-filter-status" class="filter-select">
+                <select id="emp-filter-status" class="filter-select" style="width: 145px; flex-shrink: 0; font-size: 11px; padding: 0 4px 0 6px;">
                   <option value="">-- Trạng thái làm việc --</option>
                   <option value="Đang làm việc">Đang làm việc</option>
                   <option value="Đã nghỉ việc">Đã nghỉ việc</option>
                 </select>
 
-                <select id="emp-filter-nature" class="filter-select">
+                <select id="emp-filter-nature" class="filter-select" style="width: 145px; flex-shrink: 0; font-size: 11px; padding: 0 4px 0 6px;">
                   <option value="">-- Tính chất lao động --</option>
                   <option value="Chính thức">Chính thức</option>
                   <option value="Thử việc">Thử việc</option>
                   <option value="Học việc">Học việc</option>
                 </select>
 
-                <button class="btn btn-secondary btn-sm" id="btn-reset-filters" title="Xóa bộ lọc">
+                <button class="btn btn-secondary btn-sm" id="btn-reset-filters" title="Xóa bộ lọc" style="flex-shrink: 0; white-space: nowrap; height: 32px; padding: 0 8px; font-size: 11px;">
                   <i class="fa-solid fa-rotate-left"></i> Đặt lại
                 </button>
               </div>
 
-              <div style="display: flex; gap: 8px;">
-                <button class="btn btn-outline-navy btn-sm" id="btn-open-import-emp" onclick="appImport.openModal()" title="Nhập danh sách nhân sự hàng loạt từ file Excel">
+              <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center; margin-left: auto;">
+                <button class="btn btn-outline-navy btn-sm" id="btn-open-import-emp" onclick="appImport.openModal()" title="Nhập danh sách nhân sự hàng loạt từ file Excel" style="white-space: nowrap; height: 32px; padding: 0 10px;">
                   <i class="fa-solid fa-file-import" style="color: var(--primary-navy);"></i> Nhập Excel
                 </button>
-                <button class="btn btn-excel btn-sm" id="btn-export-filtered-emp">
+                <button class="btn btn-excel btn-sm" id="btn-export-filtered-emp" style="white-space: nowrap; height: 32px; padding: 0 10px;">
                   <i class="fa-solid fa-file-excel"></i> Xuất Excel
                 </button>
-                <button class="btn btn-secondary btn-sm" id="btn-delete-all-emp" style="color: var(--accent-red); border-color: #FECACA; background: #FEF2F2;" title="Xóa toàn bộ hồ sơ nhân sự trong hệ thống">
-                  <i class="fa-solid fa-trash-can"></i> Xóa toàn bộ
-                </button>
+                <div class="action-dropdown-wrapper" style="position: relative; flex-shrink: 0;">
+                  <button class="btn btn-secondary btn-sm" id="btn-emp-action-menu" type="button" title="Thao tác chọn nhanh nhân sự" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #1E293B; white-space: nowrap; height: 32px; padding: 0 10px;">
+                    <i class="fa-solid fa-bolt" style="color: #2563EB;"></i>
+                    <span id="btn-emp-action-text">Hành động</span>
+                    <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
+                  </button>
+
+                  <div class="action-dropdown-menu" id="emp-action-dropdown">
+                    <div class="action-dropdown-header">THAO TÁC CHỌN NHANH</div>
+
+                    <button type="button" class="action-dropdown-item" id="btn-action-toggle-cb">
+                      <i class="fa-regular fa-square-check" style="color: #2563EB; font-size: 15px; width: 18px; text-align: center;"></i>
+                      <span>Chọn nhân sự (Hiện ô tích)</span>
+                    </button>
+
+                    <button type="button" class="action-dropdown-item" id="btn-action-select-page">
+                      <i class="fa-solid fa-check-double" style="color: #10B981; font-size: 15px; width: 18px; text-align: center;"></i>
+                      <span>Chọn tất cả trang này</span>
+                    </button>
+
+                    <button type="button" class="action-dropdown-item" id="btn-action-select-filtered">
+                      <i class="fa-solid fa-users-viewfinder" style="color: #3B82F6; font-size: 15px; width: 18px; text-align: center;"></i>
+                      <span>Chọn tất cả danh sách lọc</span>
+                    </button>
+
+                    <div class="action-dropdown-divider"></div>
+
+                    <button type="button" class="action-dropdown-item text-danger" id="btn-action-delete-selected">
+                      <i class="fa-solid fa-trash-can" style="color: #EF4444; font-size: 15px; width: 18px; text-align: center;"></i>
+                      <span>Xóa các nhân sự đã chọn</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -394,6 +419,9 @@
               <table class="data-table" id="emp-main-table">
                 <thead>
                   <tr>
+                    <th class="col-sticky-cb">
+                      <input type="checkbox" id="emp-select-all" title="Chọn tất cả trang này" style="accent-color: #2563EB; width: 16px; height: 16px; cursor: pointer; vertical-align: middle;">
+                    </th>
                     <th class="col-sticky-stt">STT</th>
                     <th class="col-sticky-id">Mã NV</th>
                     <th class="col-sticky-name">Họ và Tên</th>
@@ -1537,6 +1565,42 @@
         Hủy bỏ
       </button>
       <button type="button" class="btn btn-accent" id="btn-confirm-bulk-delete-account" onclick="appAccounts.confirmBulkDeleteAccounts()" style="flex: 1; height: 38px; font-size: 13px; font-weight: 600; justify-content: center; background: var(--accent-red); box-shadow: 0 2px 8px rgba(229, 33, 37, 0.25);">
+        <i class="fa-solid fa-trash-can"></i>
+        <span>Xác Nhận Xóa</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: CONFIRM BULK DELETE EMPLOYEES
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-emp-bulk-delete-confirm">
+  <div class="modal-container" style="max-width: 440px; border-top: 3px solid var(--accent-red);">
+    <div class="modal-header" style="background: #FFFFFF; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding: 12px 18px;">
+      <div class="modal-title" style="color: var(--accent-red); font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Xác Nhận Xóa Nhân Sự Đã Chọn</span>
+      </div>
+      <button class="modal-close" style="color: var(--text-secondary);" onclick="appEmployees.closeBulkDeleteModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px 24px; text-align: center;">
+      <div style="width: 52px; height: 52px; border-radius: 50%; background: var(--accent-red-soft); color: var(--accent-red); display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px;">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Chuyển nhân sự đã chọn vào Thùng rác?</h3>
+      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+        Bạn đang chọn xóa <strong id="bulk-delete-emp-count" style="color: var(--accent-red); font-size: 16px;">0</strong> hồ sơ nhân sự.
+      </p>
+      <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-sm); padding: 10px 12px; text-align: left; font-size: 12px; color: #991B1B; line-height: 1.4;">
+        <i class="fa-solid fa-circle-exclamation"></i> Các hồ sơ này sẽ được chuyển an toàn vào <strong>Thùng rác</strong> và có thể khôi phục lại bất cứ lúc nào.
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 14px 24px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; gap: 12px; justify-content: center;">
+      <button type="button" class="btn btn-secondary" onclick="appEmployees.closeBulkDeleteModal()" style="flex: 1; height: 38px; font-size: 13px; font-weight: 600; justify-content: center;">
+        Hủy bỏ
+      </button>
+      <button type="button" class="btn btn-accent" id="btn-confirm-bulk-delete-emp" onclick="appEmployees.confirmBulkDeleteEmployees()" style="flex: 1; height: 38px; font-size: 13px; font-weight: 600; justify-content: center; background: var(--accent-red); box-shadow: 0 2px 8px rgba(229, 33, 37, 0.25);">
         <i class="fa-solid fa-trash-can"></i>
         <span>Xác Nhận Xóa</span>
       </button>

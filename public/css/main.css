@@ -805,27 +805,54 @@ body {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.table-controls::-webkit-scrollbar {
+  height: 4px;
+}
+
+.table-controls::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
 }
 
 .search-filter-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
   flex: 1;
+  min-width: 0;
 }
 
 .filter-select, .form-control {
   height: 32px;
-  padding: 0 10px;
+  padding: 0 8px;
   background: #FFFFFF;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-primary);
   outline: none;
   transition: border-color var(--transition-fast);
+}
+
+.search-filter-group .filter-select {
+  font-size: 11px;
+  padding: 0 4px 0 7px;
+}
+
+.search-filter-group .filter-select option {
+  font-size: 12px;
+}
+
+.search-filter-group .form-control::placeholder,
+.search-filter-group input::placeholder {
+  font-size: 11px;
+  color: #94A3B8;
 }
 
 .filter-select:focus, .form-control:focus {
@@ -979,6 +1006,126 @@ body {
 .data-table tbody tr:hover td.col-sticky-name,
 .data-table tbody tr:hover td.col-sticky-action {
   background: #F1F5F9;
+}
+
+/* Quick Action Dropdown Menu */
+.action-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.action-dropdown-menu {
+  display: none;
+  position: fixed !important;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  min-width: 250px;
+  z-index: 999999 !important;
+  padding: 6px 0;
+}
+
+.action-dropdown-menu.show {
+  display: block;
+}
+
+.action-dropdown-header {
+  padding: 8px 16px 6px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.action-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #1E293B;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.action-dropdown-item:hover {
+  background: #F8FAFC;
+}
+
+.action-dropdown-item.text-danger {
+  color: #EF4444;
+}
+
+.action-dropdown-item.text-danger:hover {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+.action-dropdown-divider {
+  height: 1px;
+  background: #F1F5F9;
+  margin: 5px 0;
+}
+
+/* Sticky Checkbox Column in Employee Table */
+.col-sticky-cb {
+  display: none;
+  position: sticky;
+  left: 0;
+  width: 42px;
+  min-width: 42px;
+  max-width: 42px;
+  z-index: 2;
+  background: #FFFFFF;
+  text-align: center;
+  border-right: 1px solid #EAEFF6;
+  padding: 0 4px !important;
+}
+
+.data-table th.col-sticky-cb {
+  z-index: 5 !important;
+  background: #F8FAFC !important;
+}
+
+.data-table tbody tr:hover td.col-sticky-cb {
+  background: #F1F5F9;
+}
+
+/* When has-checkbox class is toggled on emp-main-table */
+.data-table.has-checkbox .col-sticky-cb {
+  display: table-cell;
+}
+
+.data-table.has-checkbox .col-sticky-stt {
+  left: 42px;
+}
+
+.data-table.has-checkbox .col-sticky-id {
+  left: 92px;
+}
+
+.data-table.has-checkbox .col-sticky-name {
+  left: 182px;
+}
+
+/* Row selection highlight */
+.data-table tbody tr.row-selected {
+  background: #EFF6FF !important;
+}
+
+.data-table tbody tr.row-selected td.col-sticky-cb,
+.data-table tbody tr.row-selected td.col-sticky-stt,
+.data-table tbody tr.row-selected td.col-sticky-id,
+.data-table tbody tr.row-selected td.col-sticky-name,
+.data-table tbody tr.row-selected td.col-sticky-action {
+  background: #EFF6FF !important;
 }
 
 /* Badges */

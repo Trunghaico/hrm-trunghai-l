@@ -81,7 +81,7 @@ const app = {
     const pageTitle = document.getElementById('current-page-title');
 
     const titles = {
-      'dashboard': '<i class="fa-solid fa-chart-pie"></i> <span>Dashboard Thống Kê</span>',
+      'dashboard': '<i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span>',
       'employees': '<i class="fa-solid fa-users"></i> <span>Quản Lý Nhân Sự</span>',
       'companies': '<i class="fa-solid fa-city"></i> <span>Danh Sách Công Ty</span>',
       'departments': '<i class="fa-solid fa-building"></i> <span>Danh Sách Phòng Ban</span>',

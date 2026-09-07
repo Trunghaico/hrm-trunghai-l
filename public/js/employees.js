@@ -8,6 +8,8 @@ const appEmployees = {
   pageSize: 25,
   filteredList: [],
   selectedEmployee: null,
+  selectionMode: false,
+  selectedEmpIds: new Set(),
 
   init() {
     this.populateFilterDropdowns();
@@ -234,7 +236,68 @@ const appEmployees = {
       exportFilteredBtn.addEventListener('click', () => this.exportFilteredExcel());
     }
 
-    // Delete All Employees
+    // Quick Action Dropdown Menu Button
+    const actionMenuBtn = document.getElementById('btn-emp-action-menu');
+    if (actionMenuBtn) {
+      actionMenuBtn.addEventListener('click', (e) => this.toggleActionDropdown(e));
+    }
+
+    // Quick Action: Hiện ô tích / Ẩn ô tích
+    const toggleCbBtn = document.getElementById('btn-action-toggle-cb');
+    if (toggleCbBtn) {
+      toggleCbBtn.addEventListener('click', () => this.toggleSelectionMode());
+    }
+
+    // Quick Action: Chọn tất cả trang này
+    const selectPageBtn = document.getElementById('btn-action-select-page');
+    if (selectPageBtn) {
+      selectPageBtn.addEventListener('click', () => this.selectAllCurrentPage());
+    }
+
+    // Quick Action: Chọn tất cả danh sách lọc
+    const selectFilteredBtn = document.getElementById('btn-action-select-filtered');
+    if (selectFilteredBtn) {
+      selectFilteredBtn.addEventListener('click', () => this.selectAllFiltered());
+    }
+
+    // Quick Action: Xóa các nhân sự đã chọn
+    const deleteSelectedBtn = document.getElementById('btn-action-delete-selected');
+    if (deleteSelectedBtn) {
+      deleteSelectedBtn.addEventListener('click', () => this.deleteSelectedEmployees());
+    }
+
+    // Header Select-all checkbox
+    const selectAllCheck = document.getElementById('emp-select-all');
+    if (selectAllCheck) {
+      selectAllCheck.addEventListener('change', (e) => this.toggleSelectAllCurrentPage(e.target.checked));
+    }
+
+    // Close action dropdown on outside click, scroll or resize
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('emp-action-dropdown');
+      const actionBtn = document.getElementById('btn-emp-action-menu');
+      if (dropdown && dropdown.classList.contains('show')) {
+        if (!dropdown.contains(e.target) && !actionBtn?.contains(e.target)) {
+          this.closeActionDropdown();
+        }
+      }
+    });
+
+    window.addEventListener('scroll', () => {
+      const dropdown = document.getElementById('emp-action-dropdown');
+      if (dropdown && dropdown.classList.contains('show')) {
+        this.closeActionDropdown();
+      }
+    }, true);
+
+    window.addEventListener('resize', () => {
+      const dropdown = document.getElementById('emp-action-dropdown');
+      if (dropdown && dropdown.classList.contains('show')) {
+        this.closeActionDropdown();
+      }
+    });
+
+    // Delete All Employees (fallback legacy)
     const deleteAllBtn = document.getElementById('btn-delete-all-emp');
     if (deleteAllBtn) {
       deleteAllBtn.addEventListener('click', () => this.openDeleteAllModal());
@@ -376,7 +439,7 @@ const appEmployees = {
     if (!tbody) return;
 
     if (this.filteredList.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 32px; color: var(--text-muted);">
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 32px; color: var(--text-muted);">
         <i class="fa-solid fa-folder-open" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
         Không tìm thấy nhân sự phù hợp với điều kiện lọc.
       </td></tr>`;
@@ -392,6 +455,9 @@ const appEmployees = {
     tbody.innerHTML = paginated.map((e, index) => {
       const stt = start + index + 1;
       const c = contactMap[e.employee_id] || {};
+      const isChecked = this.selectedEmpIds.has(e.employee_id);
+      const rowSelectedClass = isChecked ? 'row-selected' : '';
+
       const statusBadge = e.employment_status === 'Đang làm việc'
         ? '<span class="badge badge-active"><i class="fa-solid fa-check"></i> Đang làm việc</span>'
         : '<span class="badge badge-resigned"><i class="fa-solid fa-xmark"></i> Đã nghỉ việc</span>';
@@ -403,7 +469,10 @@ const appEmployees = {
         : `<span class="badge" style="background:#F1F5F9; color:#475569;">${e.labor_nature || '-'}</span>`;
 
       return `
-        <tr>
+        <tr class="${rowSelectedClass}" data-emp-id="${e.employee_id}">
+          <td class="col-sticky-cb">
+            <input type="checkbox" class="emp-row-cb" value="${e.employee_id}" ${isChecked ? 'checked' : ''} onchange="appEmployees.toggleRowSelect('${e.employee_id}', this.checked)" style="accent-color: #2563EB; width: 16px; height: 16px; cursor: pointer; vertical-align: middle;">
+          </td>
           <td class="col-sticky-stt" style="color: var(--text-muted); font-size: 12px; font-weight: 500;">${stt}</td>
           <td class="col-sticky-id"><strong style="color: var(--primary-navy); cursor: pointer;" onclick="appEmployees.openDetailModal('${e.employee_id}')">${e.employee_id}</strong></td>
           <td class="col-sticky-name">
@@ -435,6 +504,13 @@ const appEmployees = {
         </tr>
       `;
     }).join('');
+
+    const table = document.getElementById('emp-main-table');
+    if (table) {
+      if (this.selectionMode) table.classList.add('has-checkbox');
+      else table.classList.remove('has-checkbox');
+    }
+    this.updateSelectionUI();
   },
 
   renderPagination() {
@@ -479,6 +555,244 @@ const appEmployees = {
     this.renderTable();
     this.renderPagination();
     window.scrollTo({ top: 300, behavior: 'smooth' });
+  },
+
+  // ==========================================
+  // THAO TÁC CHỌN NHANH & XÓA NHÂN SỰ ĐÃ CHỌN
+  // ==========================================
+  toggleActionDropdown(e) {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const menu = document.getElementById('emp-action-dropdown');
+    const btn = document.getElementById('btn-emp-action-menu');
+    if (!menu || !btn) return;
+
+    if (menu.classList.contains('show')) {
+      this.closeActionDropdown();
+      return;
+    }
+
+    // Đưa menu ra trực tiếp dưới document.body để thoát khỏi mọi container (view-employees, card, table-responsive)
+    if (menu.parentElement !== document.body) {
+      document.body.appendChild(menu);
+    }
+
+    const rect = btn.getBoundingClientRect();
+    const rightOffset = Math.max(10, window.innerWidth - rect.right);
+    menu.style.position = 'fixed';
+    menu.style.top = `${rect.bottom + 6}px`;
+    menu.style.right = `${rightOffset}px`;
+    menu.style.left = 'auto';
+    menu.style.zIndex = '999999';
+
+    menu.classList.add('show');
+  },
+
+  closeActionDropdown() {
+    const menu = document.getElementById('emp-action-dropdown');
+    if (menu) {
+      menu.classList.remove('show');
+    }
+  },
+
+  enableSelectionMode() {
+    this.selectionMode = true;
+    const table = document.getElementById('emp-main-table');
+    if (table) {
+      table.classList.add('has-checkbox');
+    }
+  },
+
+  toggleSelectionMode() {
+    this.closeActionDropdown();
+    this.selectionMode = !this.selectionMode;
+    const table = document.getElementById('emp-main-table');
+    if (table) {
+      if (this.selectionMode) {
+        table.classList.add('has-checkbox');
+        utils.showToast('Đã hiện ô tích chọn nhân sự', 'info');
+      } else {
+        table.classList.remove('has-checkbox');
+        this.selectedEmpIds.clear();
+        this.updateSelectionUI();
+        utils.showToast('Đã ẩn ô tích chọn nhân sự', 'info');
+      }
+    }
+  },
+
+  getCurrentPageItems() {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredList.slice(start, start + this.pageSize);
+  },
+
+  selectAllCurrentPage() {
+    this.closeActionDropdown();
+    this.enableSelectionMode();
+    const pageItems = this.getCurrentPageItems();
+    pageItems.forEach(e => this.selectedEmpIds.add(e.employee_id));
+    this.updateSelectionUI();
+    utils.showToast(`Đã chọn tất cả ${pageItems.length} nhân sự trên trang này`, 'success');
+  },
+
+  selectAllFiltered() {
+    this.closeActionDropdown();
+    this.enableSelectionMode();
+    this.filteredList.forEach(e => this.selectedEmpIds.add(e.employee_id));
+    this.updateSelectionUI();
+    utils.showToast(`Đã chọn tất cả ${this.selectedEmpIds.size} nhân sự trong danh sách lọc`, 'success');
+  },
+
+  toggleRowSelect(empId, isChecked) {
+    if (isChecked) {
+      this.selectedEmpIds.add(empId);
+    } else {
+      this.selectedEmpIds.delete(empId);
+    }
+    this.updateSelectionUI();
+  },
+
+  toggleSelectAllCurrentPage(isChecked) {
+    const pageItems = this.getCurrentPageItems();
+    pageItems.forEach(e => {
+      if (isChecked) {
+        this.selectedEmpIds.add(e.employee_id);
+      } else {
+        this.selectedEmpIds.delete(e.employee_id);
+      }
+    });
+    this.updateSelectionUI();
+  },
+
+  updateSelectionUI() {
+    const pageItems = this.getCurrentPageItems();
+    const selectAllCheck = document.getElementById('emp-select-all');
+    if (selectAllCheck && pageItems.length > 0) {
+      const pageSelectedCount = pageItems.filter(e => this.selectedEmpIds.has(e.employee_id)).length;
+      selectAllCheck.checked = pageSelectedCount === pageItems.length;
+      selectAllCheck.indeterminate = pageSelectedCount > 0 && pageSelectedCount < pageItems.length;
+    }
+
+    // Update row checkboxes & highlight styles
+    document.querySelectorAll('.emp-row-cb').forEach(cb => {
+      const isChecked = this.selectedEmpIds.has(cb.value);
+      cb.checked = isChecked;
+      const tr = cb.closest('tr');
+      if (tr) {
+        if (isChecked) tr.classList.add('row-selected');
+        else tr.classList.remove('row-selected');
+      }
+    });
+
+    // Update button text
+    const textEl = document.getElementById('btn-emp-action-text');
+    if (textEl) {
+      textEl.textContent = this.selectedEmpIds.size > 0
+        ? `Hành động (${this.selectedEmpIds.size})`
+        : 'Hành động';
+    }
+  },
+
+  deleteSelectedEmployees() {
+    this.closeActionDropdown();
+    const count = this.selectedEmpIds.size;
+    if (count === 0) {
+      utils.showToast('Vui lòng chọn ít nhất 1 nhân sự để xóa!', 'warning');
+      return;
+    }
+    this.openBulkDeleteModal();
+  },
+
+  openBulkDeleteModal() {
+    const count = this.selectedEmpIds.size;
+    const countEl = document.getElementById('bulk-delete-emp-count');
+    if (countEl) countEl.textContent = utils.formatNumber(count);
+    const modal = document.getElementById('modal-emp-bulk-delete-confirm');
+    if (modal) modal.classList.add('active');
+  },
+
+  closeBulkDeleteModal() {
+    const modal = document.getElementById('modal-emp-bulk-delete-confirm');
+    if (modal) modal.classList.remove('active');
+  },
+
+  async confirmBulkDeleteEmployees() {
+    const confirmBtn = document.getElementById('btn-confirm-bulk-delete-emp');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang xử lý...</span>';
+    }
+
+    const empIdsArray = Array.from(this.selectedEmpIds);
+    const user = (typeof appAuth !== 'undefined' && typeof appAuth.getCurrentUser === 'function')
+      ? appAuth.getCurrentUser()
+      : { employee_id: 'TH-1948', full_name: 'Huỳnh Thanh Long', role: 'ADMIN' };
+
+    try {
+      const res = await fetch('/api/employees/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_ids: empIdsArray,
+          operator_id: user?.employee_id || 'TH-1948',
+          operator_name: user?.full_name || 'Huỳnh Thanh Long',
+          operator_role: user?.role || 'ADMIN'
+        })
+      });
+
+      const result = await res.json().catch(() => ({}));
+      if (res.ok && result.success) {
+        utils.showToast(result.message || `Đã chuyển ${empIdsArray.length} nhân sự vào Thùng rác thành công!`, 'success');
+        this.selectedEmpIds.clear();
+        this.closeBulkDeleteModal();
+        this.updateSelectionUI();
+        await appData.init();
+        if (typeof appDashboard !== 'undefined') appDashboard.init();
+        if (typeof appTrash !== 'undefined') appTrash.render();
+        this.applyFilters();
+      } else {
+        // Fallback: delete sequentially if bulk route is unavailable
+        let successCount = 0;
+        for (const id of empIdsArray) {
+          try {
+            const r = await fetch(`/api/employees/${encodeURIComponent(id)}`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                operator_id: user?.employee_id || 'TH-1948',
+                operator_name: user?.full_name || 'Huỳnh Thanh Long',
+                operator_role: user?.role || 'ADMIN'
+              })
+            });
+            const j = await r.json().catch(() => ({}));
+            if (j.success) successCount++;
+          } catch (e) {
+            console.error('Lỗi khi xóa nhân sự ' + id, e);
+          }
+        }
+
+        if (successCount > 0) {
+          utils.showToast(`Đã chuyển ${successCount} nhân sự vào Thùng rác thành công!`, 'success');
+          this.selectedEmpIds.clear();
+          this.closeBulkDeleteModal();
+          this.updateSelectionUI();
+          await appData.init();
+          if (typeof appDashboard !== 'undefined') appDashboard.init();
+          if (typeof appTrash !== 'undefined') appTrash.render();
+          this.applyFilters();
+        } else {
+          utils.showToast(result.message || 'Không thể xóa các nhân sự đã chọn', 'error');
+        }
+      }
+    } catch (err) {
+      utils.showToast('Lỗi kết nối máy chủ: ' + err.message, 'error');
+    } finally {
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i> <span>Xác Nhận Xóa</span>';
+      }
+    }
   },
 
   // Open Full 115 Fields Detail Modal
