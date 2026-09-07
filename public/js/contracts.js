@@ -2102,7 +2102,9 @@ const appContracts = {
       utils.showToast('Không tìm thấy dữ liệu tệp mẫu!', 'warning');
       return;
     }
-    contractMergeEngine.downloadBlob(t.data_buffer, t.file_name || `${t.name}.docx`, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    const fileName = t.file_name || `${t.name}.${t.format || 'docx'}`;
+    const mime = fileName.toLowerCase().endsWith('.doc') ? 'application/msword' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    contractMergeEngine.downloadBlob(t.data_buffer, fileName, mime);
     utils.showToast(`Đã tải xuống file mẫu: ${t.name}`, 'success');
   },
 
@@ -2114,28 +2116,47 @@ const appContracts = {
     try {
       const buf = await contractMergeEngine.generateDefaultDocxBuffer();
       contractMergeEngine.downloadBlob(buf, 'Mau_Hop_Dong_MISA_Chuan_TRUNGHAI.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      utils.showToast('Đã tải xuống mẫu Word chuẩn MISA (.docx) kèm các trường trộn hợp đồng!', 'success');
+      utils.showToast('Đã tải xuống mẫu Word chuẩn MISA định dạng .docx!', 'success');
     } catch (e) {
       console.error(e);
       utils.showToast('Lỗi khi tạo file mẫu Word: ' + e.message, 'error');
     }
   },
 
+  downloadSampleDoc() {
+    if (typeof contractMergeEngine === 'undefined') {
+      utils.showToast('Thư viện tạo mẫu chưa sẵn sàng', 'warning');
+      return;
+    }
+    try {
+      const blob = contractMergeEngine.generateDefaultDocBlob();
+      contractMergeEngine.downloadBlob(blob, 'Mau_Hop_Dong_MISA_Chuan_TRUNGHAI.doc');
+      utils.showToast('Đã tải xuống mẫu Word chuẩn MISA định dạng .doc (Word 97 - 2003)!', 'success');
+    } catch (e) {
+      console.error(e);
+      utils.showToast('Lỗi khi tạo file mẫu Word .doc: ' + e.message, 'error');
+    }
+  },
+
   async onTemplateFileSelected(file) {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.docx')) {
-      utils.showToast('Vui lòng chọn tệp định dạng Microsoft Word (.docx)!', 'warning');
+    const nameLower = file.name.toLowerCase();
+    const isDocx = nameLower.endsWith('.docx');
+    const isDoc = nameLower.endsWith('.doc');
+    if (!isDocx && !isDoc) {
+      utils.showToast('Vui lòng chọn tệp định dạng Microsoft Word (.docx hoặc .doc)!', 'warning');
       return;
     }
 
     const dropzoneLabel = document.getElementById('template-dropzone-label');
     if (dropzoneLabel) {
-      dropzoneLabel.innerHTML = `Đã chọn: <strong style="color: #2563EB;">${file.name}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+      const ext = isDoc ? '.doc' : '.docx';
+      dropzoneLabel.innerHTML = `Đã chọn: <strong style="color: #2563EB;">${file.name}</strong> (${(file.size / 1024).toFixed(1)} KB) - Định dạng Word ${ext}`;
     }
 
     const nameInput = document.getElementById('template-upload-name');
     if (nameInput && !nameInput.value.trim()) {
-      nameInput.value = file.name.replace(/\.docx$/i, '');
+      nameInput.value = file.name.replace(/\.(docx|doc)$/i, '');
     }
 
     try {
@@ -2444,20 +2465,24 @@ const appContracts = {
     if (progressContainer) progressContainer.style.display = 'block';
     if (execBtn) execBtn.disabled = true;
 
+    const formatRadio = document.querySelector('input[name="merge-export-format"]:checked');
+    const exportFormat = formatRadio ? formatRadio.value : 'docx'; // 'docx' | 'doc' | 'both'
+
     try {
       const zipBlob = await contractMergeEngine.batchMerge(targets, templateBuffer, (curr, total, name) => {
         const percent = Math.round((curr / total) * 100);
         if (progressBar) progressBar.style.width = `${percent}%`;
         if (progressPercent) progressPercent.textContent = `${percent}%`;
         if (progressText) progressText.textContent = `Đang bốc tách & tạo file (${curr}/${total}): ${name}`;
-      });
+      }, exportFormat);
 
       if (zipBlob) {
         const dateStr = new Date().toISOString().split('T')[0];
-        contractMergeEngine.downloadBlob(zipBlob, `Bo_Hop_Dong_TRUNGHAI_${dateStr}.zip`);
+        const formatLabel = exportFormat === 'doc' ? 'DOC' : (exportFormat === 'both' ? 'DOCX_DOC' : 'DOCX');
+        contractMergeEngine.downloadBlob(zipBlob, `Bo_Hop_Dong_TRUNGHAI_${formatLabel}_${dateStr}.zip`);
       }
 
-      utils.showToast(`Đã hoàn tất chạy và tải xuống ${targets.length} hợp đồng thành công!`, 'success');
+      utils.showToast(`Đã hoàn tất chạy và tải xuống ${targets.length} hợp đồng (${exportFormat.toUpperCase()}) thành công!`, 'success');
       setTimeout(() => {
         if (progressContainer) progressContainer.style.display = 'none';
         if (execBtn) execBtn.disabled = false;
@@ -2480,7 +2505,7 @@ const appContracts = {
   },
 
   // ========================================================================
-  // XEM BẢN IN HỢP ĐỒNG & LƯU PDF / TẢI WORD (.DOCX)
+  // XEM BẢN IN HỢP ĐỒNG & LƯU PDF / TẢI WORD (.DOCX & .DOC)
   // ========================================================================
   openPrintPreview(contractId) {
     const c = (this.contracts || []).find(item => item.contract_id === contractId);
@@ -2520,10 +2545,24 @@ const appContracts = {
       const docxBlob = await contractMergeEngine.mergeDocx(templateBuffer, mergeData);
       const fileName = `HDLD_${mergeData.MaNV}_${mergeData.HoVaTen.replace(/\s+/g, '_')}.docx`;
       contractMergeEngine.downloadBlob(docxBlob, fileName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      utils.showToast(`Đã tải về: ${fileName}`, 'success');
+      utils.showToast(`Đã tải về file Word .docx: ${fileName}`, 'success');
     } catch (e) {
       console.error(e);
-      utils.showToast('Lỗi khi tạo file Word: ' + e.message, 'error');
+      utils.showToast('Lỗi khi tạo file Word .docx: ' + e.message, 'error');
+    }
+  },
+
+  downloadCurrentPreviewDoc() {
+    if (!this.currentPreviewContract || typeof contractMergeEngine === 'undefined') return;
+    try {
+      const mergeData = contractMergeEngine.buildMergeData(this.currentPreviewContract);
+      const docBlob = contractMergeEngine.generateDocBlob(mergeData);
+      const fileName = `HDLD_${mergeData.MaNV}_${mergeData.HoVaTen.replace(/\s+/g, '_')}.doc`;
+      contractMergeEngine.downloadBlob(docBlob, fileName);
+      utils.showToast(`Đã tải về file Word .doc: ${fileName}`, 'success');
+    } catch (e) {
+      console.error(e);
+      utils.showToast('Lỗi khi tạo file Word .doc: ' + e.message, 'error');
     }
   },
 

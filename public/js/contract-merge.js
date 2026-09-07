@@ -555,22 +555,42 @@ const contractMergeEngine = {
     return finalData;
   },
 
-  // AI / Smart Scanner: Quét và nhận diện các trường trộn từ tệp Word (.docx)
+  // AI / Smart Scanner: Quét và nhận diện các trường trộn từ tệp Word (.docx và .doc)
   analyzeDocxFields(arrayBuffer) {
-    if (typeof PizZip === 'undefined') {
-      return { success: false, message: 'Thư viện PizZip chưa sẵn sàng' };
+    if (!arrayBuffer) {
+      return { success: false, message: 'Dữ liệu file trống' };
     }
 
     try {
-      const zip = new PizZip(arrayBuffer);
-      const docXml = zip.files['word/document.xml'] ? zip.files['word/document.xml'].asText() : '';
+      let textOnly = '';
 
-      if (!docXml) {
-        return { success: false, message: 'Tệp Word không chứa nội dung hợp lệ (document.xml)' };
+      // Kiểm tra magic bytes xem có phải định dạng ZIP (.docx) không
+      const headerBytes = new Uint8Array(arrayBuffer.slice(0, 4));
+      const isZip = headerBytes[0] === 0x50 && headerBytes[1] === 0x4B;
+
+      if (isZip && typeof PizZip !== 'undefined') {
+        try {
+          const zip = new PizZip(arrayBuffer);
+          const docXml = zip.files['word/document.xml'] ? zip.files['word/document.xml'].asText() : '';
+          if (docXml) {
+            textOnly = docXml.replace(/<[^>]+>/g, ' ');
+          }
+        } catch (zipErr) {
+          console.warn('Lỗi giải nén .docx:', zipErr);
+        }
       }
 
-      // 1. Dọn dẹp XML và tìm tất cả thẻ có dạng <...>, {...}, «...»
-      const textOnly = docXml.replace(/<[^>]+>/g, '');
+      // Nếu không phải zip hoặc docXml trống (file Word .doc dạng HTML / RTF / nhị phân), đọc chuỗi văn bản
+      if (!textOnly) {
+        try {
+          const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer);
+          textOnly += ' ' + utf8.replace(/<[^>]+>/g, ' ');
+        } catch (_) {}
+        try {
+          const utf16 = new TextDecoder('utf-16le', { fatal: false }).decode(arrayBuffer);
+          textOnly += ' ' + utf16.replace(/<[^>]+>/g, ' ');
+        } catch (_) {}
+      }
 
       // Regex quét trường: <Tag>, {Tag}, «Tag»
       const tagRegex = /(?:<|&lt;|«|\{)([a-zA-Z0-9_À-ỹ]+)(?:>|&gt;|»|\})/g;
@@ -578,8 +598,8 @@ const contractMergeEngine = {
       let match;
       while ((match = tagRegex.exec(textOnly)) !== null) {
         const tagName = match[1].trim();
-        // Bỏ qua các tag XML chuẩn nếu có
-        if (!['xml', 'w', 'r', 'p', 't', 'b', 'i'].includes(tagName.toLowerCase())) {
+        // Bỏ qua các tag HTML / XML chuẩn
+        if (!['xml', 'w', 'r', 'p', 't', 'b', 'i', 'html', 'head', 'body', 'style', 'table', 'tr', 'td', 'div', 'span'].includes(tagName.toLowerCase())) {
           detectedSet.add(tagName);
         }
       }
@@ -691,8 +711,94 @@ const contractMergeEngine = {
     return out;
   },
 
-  // Trộn hàng loạt (Batch Merge) và nén thành tệp .ZIP kèm báo cáo tiến trình
-  async batchMerge(contractsList, templateBuffer, onProgress) {
+  // Tạo file Word .doc (chuẩn Microsoft Word 97-2003 / MHTML mở tốt trên mọi phiên bản Office)
+  generateDocBlob(mergeData) {
+    const htmlBody = this.generateContractPrintHtml(mergeData);
+    const fullHtml = `<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='utf-8'>
+  <title>Hop Dong Lao Dong - ${mergeData.HoVaTen || ''}</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page Section1 {
+      size: 210mm 297mm;
+      margin: 20mm 20mm 20mm 25mm;
+      mso-header-margin: 35.4pt;
+      mso-footer-margin: 35.4pt;
+    }
+    div.Section1 {
+      page: Section1;
+    }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 13pt;
+      line-height: 1.5;
+      color: #000000;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    td, th {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 13pt;
+    }
+    p, div {
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="Section1">
+    ${htmlBody}
+  </div>
+</body>
+</html>`;
+    return new Blob(['\ufeff' + fullHtml], { type: 'application/msword;charset=utf-8' });
+  },
+
+  // Tạo file mẫu Word .doc chuẩn MISA với đầy đủ các thẻ trộn
+  generateDefaultDocBlob() {
+    const defaultData = {};
+    this.MISA_MERGE_FIELDS.forEach(f => {
+      defaultData[f.key] = `<${f.key}>`;
+    });
+    defaultData.HoVaTen = '<HoVaTen>';
+    defaultData.SoHD = '<SoHD>';
+    defaultData.LoaiHD = '<LoaiHD>';
+    defaultData.NgayKy = '<NgayKy>';
+    defaultData.NgayHieuLuc = '<NgayHieuLuc>';
+    defaultData.NgayHetHan = '<NgayHetHan>';
+    defaultData.NgaySinh = '<NgaySinh>';
+    defaultData.GioiTinh = '<GioiTinh>';
+    defaultData.SoCCCD = '<SoCCCD>';
+    defaultData.NgayCapCCCD = '<NgayCapCCCD>';
+    defaultData.NoiCapCCCD = '<NoiCapCCCD>';
+    defaultData.DiaChiThuongTru = '<DiaChiThuongTru>';
+    defaultData.DiaChiHienNay = '<DiaChiHienNay>';
+    defaultData.SoDienThoai = '<SoDienThoai>';
+    defaultData.ChucDanh = '<ChucDanh>';
+    defaultData.PhongBan = '<PhongBan>';
+    defaultData.MucLuong = '<MucLuong>';
+    defaultData.LuongBangChu = '<LuongBangChu>';
+    defaultData.TenCongTy = '<TenCongTy>';
+    defaultData.NguoiDaiDien = '<NguoiDaiDien>';
+    defaultData.ChucVuDaiDien = '<ChucVuDaiDien>';
+    defaultData.DiaChiCongTy = '<DiaChiCongTy>';
+    return this.generateDocBlob(defaultData);
+  },
+
+  // Trộn hàng loạt (Batch Merge) hỗ trợ xuất .docx, .doc hoặc cả hai và nén thành tệp .ZIP
+  async batchMerge(contractsList, templateBuffer, onProgress, format = 'docx') {
     if (typeof JSZip === 'undefined') {
       throw new Error('Thư viện JSZip chưa sẵn sàng');
     }
@@ -702,7 +808,7 @@ const contractMergeEngine = {
     const employees = (typeof appData !== 'undefined' && appData.employees) ? appData.employees : [];
     const company = (typeof appData !== 'undefined' && appData.company) ? appData.company : {};
 
-    if (!templateBuffer) {
+    if (!templateBuffer && (format === 'docx' || format === 'both')) {
       templateBuffer = this.generateDefaultDocxBuffer();
     }
 
@@ -715,16 +821,25 @@ const contractMergeEngine = {
         onProgress(i + 1, total, mergeData.HoVaTen || contract.employee_id);
       }
 
-      // Trộn từng hợp đồng
-      const docxBlob = await this.mergeDocx(templateBuffer, mergeData);
       const cleanEmpName = (mergeData.HoVaTen || contract.employee_id || `NV_${i + 1}`)
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-zA-Z0-9]/g, '_')
         .replace(/_+/g, '_');
 
-      const fileName = `Hop_Dong_${contract.contract_id || `HD_${i + 1}`}_${cleanEmpName}.docx`;
-      zipPackage.file(fileName, docxBlob);
+      const baseFileName = `Hop_Dong_${contract.contract_id || `HD_${i + 1}`}_${cleanEmpName}`;
+
+      // 1. Tạo file .docx
+      if (format === 'docx' || format === 'both') {
+        const docxBlob = await this.mergeDocx(templateBuffer, mergeData);
+        zipPackage.file(`${baseFileName}.docx`, docxBlob);
+      }
+
+      // 2. Tạo file .doc
+      if (format === 'doc' || format === 'both') {
+        const docBlob = this.generateDocBlob(mergeData);
+        zipPackage.file(`${baseFileName}.doc`, docBlob);
+      }
     }
 
     // Đóng gói file .ZIP
