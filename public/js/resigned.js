@@ -160,9 +160,9 @@ const appResigned = {
 
   calculateSeniority(startDate, endDate) {
     if (!startDate) return '-';
-    const start = new Date(startDate);
-    const end = (endDate && endDate !== 'Không xác định') ? new Date(endDate) : new Date();
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return '-';
+    const start = (typeof utils !== 'undefined' && utils.parseDate) ? utils.parseDate(startDate) : new Date(startDate);
+    const end = (endDate && endDate !== 'Không xác định') ? ((typeof utils !== 'undefined' && utils.parseDate) ? utils.parseDate(endDate) : new Date(endDate)) : new Date();
+    if (!start || isNaN(start.getTime()) || !end || isNaN(end.getTime())) return '-';
 
     let years = end.getFullYear() - start.getFullYear();
     let months = end.getMonth() - start.getMonth();
