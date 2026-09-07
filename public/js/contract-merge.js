@@ -851,15 +851,50 @@ const contractMergeEngine = {
     return zipBlob;
   },
 
-  // Tải file về máy tính
-  downloadBlob(blob, fileName) {
+  // Tải file về máy tính (tự động chuyển đổi ArrayBuffer, TypedArray, base64 hoặc chuỗi sang Blob)
+  downloadBlob(data, fileName, mimeType) {
+    if (!data) return;
+
+    let blob;
+    if (data instanceof Blob) {
+      blob = data;
+    } else if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
+      const mime = mimeType || (fileName && fileName.toLowerCase().endsWith('.doc')
+        ? 'application/msword'
+        : fileName && fileName.toLowerCase().endsWith('.docx')
+          ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          : 'application/octet-stream');
+      blob = new Blob([data], { type: mime });
+    } else if (typeof data === 'string') {
+      if (data.startsWith('data:')) {
+        const parts = data.split(',');
+        const mimeMatch = parts[0].match(/:(.*?);/);
+        const mime = (mimeMatch && mimeMatch[1]) || mimeType || 'application/octet-stream';
+        const byteCharacters = atob(parts[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        blob = new Blob([new Uint8Array(byteNumbers)], { type: mime });
+      } else {
+        blob = new Blob([data], { type: mimeType || 'text/plain;charset=utf-8' });
+      }
+    } else {
+      blob = new Blob([data], { type: mimeType || 'application/octet-stream' });
+    }
+
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = fileName;
+    link.href = url;
+    link.download = fileName || 'document';
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(link.href);
+    setTimeout(() => {
+      if (link.parentNode) {
+        document.body.removeChild(link);
+      }
+      window.URL.revokeObjectURL(url);
+    }, 1000);
   },
 
   // Kiến tạo giao diện HTML in hợp đồng chuẩn pháp lý cho xem trước & in trực tiếp / xuất PDF

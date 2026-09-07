@@ -2175,15 +2175,23 @@ const appContracts = {
 
   async downloadTemplateFile(id) {
     if (typeof contractTemplateStore === 'undefined' || typeof contractMergeEngine === 'undefined') return;
-    const t = await contractTemplateStore.getTemplate(id);
-    if (!t || !t.data_buffer) {
-      utils.showToast('Không tìm thấy dữ liệu tệp mẫu!', 'warning');
-      return;
+    try {
+      const t = await contractTemplateStore.getTemplate(id);
+      if (!t || !t.data_buffer) {
+        utils.showToast('Không tìm thấy dữ liệu tệp mẫu!', 'warning');
+        return;
+      }
+      const fileName = t.file_name || `${t.name}.${t.format || 'docx'}`;
+      const mime = fileName.toLowerCase().endsWith('.doc') 
+        ? 'application/msword' 
+        : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const blob = t.data_buffer instanceof Blob ? t.data_buffer : new Blob([t.data_buffer], { type: mime });
+      contractMergeEngine.downloadBlob(blob, fileName, mime);
+      utils.showToast(`Đã tải xuống file mẫu: ${t.name}`, 'success');
+    } catch (e) {
+      console.error(e);
+      utils.showToast('Lỗi khi tải file mẫu: ' + e.message, 'error');
     }
-    const fileName = t.file_name || `${t.name}.${t.format || 'docx'}`;
-    const mime = fileName.toLowerCase().endsWith('.doc') ? 'application/msword' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    contractMergeEngine.downloadBlob(t.data_buffer, fileName, mime);
-    utils.showToast(`Đã tải xuống file mẫu: ${t.name}`, 'success');
   },
 
   async downloadSampleDocx() {
@@ -2193,7 +2201,9 @@ const appContracts = {
     }
     try {
       const buf = await contractMergeEngine.generateDefaultDocxBuffer();
-      contractMergeEngine.downloadBlob(buf, 'Mau_Hop_Dong_MISA_Chuan_TRUNGHAI.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      const mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const blob = buf instanceof Blob ? buf : new Blob([buf], { type: mime });
+      contractMergeEngine.downloadBlob(blob, 'Mau_Hop_Dong_MISA_Chuan_TRUNGHAI.docx', mime);
       utils.showToast('Đã tải xuống mẫu Word chuẩn MISA định dạng .docx!', 'success');
     } catch (e) {
       console.error(e);
@@ -2208,7 +2218,7 @@ const appContracts = {
     }
     try {
       const blob = contractMergeEngine.generateDefaultDocBlob();
-      contractMergeEngine.downloadBlob(blob, 'Mau_Hop_Dong_MISA_Chuan_TRUNGHAI.doc');
+      contractMergeEngine.downloadBlob(blob, 'Mau_Hop_Dong_MISA_Chuan_TRUNGHAI.doc', 'application/msword');
       utils.showToast('Đã tải xuống mẫu Word chuẩn MISA định dạng .doc (Word 97 - 2003)!', 'success');
     } catch (e) {
       console.error(e);
