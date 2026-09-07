@@ -36,11 +36,21 @@ const contractTemplateStore = {
   getDefaultTemplatesMeta() {
     return [
       {
+        id: 'tpl-trunghai-2025',
+        name: '12.NS-TH.2025 - Hợp Đồng Lao Động Chuẩn Trung Hải',
+        type: 'Hợp đồng lao động',
+        file_name: '12.NS-TH.2025_Hop_dong_lao_dong.docx',
+        is_default: true,
+        created_at: '2026-01-01T00:00:00.000Z',
+        description: 'Mẫu hợp đồng lao động chính thức của Tập đoàn Trung Hải (khớp chuẩn 13 trường dữ liệu HRM)',
+        size: '54 KB'
+      },
+      {
         id: 'tpl-default-fixed-term',
         name: 'Hợp Đồng Lao Động Xác Định Thời Hạn (Chuẩn MISA)',
         type: 'Hợp đồng lao động',
         file_name: 'Mau_Hop_Dong_Lao_Dong_Xac_Dinh_Thoi_Han_MISA.docx',
-        is_default: true,
+        is_default: false,
         created_at: '2026-01-01T00:00:00.000Z',
         description: 'Mẫu hợp đồng chuẩn Bộ Lao động & MISA AMIS có chèn sẵn 25+ trường trộn tự động.',
         size: '28 KB'
@@ -50,7 +60,7 @@ const contractTemplateStore = {
         name: 'Hợp Đồng Lao Động Không Xác Định Thời Hạn (Chuẩn MISA)',
         type: 'Hợp đồng lao động',
         file_name: 'Mau_Hop_Dong_Lao_Dong_Khong_Xac_Dinh_Thoi_Han.docx',
-        is_default: true,
+        is_default: false,
         created_at: '2026-01-01T00:00:00.000Z',
         description: 'Dành cho nhân sự chính thức gắn bó dài hạn, đầy đủ quyền lợi bảo hiểm và phúc lợi.',
         size: '29 KB'
@@ -60,7 +70,7 @@ const contractTemplateStore = {
         name: 'Phụ Lục Hợp Đồng Lao Động (Điều Chỉnh Lương & Chức Danh)',
         type: 'Phụ lục hợp đồng',
         file_name: 'Mau_Phu_Luc_Hop_Dong_Lao_Dong.docx',
-        is_default: true,
+        is_default: false,
         created_at: '2026-01-01T00:00:00.000Z',
         description: 'Mẫu phụ lục điều chỉnh tăng lương, thăng chức hoặc thay đổi địa điểm công tác.',
         size: '22 KB'
@@ -70,7 +80,7 @@ const contractTemplateStore = {
         name: 'Hợp Đồng Thử Việc & Thỏa Thuận Học Việc',
         type: 'Hợp đồng thử việc',
         file_name: 'Mau_Hop_Dong_Thu_Viec_Chuan.docx',
-        is_default: true,
+        is_default: false,
         created_at: '2026-01-01T00:00:00.000Z',
         description: 'Mẫu hợp đồng thử việc theo thời hạn 30 - 60 ngày theo Luật Lao động.',
         size: '24 KB'
@@ -188,6 +198,7 @@ const contractTemplateStore = {
     if (this.memoryTemplates.has(templateId)) {
       const t = this.memoryTemplates.get(templateId);
       if (t.buffer) return t.buffer;
+      if (t.data_buffer) return t.data_buffer;
       if (t.base64) return this.base64ToArrayBuffer(t.base64);
     }
 
@@ -203,6 +214,7 @@ const contractTemplateStore = {
         });
         if (res) {
           if (res.buffer) return res.buffer;
+          if (res.data_buffer) return res.data_buffer;
           if (res.base64) return this.base64ToArrayBuffer(res.base64);
         }
       }
@@ -210,7 +222,18 @@ const contractTemplateStore = {
       console.warn('Lấy buffer từ DB thất bại:', e);
     }
 
-    // 2. Nếu là mẫu mặc định, tự động kiến tạo file .docx hoàn chỉnh bằng PizZip
+    // 2. Mẫu chuẩn 12.NS-TH.2025 của Tập đoàn Trung Hải
+    if (templateId === 'tpl-trunghai-2025' || (templateId && String(templateId).includes('trunghai'))) {
+      if (typeof window !== 'undefined' && window.TRUNGHAI_2025_DOCX_BASE64) {
+        return this.base64ToArrayBuffer(window.TRUNGHAI_2025_DOCX_BASE64);
+      }
+      try {
+        const resp = await fetch('templates/12.NS-TH.2025_Hop_dong_lao_dong.docx');
+        if (resp.ok) return await resp.arrayBuffer();
+      } catch (_) {}
+    }
+
+    // 3. Nếu là mẫu mặc định khác, tự động kiến tạo file .docx hoàn chỉnh bằng PizZip
     return this.generateDefaultDocxBuffer(templateId);
   },
 
@@ -558,90 +581,299 @@ const contractMergeEngine = {
   // AI / Smart Scanner: Quét và nhận diện các trường trộn từ tệp Word (.docx và .doc)
   analyzeDocxFields(arrayBuffer) {
     if (!arrayBuffer) {
-      return { success: false, message: 'Dữ liệu file trống' };
+      return { success: false, totalTags: 0, recognizedTags: [], unrecognizedTags: [], message: 'Dữ liệu file trống' };
     }
 
     try {
-      let textOnly = '';
+      // 1. Kiểm tra magic bytes xem có phải định dạng ZIP (.docx OpenXML) không
+      const u8 = new Uint8Array(arrayBuffer instanceof ArrayBuffer ? arrayBuffer : (arrayBuffer.buffer || arrayBuffer));
+      const isZip = u8.length > 4 && u8[0] === 0x50 && u8[1] === 0x4B; // 'PK'
 
-      // Kiểm tra magic bytes xem có phải định dạng ZIP (.docx) không
-      const headerBytes = new Uint8Array(arrayBuffer.slice(0, 4));
-      const isZip = headerBytes[0] === 0x50 && headerBytes[1] === 0x4B;
+      const extractedTexts = [];
 
       if (isZip && typeof PizZip !== 'undefined') {
         try {
           const zip = new PizZip(arrayBuffer);
-          const docXml = zip.files['word/document.xml'] ? zip.files['word/document.xml'].asText() : '';
-          if (docXml) {
-            textOnly = docXml.replace(/<[^>]+>/g, ' ');
+          for (const fn of Object.keys(zip.files)) {
+            const fnLower = fn.toLowerCase().replace(/\\/g, '/');
+            if (fnLower.startsWith('word/') && fnLower.endsWith('.xml') && !fnLower.includes('styles') && !fnLower.includes('fonttable') && !fnLower.includes('settings')) {
+              const file = zip.files[fn];
+              if (file && typeof file.asText === 'function') {
+                const xml = file.asText();
+                // Nối các thẻ <w:t> trong từng đoạn <w:p> để tránh trường hợp Word chia tách thẻ trộn
+                const pRegex = /<w:p\b[^>]*>([\s\S]*?)<\/w:p>/gi;
+                let pMatch;
+                while ((pMatch = pRegex.exec(xml)) !== null) {
+                  const pContent = pMatch[1];
+                  const tRegex = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi;
+                  let tMatch;
+                  let pText = '';
+                  while ((tMatch = tRegex.exec(pContent)) !== null) {
+                    pText += tMatch[1];
+                  }
+                  if (pText) {
+                    // Giải mã XML entities
+                    pText = pText
+                      .replace(/&lt;/g, '<')
+                      .replace(/&gt;/g, '>')
+                      .replace(/&amp;/g, '&')
+                      .replace(/&quot;/g, '"')
+                      .replace(/&apos;/g, "'")
+                      .replace(/&laquo;/g, '«')
+                      .replace(/&raquo;/g, '»');
+                    extractedTexts.push(pText);
+                  }
+                }
+              }
+            }
           }
         } catch (zipErr) {
-          console.warn('Lỗi giải nén .docx:', zipErr);
+          console.warn('[analyzeDocxFields] Lỗi giải nén .docx:', zipErr);
         }
       }
 
-      // Nếu không phải zip hoặc docXml trống (file Word .doc dạng HTML / RTF / nhị phân), đọc chuỗi văn bản
-      if (!textOnly) {
+      // 2. Nếu không phải zip hoặc không trích xuất được (file .doc Word 97-2003, RTF, HTML...)
+      if (extractedTexts.length === 0) {
         try {
-          const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer);
-          textOnly += ' ' + utf8.replace(/<[^>]+>/g, ' ');
+          // Word 97-2003 lưu text chính dưới dạng UTF-16LE
+          const utf16 = new TextDecoder('utf-16le', { fatal: false }).decode(arrayBuffer);
+          if (utf16) extractedTexts.push(utf16);
         } catch (_) {}
         try {
-          const utf16 = new TextDecoder('utf-16le', { fatal: false }).decode(arrayBuffer);
-          textOnly += ' ' + utf16.replace(/<[^>]+>/g, ' ');
+          const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer);
+          if (utf8) extractedTexts.push(utf8);
         } catch (_) {}
       }
 
-      // Regex quét trường: <Tag>, {Tag}, «Tag»
-      const tagRegex = /(?:<|&lt;|«|\{)([a-zA-Z0-9_À-ỹ]+)(?:>|&gt;|»|\})/g;
+      const combinedText = extractedTexts.join('\n');
+
+      // 3. Regex quét trường: <Tag>, {Tag}, «Tag», [Tag], <<Tag>>
+      const tagRegex = /(?:<|&lt;|«|\{|\[|&laquo;)\s*([a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9\s\.\-]+?)\s*(?:>|&gt;|»|\}|\]|&raquo;)/g;
       const detectedSet = new Set();
       let match;
-      while ((match = tagRegex.exec(textOnly)) !== null) {
-        const tagName = match[1].trim();
-        // Bỏ qua các tag HTML / XML chuẩn
-        if (!['xml', 'w', 'r', 'p', 't', 'b', 'i', 'html', 'head', 'body', 'style', 'table', 'tr', 'td', 'div', 'span'].includes(tagName.toLowerCase())) {
-          detectedSet.add(tagName);
+
+      const ignoreXmlTags = new Set([
+        'xml', 'w', 'r', 'p', 't', 'b', 'i', 'html', 'head', 'body', 'style', 'table', 'tr', 'td',
+        'div', 'span', 'br', 'hr', 'meta', 'link', 'script', 'title', 'font', 'section', 'header',
+        'footer', 'w:p', 'w:r', 'w:t', 'o:p', 'w:body', 'w:tc', 'w:tr', 'mso-element'
+      ]);
+
+      while ((match = tagRegex.exec(combinedText)) !== null) {
+        const rawTag = match[1].trim();
+        const lowTag = rawTag.toLowerCase();
+        if (rawTag.length >= 2 && !ignoreXmlTags.has(lowTag) && !lowTag.startsWith('w:') && !lowTag.startsWith('xmlns') && !lowTag.startsWith('http')) {
+          detectedSet.add(rawTag);
         }
       }
 
       const detectedTags = Array.from(detectedSet);
 
-      // Danh mục trường HRM đã được hỗ trợ tự động bốc tách
-      const supportedMap = {
-        'HoVaTen': 'Họ và tên nhân viên',
-        'NgaySinh': 'Ngày tháng năm sinh',
-        'GioiTinh': 'Giới tính',
-        'SoCCCD': 'Số Căn cước công dân / CMND',
-        'NgayCapCCCD': 'Ngày cấp CCCD',
-        'NoiCapCCCD': 'Nơi cấp CCCD',
-        'DiaChiThuongTru': 'Hộ khẩu thường trú',
-        'DiaChiHienNay': 'Chỗ ở hiện nay',
-        'SoDienThoai': 'Số điện thoại liên hệ',
-        'Email': 'Địa chỉ Email cơ quan/cá nhân',
-        'SoHD': 'Số hợp đồng lao động',
-        'LoaiHD': 'Loại hợp đồng lao động',
-        'ChucDanh': 'Vị trí công việc / Chức danh',
-        'PhongBan': 'Phòng ban công tác',
-        'NgayBatDau': 'Ngày bắt đầu hợp đồng',
-        'NgayKetThuc': 'Ngày kết thúc hợp đồng',
-        'NgayHieuLuc': 'Ngày hiệu lực',
-        'MucLuong': 'Mức lương hợp đồng (định dạng số & VNĐ)',
-        'LuongBangChu': 'Mức lương viết bằng chữ',
-        'SoTaiKhoan': 'Số tài khoản ngân hàng',
-        'NganHang': 'Tên ngân hàng mở thẻ',
-        'TenCongTy': 'Tên doanh nghiệp / Công ty',
-        'NguoiDaiDien': 'Người đại diện theo pháp luật',
-        'ChucVuDaiDien': 'Chức vụ người đại diện',
-        'NgayKy': 'Ngày ký kết hợp đồng'
+      // 4. Danh mục trường HRM đã được hỗ trợ tự động bốc tách cùng từ khóa tương đương
+      const HRM_FIELD_DEFINITIONS = [
+        {
+          key: 'SoHD',
+          label: 'Số hợp đồng lao động',
+          sample: '12.NS-TH/2026',
+          aliases: ['sohd', 'sohopdong', 'sohopdonglaodong', 'contractno', 'contractid', 'so_hd']
+        },
+        {
+          key: 'HoVaTen',
+          label: 'Họ và tên nhân viên',
+          sample: 'Nguyễn Văn A',
+          aliases: ['hovaten', 'hoten', 'tennhanvien', 'nhanvien', 'fullname', 'name', 'nguoilaodong', 'ho_va_ten']
+        },
+        {
+          key: 'NgaySinh',
+          label: 'Ngày tháng năm sinh',
+          sample: '15/08/1992',
+          aliases: ['ngaysinh', 'sinhngay', 'namsinh', 'dob', 'birthday', 'ngay_sinh']
+        },
+        {
+          key: 'GioiTinh',
+          label: 'Giới tính',
+          sample: 'Nam',
+          aliases: ['gioitinh', 'namnu', 'gender', 'sex', 'gioi_tinh']
+        },
+        {
+          key: 'QuocTich',
+          label: 'Quốc tịch',
+          sample: 'Việt Nam',
+          aliases: ['quoctich', 'nationality', 'quoc_tich']
+        },
+        {
+          key: 'SoCCCD',
+          label: 'Số Căn cước công dân / CMND',
+          sample: '079092001234',
+          aliases: ['socccd', 'so_cccd', 'cccd', 'cmnd', 'socmnd', 'cancuoc', 'cmt', 'socmt', 'so_cmnd']
+        },
+        {
+          key: 'NgayCapCCCD',
+          label: 'Ngày cấp CCCD / CMND',
+          sample: '10/05/2021',
+          aliases: ['ngaycapcccd', 'ngaycap', 'ngaycapcmnd', 'ngay_cap_cccd', 'ngay_cap']
+        },
+        {
+          key: 'NoiCapCCCD',
+          label: 'Nơi cấp CCCD / CMND',
+          sample: 'Cục Cảnh sát QLHC về TTXH',
+          aliases: ['noicapcccd', 'noicap', 'noicapcmnd', 'noi_cap_cccd', 'noi_cap']
+        },
+        {
+          key: 'DiaChiThuongTru',
+          label: 'Hộ khẩu thường trú',
+          sample: '123 Nguyễn Trãi, P. Bến Thành, Q.1, TP.HCM',
+          aliases: ['diachithuongtru', 'thuongtru', 'hokhau', 'hokhauthuongtru', 'diachihokhau', 'dia_chi_thuong_tru']
+        },
+        {
+          key: 'DiaChiHienNay',
+          label: 'Chỗ ở hiện nay',
+          sample: '456 Lê Văn Sỹ, P.14, Q.3, TP.HCM',
+          aliases: ['diachihiennay', 'noiohiennay', 'tamtru', 'diachitamtru', 'choohiennay', 'noio', 'dia_chi_hien_nay']
+        },
+        {
+          key: 'SoDienThoai',
+          label: 'Số điện thoại liên hệ',
+          sample: '0901 234 567',
+          aliases: ['sodienthoai', 'dienthoai', 'sodt', 'dt', 'phone', 'tel', 'mobile', 'so_dien_thoai', 'so_dt']
+        },
+        {
+          key: 'Email',
+          label: 'Địa chỉ Email cơ quan/cá nhân',
+          sample: 'nguyenvana@trunghaico.vn',
+          aliases: ['email', 'thudientu', 'homthu', 'mail']
+        },
+        {
+          key: 'LoaiHD',
+          label: 'Loại hợp đồng lao động',
+          sample: 'Xác định thời hạn (12 tháng)',
+          aliases: ['loaihd', 'loaihopdong', 'hinhthuchd', 'contracttype', 'loai_hd']
+        },
+        {
+          key: 'ChucDanh',
+          label: 'Vị trí công việc / Chức danh',
+          sample: 'Chuyên viên Kế toán',
+          aliases: ['chucdanh', 'chucvu', 'vitri', 'vitricongviec', 'position', 'jobtitle', 'chuc_danh', 'chuc_vu']
+        },
+        {
+          key: 'PhongBan',
+          label: 'Phòng ban công tác',
+          sample: 'Phòng Kế Toán - Tài Chính',
+          aliases: ['phongban', 'bophan', 'phong', 'khoi', 'department', 'phong_ban', 'bo_phan']
+        },
+        {
+          key: 'NgayBatDau',
+          label: 'Ngày bắt đầu hợp đồng',
+          sample: '01/01/2026',
+          aliases: ['ngaybatdau', 'ngayvao', 'tungay', 'startdate', 'ngay_bat_dau']
+        },
+        {
+          key: 'NgayKetThuc',
+          label: 'Ngày kết thúc hợp đồng',
+          sample: '31/12/2026',
+          aliases: ['ngayketthuc', 'denngay', 'enddate', 'ngay_ket_thuc']
+        },
+        {
+          key: 'NgayHieuLuc',
+          label: 'Ngày hiệu lực',
+          sample: '01/01/2026',
+          aliases: ['ngayhieuluc', 'hieuluctu', 'ngaycohieuluc', 'effectivedate', 'ngay_hieu_luc']
+        },
+        {
+          key: 'NgayHetHan',
+          label: 'Ngày hết hạn hợp đồng',
+          sample: '31/12/2026',
+          aliases: ['ngayhethan', 'hethanngay', 'expiredate', 'ngay_het_han']
+        },
+        {
+          key: 'MucLuong',
+          label: 'Mức lương hợp đồng (định dạng số & VNĐ)',
+          sample: '15,000,000 đ',
+          aliases: ['mucluong', 'luongchinh', 'luongcoban', 'luong', 'salary', 'basicsalary', 'muc_luong']
+        },
+        {
+          key: 'LuongBangChu',
+          label: 'Mức lương viết bằng chữ',
+          sample: 'Mười lăm triệu đồng chẵn',
+          aliases: ['luongbangchu', 'mucluongbangchu', 'tienluongbangchu', 'luong_bang_chu']
+        },
+        {
+          key: 'SoTaiKhoan',
+          label: 'Số tài khoản ngân hàng',
+          sample: '1903456789001',
+          aliases: ['sotaikhoan', 'stk', 'so_tk', 'bankaccount', 'so_tai_khoan']
+        },
+        {
+          key: 'NganHang',
+          label: 'Tên ngân hàng mở thẻ',
+          sample: 'Techcombank',
+          aliases: ['nganhang', 'tennganhang', 'bankname', 'bank', 'ngan_hang']
+        },
+        {
+          key: 'TenCongTy',
+          label: 'Tên doanh nghiệp / Công ty',
+          sample: 'CÔNG TY CỔ PHẦN ĐẦU TƯ TRUNG HẢI',
+          aliases: ['tencongty', 'congty', 'doanhnghiep', 'company', 'ten_cong_ty']
+        },
+        {
+          key: 'DiaChiCongTy',
+          label: 'Địa chỉ trụ sở công ty',
+          sample: 'Số 12 Đường Số 5, P. An Phú, TP. Thủ Đức, TP.HCM',
+          aliases: ['diachicongty', 'diachicongtyhd', 'truso', 'dia_chi_cong_ty']
+        },
+        {
+          key: 'NguoiDaiDien',
+          label: 'Người đại diện theo pháp luật',
+          sample: 'Nguyễn Trung Hải',
+          aliases: ['nguoidaidien', 'daidien', 'nguoidaidienphapluat', 'representative', 'nguoi_dai_dien']
+        },
+        {
+          key: 'ChucVuDaiDien',
+          label: 'Chức vụ người đại diện',
+          sample: 'Tổng Giám Đốc',
+          aliases: ['chucvudaidien', 'chucvunguoidaidien', 'chuc_vu_dai_dien']
+        },
+        {
+          key: 'NgayKy',
+          label: 'Ngày ký kết hợp đồng',
+          sample: '01/01/2026',
+          aliases: ['ngayky', 'ngaykyhd', 'signdate', 'ngay_ky']
+        },
+        {
+          key: 'MaNV',
+          label: 'Mã nhân viên',
+          sample: 'TH-0012',
+          aliases: ['manv', 'manhanvien', 'employeeid', 'empcode', 'ma_nv']
+        }
+      ];
+
+      // Hàm chuẩn hóa chuỗi tag để so khớp thông minh không dấu, không khoảng trắng
+      const normalizeStr = (s) => {
+        return (s || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/đ/g, 'd')
+          .replace(/Đ/g, 'D')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '');
       };
 
       const matched = [];
       const unmatched = [];
 
       detectedTags.forEach(tag => {
-        const foundKey = Object.keys(supportedMap).find(k => k.toLowerCase() === tag.toLowerCase());
-        if (foundKey) {
-          matched.push({ tag, fieldKey: foundKey, label: supportedMap[foundKey] });
+        const normTag = normalizeStr(tag);
+        const def = HRM_FIELD_DEFINITIONS.find(d => {
+          if (normalizeStr(d.key) === normTag) return true;
+          return d.aliases.some(alias => normalizeStr(alias) === normTag);
+        });
+
+        if (def) {
+          matched.push({
+            tag,
+            fieldKey: def.key,
+            label: def.label,
+            sample: def.sample
+          });
         } else {
           unmatched.push(tag);
         }
@@ -698,19 +930,26 @@ const contractMergeEngine = {
           }
         }
       } catch (zipErr) {
-        console.warn('[mergeDocx] Lỗi mở zip template, chuyển sang mẫu mặc định:', zipErr);
+        console.warn('[mergeDocx] Lỗi mở zip template, chuyển sang mẫu dự phòng:', zipErr);
         zip = null;
         docXmlKey = null;
       }
     }
 
     // 2. Nếu template không phải file ZIP hoặc không tìm thấy document.xml (ví dụ file .doc hoặc corrupt)
-    // Tự động dùng mẫu DOCX chuẩn MISA có sẵn 25+ trường trộn
+    // Tự động ưu tiên dùng mẫu OpenXML chuẩn Trung Hải (12.NS-TH.2025)
     if (!zip || !docXmlKey) {
-      console.warn('[mergeDocx] Mẫu văn bản không có cấu trúc word/document.xml. Dùng mẫu chuẩn MISA.');
-      const defaultBuf = this.generateDefaultDocxBuffer();
-      zip = new PizZip(defaultBuf);
-      docXmlKey = 'word/document.xml';
+      if (typeof window !== 'undefined' && window.TRUNGHAI_2025_DOCX_BASE64 && typeof contractTemplateStore !== 'undefined') {
+        console.info('[mergeDocx] Nạp mẫu chuẩn Word OpenXML Trung Hải (12.NS-TH.2025)');
+        const thBuf = contractTemplateStore.base64ToArrayBuffer(window.TRUNGHAI_2025_DOCX_BASE64);
+        zip = new PizZip(thBuf);
+        docXmlKey = 'word/document.xml';
+      } else {
+        console.warn('[mergeDocx] Dùng mẫu chuẩn MISA.');
+        const defaultBuf = this.generateDefaultDocxBuffer();
+        zip = new PizZip(defaultBuf);
+        docXmlKey = 'word/document.xml';
+      }
     }
 
     // 3. Chuẩn hóa & thay thế tất cả các thẻ trộn <Tag>, {Tag}, «Tag» trong toàn bộ các file XML của Word (Body, Headers, Footers)

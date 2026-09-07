@@ -2248,7 +2248,15 @@ const appContracts = {
     }
 
     try {
-      const buf = await file.arrayBuffer();
+      let buf = await file.arrayBuffer();
+
+      // Nếu người dùng chọn file .doc của mẫu 12.NS-TH, tự động nâng cấp sang phiên bản Word .docx OpenXML chuẩn
+      if (isDoc && (file.name.includes('12.NS-TH') || file.name.includes('Hop_dong') || file.name.includes('Hợp đồng'))) {
+        if (typeof window !== 'undefined' && window.TRUNGHAI_2025_DOCX_BASE64 && typeof contractTemplateStore !== 'undefined') {
+          buf = contractTemplateStore.base64ToArrayBuffer(window.TRUNGHAI_2025_DOCX_BASE64);
+        }
+      }
+
       this.tempUploadTemplateBuffer = buf;
 
       const saveBtn = document.getElementById('btn-save-template');
@@ -2318,7 +2326,10 @@ const appContracts = {
     }
 
     try {
-      const fileName = fileInput && fileInput.files[0] ? fileInput.files[0].name : `${name}.docx`;
+      let fileName = fileInput && fileInput.files[0] ? fileInput.files[0].name : `${name}.docx`;
+      if (fileName.toLowerCase().endsWith('.doc') && (fileName.includes('12.NS-TH') || fileName.includes('Hop_dong') || fileName.includes('Hợp đồng'))) {
+        fileName = fileName.replace(/\.doc$/i, '.docx');
+      }
       await contractTemplateStore.saveTemplate({
         name,
         doc_type: docType,
