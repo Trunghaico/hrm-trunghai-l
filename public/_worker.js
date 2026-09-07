@@ -741,24 +741,108 @@ export default {
           });
         }
 
-        // POST /api/employees (Add or Update)
-        if (method === "POST") {
+        // POST or PUT /api/employees (Add or Update)
+        if (method === "POST" || method === "PUT") {
           const body = await request.json().catch(() => ({}));
           const targetId = empId || body.employee_id;
           if (!targetId) return jsonResponse({ success: false, message: "Thiếu mã nhân viên" }, 400);
 
+          if (body.date_of_birth) body.date_of_birth = fixExcelSerialDate(body.date_of_birth);
+          if (body['Ngày sinh']) body['Ngày sinh'] = fixExcelSerialDate(body['Ngày sinh']);
+          if (body.start_date) body.start_date = fixExcelSerialDate(body.start_date);
+          if (body.trial_start_date) body.trial_start_date = fixExcelSerialDate(body.trial_start_date);
+          if (body.official_date) body.official_date = fixExcelSerialDate(body.official_date);
+
           const data = await loadAllFromD1(db);
           const employees = data.tables["03_Employees"] || [];
-          const index = employees.findIndex(e => e.employee_id === targetId);
+          const index = employees.findIndex(e => e.employee_id === targetId || (body.employee_id && e.employee_id === body.employee_id));
+
+          const updatedEmp = {
+            ...(index >= 0 ? employees[index] : {}),
+            ...body,
+            employee_id: body.employee_id || targetId,
+            updated_at: new Date().toISOString()
+          };
+          delete updatedEmp.master_profile;
 
           if (index >= 0) {
-            employees[index] = { ...employees[index], ...body, updated_at: new Date().toISOString() };
+            employees[index] = updatedEmp;
           } else {
-            employees.push({ ...body, employee_id: targetId, created_at: new Date().toISOString() });
+            employees.push({ ...updatedEmp, created_at: new Date().toISOString() });
           }
 
           await saveTableToD1(db, "03_Employees", employees);
-          await saveTableToD1(db, "00_Master_Profiles", employees);
+
+          // Đồng bộ 00_Master_Profiles
+          let masterList = data.tables["00_Master_Profiles"] || [];
+          const mIdx = masterList.findIndex(m => m.employee_id === targetId || m['Mã nhân viên'] === targetId || (body.employee_id && (m.employee_id === body.employee_id || m['Mã nhân viên'] === body.employee_id)));
+          const masterProfileData = body.master_profile ? { ...body.master_profile } : {};
+          if (masterProfileData['Ngày sinh']) masterProfileData['Ngày sinh'] = fixExcelSerialDate(masterProfileData['Ngày sinh']);
+          if (masterProfileData.date_of_birth) masterProfileData.date_of_birth = fixExcelSerialDate(masterProfileData.date_of_birth);
+
+          const mergedMaster = {
+            ...(mIdx >= 0 ? masterList[mIdx] : {}),
+            ...masterProfileData,
+            'Mã nhân viên': body.employee_id || targetId,
+            employee_id: body.employee_id || targetId,
+            'Họ và tên': body.full_name || masterProfileData['Họ và tên'] || targetId,
+            full_name: body.full_name || masterProfileData['Họ và tên'] || targetId,
+            updated_at: new Date().toISOString()
+          };
+
+          if (mIdx >= 0) {
+            masterList[mIdx] = mergedMaster;
+          } else {
+            masterList.push(mergedMaster);
+          }
+          await saveTableToD1(db, "00_Master_Profiles", masterList);
+
+          // Đồng bộ 04_Contacts_Addresses
+          let contacts = data.tables["04_Contacts_Addresses"] || [];
+          const cIdx = contacts.findIndex(c => c.employee_id === targetId || (body.employee_id && c.employee_id === body.employee_id));
+          const contactObj = {
+            employee_id: body.employee_id || targetId,
+            mobile_phone: body.mobile_phone || (cIdx >= 0 ? contacts[cIdx].mobile_phone : '') || '',
+            work_email: body.work_email || (cIdx >= 0 ? contacts[cIdx].work_email : '') || '',
+            permanent_address_full: body.permanent_address_full || (cIdx >= 0 ? contacts[cIdx].permanent_address_full : '') || '',
+            current_address_full: body.current_address_full || (cIdx >= 0 ? contacts[cIdx].current_address_full : '') || ''
+          };
+          if (cIdx >= 0) contacts[cIdx] = { ...contacts[cIdx], ...contactObj };
+          else contacts.push(contactObj);
+          await saveTableToD1(db, "04_Contacts_Addresses", contacts);
+
+          // Đồng bộ 05_Identity_Docs
+          let identity = data.tables["05_Identity_Docs"] || [];
+          const iIdx = identity.findIndex(i => i.employee_id === targetId || (body.employee_id && i.employee_id === body.employee_id));
+          const idObj = {
+            employee_id: body.employee_id || targetId,
+            id_number: body.id_number || (iIdx >= 0 ? identity[iIdx].id_number : '') || '',
+            id_issue_date: body.id_issue_date || (iIdx >= 0 ? identity[iIdx].id_issue_date : null),
+            id_issue_place: body.id_issue_place || (iIdx >= 0 ? identity[iIdx].id_issue_place : '') || '',
+            passport_number: body.passport_number || (iIdx >= 0 ? identity[iIdx].passport_number : '') || '',
+            doc_type: body.doc_type || 'CCCD'
+          };
+          if (iIdx >= 0) identity[iIdx] = { ...identity[iIdx], ...idObj };
+          else identity.push(idObj);
+          await saveTableToD1(db, "05_Identity_Docs", identity);
+
+          // Đồng bộ 10_Contracts
+          let contracts = data.tables["10_Contracts"] || [];
+          const conIdx = contracts.findIndex(c => c.employee_id === targetId || (body.employee_id && c.employee_id === body.employee_id));
+          const conObj = {
+            contract_id: (conIdx >= 0 && contracts[conIdx].contract_id) ? contracts[conIdx].contract_id : (body.employee_id || targetId),
+            employee_id: body.employee_id || targetId,
+            full_name: body.full_name || (conIdx >= 0 ? contracts[conIdx].full_name : ''),
+            contract_type: body.contract_type || (conIdx >= 0 ? contracts[conIdx].contract_type : 'Hợp đồng lao động không xác định thời hạn'),
+            trial_start_date: body.trial_start_date || (conIdx >= 0 ? contracts[conIdx].trial_start_date : '') || '',
+            official_date: body.official_date || (conIdx >= 0 ? contracts[conIdx].official_date : '') || '',
+            start_date: body.start_date || (conIdx >= 0 ? contracts[conIdx].start_date : '') || '',
+            end_date: body.end_date || (conIdx >= 0 ? contracts[conIdx].end_date : '') || '',
+            contract_status: body.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
+          };
+          if (conIdx >= 0) contracts[conIdx] = { ...contracts[conIdx], ...conObj };
+          else contracts.push(conObj);
+          await saveTableToD1(db, "10_Contracts", contracts);
 
           appendAuditLog(data.tables, {
             action_type: index >= 0 ? "UPDATE" : "CREATE",

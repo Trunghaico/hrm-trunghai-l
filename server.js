@@ -2154,7 +2154,7 @@ app.post('/api/employees', (req, res) => {
 });
 
 // 6. UPDATE EMPLOYEE (FULL 115 STANDARDIZED ATTRIBUTES & CHANGEABLE EMPLOYEE_ID)
-app.put('/api/employees/:id', (req, res) => {
+const updateEmployeeHandler = (req, res) => {
     const db = loadDatabase();
     const id = req.params.id;
     const body = req.body;
@@ -2451,7 +2451,9 @@ app.put('/api/employees/:id', (req, res) => {
         message: 'Cập nhật hồ sơ nhân viên thành công',
         employee_id: targetId
     });
-});
+};
+app.put('/api/employees/:id', updateEmployeeHandler);
+app.post('/api/employees/:id', updateEmployeeHandler);
 
 // 6.5. DELETE ALL EMPLOYEES (BULK DELETE OR PURGE)
 app.delete('/api/employees/all', (req, res) => {

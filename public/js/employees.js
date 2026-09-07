@@ -1201,11 +1201,19 @@ const appEmployees = {
       const url = isEdit ? `/api/employees/${encodeURIComponent(targetIdForUrl)}` : '/api/employees';
       const method = isEdit ? 'PUT' : 'POST';
 
-      const res = await fetch(url, {
+      let res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      // Dự phòng: nếu môi trường server chưa hỗ trợ PUT thì tự động thử lại bằng POST
+      if (!res.ok && isEdit && (res.status === 404 || res.status === 405)) {
+        res = await fetch('/api/employees', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
       const json = await res.json();
 
       if (json.success) {
