@@ -29,6 +29,7 @@ const app = {
     appTrash.init();
     if (window.appContracts) {
       appContracts.init();
+      appContracts.render();
     }
 
     // 4. Update sidebar count badges
