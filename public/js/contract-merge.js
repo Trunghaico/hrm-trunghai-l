@@ -669,42 +669,114 @@ const contractMergeEngine = {
 
   // Trộn 1 hợp đồng với mẫu Word (.docx)
   async mergeDocx(templateBuffer, mergeData) {
-    if (typeof PizZip === 'undefined' || typeof window.docxtemplater === 'undefined') {
-      throw new Error('Thư viện xử lý Word chưa sẵn sàng (PizZip/Docxtemplater)');
+    if (typeof PizZip === 'undefined') {
+      throw new Error('Thư viện xử lý Word chưa sẵn sàng (PizZip)');
     }
 
-    if (!templateBuffer) {
-      templateBuffer = this.generateDefaultDocxBuffer();
-    }
+    let zip = null;
+    let docXmlKey = null;
 
-    const zip = new PizZip(templateBuffer);
+    // 1. Kiểm tra templateBuffer có phải định dạng ZIP hợp lệ (.docx) không
+    const isZip = (buf) => {
+      if (!buf) return false;
+      try {
+        const u8 = new Uint8Array(buf instanceof ArrayBuffer ? buf : (buf.buffer || buf));
+        return u8.length > 4 && u8[0] === 0x50 && u8[1] === 0x4B; // 'PK'
+      } catch (_) {
+        return false;
+      }
+    };
 
-    // Tự động chuẩn hóa nội dung document.xml:
-    let docXml = zip.files['word/document.xml'].asText();
-    for (const [key, val] of Object.entries(mergeData)) {
-      if (key.startsWith('<') && key.endsWith('>')) {
-        const rawKey = key.slice(1, -1);
-        const safeVal = (val !== undefined && val !== null ? String(val) : '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
-
-        docXml = docXml.split(`&lt;${rawKey}&gt;`).join(safeVal);
-        docXml = docXml.split(`<${rawKey}>`).join(safeVal);
-        docXml = docXml.split(`«${rawKey}»`).join(safeVal);
+    if (templateBuffer && isZip(templateBuffer)) {
+      try {
+        zip = new PizZip(templateBuffer);
+        if (zip.files) {
+          if (zip.files['word/document.xml']) {
+            docXmlKey = 'word/document.xml';
+          } else {
+            docXmlKey = Object.keys(zip.files).find(k => k.toLowerCase().replace(/\\/g, '/') === 'word/document.xml');
+          }
+        }
+      } catch (zipErr) {
+        console.warn('[mergeDocx] Lỗi mở zip template, chuyển sang mẫu mặc định:', zipErr);
+        zip = null;
+        docXmlKey = null;
       }
     }
-    zip.file('word/document.xml', docXml);
 
-    const doc = new window.docxtemplater(zip, {
-      paragraphLoop: true,
-      linebreaks: true,
-      delimiters: { start: '{', end: '}' }
-    });
+    // 2. Nếu template không phải file ZIP hoặc không tìm thấy document.xml (ví dụ file .doc hoặc corrupt)
+    // Tự động dùng mẫu DOCX chuẩn MISA có sẵn 25+ trường trộn
+    if (!zip || !docXmlKey) {
+      console.warn('[mergeDocx] Mẫu văn bản không có cấu trúc word/document.xml. Dùng mẫu chuẩn MISA.');
+      const defaultBuf = this.generateDefaultDocxBuffer();
+      zip = new PizZip(defaultBuf);
+      docXmlKey = 'word/document.xml';
+    }
 
-    doc.render(mergeData);
+    // 3. Chuẩn hóa & thay thế tất cả các thẻ trộn <Tag>, {Tag}, «Tag» trong toàn bộ các file XML của Word (Body, Headers, Footers)
+    const cleanMergeData = {};
+    for (const [key, val] of Object.entries(mergeData)) {
+      const rawKey = key.replace(/^[<{«]+|[>»}]+$/g, '');
+      cleanMergeData[rawKey] = val !== undefined && val !== null ? String(val) : '';
+    }
 
-    const out = doc.getZip().generate({
+    for (const fileName of Object.keys(zip.files)) {
+      const fnLower = fileName.toLowerCase().replace(/\\/g, '/');
+      if (fnLower.startsWith('word/') && fnLower.endsWith('.xml') && !fnLower.includes('styles') && !fnLower.includes('fonttable') && !fnLower.includes('settings')) {
+        const file = zip.files[fileName];
+        if (file && typeof file.asText === 'function') {
+          try {
+            let content = file.asText();
+            let modified = false;
+            for (const [rawKey, val] of Object.entries(cleanMergeData)) {
+              const safeVal = val
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+
+              const patterns = [
+                `&lt;${rawKey}&gt;`,
+                `<${rawKey}>`,
+                `{${rawKey}}`,
+                `&laquo;${rawKey}&raquo;`,
+                `«${rawKey}»`,
+                `&lt;&lt;${rawKey}&gt;&gt;`,
+                `<<${rawKey}>>`
+              ];
+              for (const p of patterns) {
+                if (content.includes(p)) {
+                  content = content.split(p).join(safeVal);
+                  modified = true;
+                }
+              }
+            }
+            if (modified) {
+              zip.file(fileName, content);
+            }
+          } catch (readErr) {
+            console.warn(`[mergeDocx] Bỏ qua file xml ${fileName}:`, readErr);
+          }
+        }
+      }
+    }
+
+    // 4. Nếu có docxtemplater, render thêm cho các biểu thức nâng cao
+    if (typeof window.docxtemplater !== 'undefined') {
+      try {
+        const doc = new window.docxtemplater(zip, {
+          paragraphLoop: true,
+          linebreaks: true,
+          delimiters: { start: '{', end: '}' }
+        });
+        doc.render(mergeData);
+      } catch (dtErr) {
+        console.warn('[mergeDocx] docxtemplater render warning:', dtErr);
+      }
+    }
+
+    // 5. Xuất tệp Blob .docx hoàn chỉnh
+    const out = zip.generate({
       type: 'blob',
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     });
@@ -712,7 +784,25 @@ const contractMergeEngine = {
   },
 
   // Tạo file Word .doc (chuẩn Microsoft Word 97-2003 / MHTML mở tốt trên mọi phiên bản Office)
-  generateDocBlob(mergeData) {
+  generateDocBlob(mergeData, templateBuffer = null) {
+    // 1. Nếu có templateBuffer của file .doc người dùng tải lên dạng HTML/MHTML/Text
+    if (templateBuffer) {
+      try {
+        let text = new TextDecoder('utf-8', { fatal: false }).decode(templateBuffer);
+        if (text && (text.includes('<html') || text.includes('<table') || text.includes('<body') || text.includes('MIME-Version'))) {
+          for (const [k, val] of Object.entries(mergeData)) {
+            const rawKey = k.replace(/^[<{«]+|[>»}]+$/g, '');
+            const safeVal = val !== undefined && val !== null ? String(val) : '';
+            text = text.split(`<${rawKey}>`).join(safeVal);
+            text = text.split(`{${rawKey}}`).join(safeVal);
+            text = text.split(`«${rawKey}»`).join(safeVal);
+            text = text.split(`&lt;${rawKey}&gt;`).join(safeVal);
+          }
+          return new Blob(['\ufeff' + text], { type: 'application/msword;charset=utf-8' });
+        }
+      } catch (_) {}
+    }
+
     const htmlBody = this.generateContractPrintHtml(mergeData);
     const fullHtml = `<!DOCTYPE html>
 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -837,7 +927,7 @@ const contractMergeEngine = {
 
       // 2. Tạo file .doc
       if (format === 'doc' || format === 'both') {
-        const docBlob = this.generateDocBlob(mergeData);
+        const docBlob = this.generateDocBlob(mergeData, templateBuffer);
         zipPackage.file(`${baseFileName}.doc`, docBlob);
       }
     }
