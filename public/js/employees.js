@@ -1405,7 +1405,16 @@ const appEmployees = {
       other_certificates: masterData['Bằng cấp chuyên môn khác'] || ''
     };
 
+    const submitBtn = document.querySelector('#employee-crud-form button[type="submit"]');
+    const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '<i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi';
+
     try {
+      this.isSubmitting = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+      }
+
       const targetIdForUrl = (isEdit && oldEmpId) ? oldEmpId : empId;
       const url = isEdit ? `/api/employees/${encodeURIComponent(targetIdForUrl)}` : '/api/employees';
       const method = isEdit ? 'PUT' : 'POST';
@@ -1417,15 +1426,59 @@ const appEmployees = {
       });
       // Dự phòng: nếu môi trường server chưa hỗ trợ PUT thì tự động thử lại bằng POST
       if (!res.ok && isEdit && (res.status === 404 || res.status === 405)) {
-        res = await fetch('/api/employees', {
+        res = await fetch(`/api/employees/${encodeURIComponent(targetIdForUrl)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+        if (!res.ok && (res.status === 404 || res.status === 405)) {
+          res = await fetch('/api/employees', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
       }
-      const json = await res.json();
 
-      if (json.success) {
+      let json = null;
+      try {
+        json = await res.json();
+      } catch (jsonErr) {
+        console.warn('Response JSON parse fallback:', jsonErr);
+      }
+
+      // Cập nhật ngay trong bộ nhớ cache client để giao diện luôn tức thì chính xác
+      if (typeof appData !== 'undefined' && appData.employees) {
+        const localIdx = appData.employees.findIndex(emp => emp.employee_id === targetIdForUrl || emp.employee_id === empId);
+        const updatedLocalEmp = {
+          ...(localIdx >= 0 ? appData.employees[localIdx] : {}),
+          ...payload,
+          employee_id: empId,
+          full_name: fullName,
+          department_id: boundDeptId,
+          department_name: boundDeptName,
+          position_id: boundPosId,
+          position_name: boundPosName
+        };
+        if (localIdx >= 0) {
+          appData.employees[localIdx] = updatedLocalEmp;
+        } else {
+          appData.employees.push(updatedLocalEmp);
+        }
+        if (appData.empMap) {
+          appData.empMap[empId] = updatedLocalEmp;
+        }
+        if (appData.masterProfiles) {
+          const mpIdx = appData.masterProfiles.findIndex(m => (m['Mã nhân viên'] === targetIdForUrl || m.employee_id === targetIdForUrl || m['Mã nhân viên'] === empId || m.employee_id === empId));
+          if (mpIdx >= 0) {
+            appData.masterProfiles[mpIdx] = { ...appData.masterProfiles[mpIdx], ...masterData, 'Mã nhân viên': empId, employee_id: empId };
+          } else {
+            appData.masterProfiles.push({ ...masterData, 'Mã nhân viên': empId, employee_id: empId });
+          }
+        }
+      }
+
+      if (res.ok && (!json || json.success !== false)) {
         utils.showToast(isEdit ? 'Cập nhật nhân sự thành công!' : 'Thêm nhân sự mới thành công!', 'success');
         if (window.recordActivityLog) {
           const logAction = isEdit ? 'UPDATE' : 'CREATE';
@@ -1435,15 +1488,26 @@ const appEmployees = {
           window.recordActivityLog(logAction, 'Nhân sự', logDesc);
         }
         this.closeFormModal();
-        await appData.init();
-        appDashboard.init();
+        try {
+          await appData.init();
+          appDashboard.init();
+        } catch (syncErr) {
+          console.warn('Background reload notice:', syncErr);
+        }
         this.applyFilters();
       } else {
-        utils.showToast(json.message || 'Lỗi khi lưu dữ liệu', 'error');
+        const errorMsg = (json && (json.message || json.error)) || `Lỗi máy chủ (Mã: ${res.status})`;
+        utils.showToast(errorMsg, 'error');
       }
     } catch (err) {
-      console.error(err);
-      utils.showToast('Lỗi kết nối tới máy chủ', 'error');
+      console.error('Submit error:', err);
+      utils.showToast(`Lỗi kết nối máy chủ: ${err.message || 'Vui lòng thử lại'}`, 'error');
+    } finally {
+      this.isSubmitting = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHtml;
+      }
     }
   },
 

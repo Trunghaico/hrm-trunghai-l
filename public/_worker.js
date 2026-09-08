@@ -408,16 +408,19 @@ async function loadAllFromD1(db) {
   return { tables, company };
 }
 
-// Save single table to D1 with automatic chunking for tables > 60KB
+// Save single table to D1 with automatic chunking for tables > 45KB
 async function saveTableToD1(db, tblName, rows) {
   const jsonStr = JSON.stringify(rows);
-  const CHUNK_SIZE = 60000;
+  const CHUNK_SIZE = 45000;
 
   if (jsonStr.length <= CHUNK_SIZE) {
+    await db.prepare("DELETE FROM hrm_store WHERE key LIKE ?").bind(`tbl_${tblName}__part_%`).run().catch(() => {});
     await db.prepare("INSERT OR REPLACE INTO hrm_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
       .bind(`tbl_${tblName}`, jsonStr)
       .run();
   } else {
+    await db.prepare("DELETE FROM hrm_store WHERE key LIKE ?").bind(`tbl_${tblName}__part_%`).run().catch(() => {});
+
     const totalChunks = Math.ceil(jsonStr.length / CHUNK_SIZE);
     const statements = [];
     for (let i = 0; i < totalChunks; i++) {
@@ -432,7 +435,13 @@ async function saveTableToD1(db, tblName, rows) {
       db.prepare("INSERT OR REPLACE INTO hrm_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
         .bind(`tbl_${tblName}`, manifest)
     );
-    await db.batch(statements);
+
+    // Run in batches of at most 6 statements (~270KB each) to strictly stay under D1's 1MB limit
+    const BATCH_SIZE = 6;
+    for (let b = 0; b < statements.length; b += BATCH_SIZE) {
+      const batchSlice = statements.slice(b, b + BATCH_SIZE);
+      await db.batch(batchSlice);
+    }
   }
 }
 
@@ -2312,6 +2321,7 @@ export default {
       console.error("[Cloudflare API Error]:", err);
       return jsonResponse({
         success: false,
+        message: err.message || "Lỗi máy chủ Cloudflare",
         error: err.message || "Lỗi máy chủ Cloudflare",
         stack: err.stack,
         availableEnvKeys: Object.keys(env || {})
