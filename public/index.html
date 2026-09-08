@@ -1885,8 +1885,8 @@
                   <i class="fa-solid fa-database"></i>
                 </div>
                 <div>
-                  <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Kết Nối Trực Tiếp CSDL Phần Mềm Ronald Jack Pro</h3>
-                  <p style="margin: 0; font-size: 11.5px; color: var(--text-secondary);">Tự động trích xuất bảng CheckInOut từ Microsoft SQL Server hoặc MS Access</p>
+                  <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Kết Nối Trực Tiếp CSDL Phần Mềm Chấm Công (Mitaco / Ronald Jack)</h3>
+                  <p style="margin: 0; font-size: 11.5px; color: var(--text-secondary);">Tự động trích xuất bảng CheckInOut & NHANVIEN từ Microsoft SQL Server hoặc MS Access</p>
                 </div>
               </div>
 
@@ -1894,6 +1894,7 @@
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Phần mềm chấm công:</label>
                   <select id="zk-sw-type" class="form-control" style="font-weight: 600;">
+                    <option value="mitaco" selected>Mitaco 5v2 / Mitaco Pro (SQL Server)</option>
                     <option value="ronald_jack_pro">Ronald Jack Pro Official</option>
                     <option value="ronald_jack_plus">Ronald Jack Plus / Software</option>
                     <option value="wise_eye_39">Wise Eye On 39 / Wise Eye V5.1</option>
@@ -1903,7 +1904,7 @@
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Loại Cơ Sở Dữ Liệu:</label>
                   <select id="zk-sw-db-type" class="form-control" style="font-weight: 600;">
-                    <option value="sql_server">Microsoft SQL Server (Khuyên dùng)</option>
+                    <option value="sql_server" selected>Microsoft SQL Server (Khuyên dùng)</option>
                     <option value="ms_access">Microsoft Access (.mdb / .accdb)</option>
                     <option value="mysql">MySQL Server</option>
                   </select>
@@ -1913,7 +1914,7 @@
               <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Địa chỉ Máy chủ (Host / IP):</label>
-                  <input type="text" id="zk-sw-host" class="form-control" value="127.0.0.1" placeholder="127.0.0.1 hoặc 192.168.1.100\SQLEXPRESS" style="font-family: monospace; font-weight: 600;">
+                  <input type="text" id="zk-sw-host" class="form-control" value="113.161.53.133" placeholder="113.161.53.133 hoặc 127.0.0.1" style="font-family: monospace; font-weight: 600;">
                 </div>
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Port CSDL:</label>
@@ -1923,7 +1924,7 @@
 
               <div style="margin-bottom: 12px;">
                 <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Tên CSDL hoặc Đường dẫn file Access:</label>
-                <input type="text" id="zk-sw-dbname" class="form-control" value="RonaldJackPro" placeholder="Ví dụ: RonaldJackPro hoặc C:\att2000.mdb" style="font-family: monospace; font-weight: 600;">
+                <input type="text" id="zk-sw-dbname" class="form-control" value="mitaco" placeholder="mitaco hoặc RonaldJackPro" style="font-family: monospace; font-weight: 600;">
               </div>
 
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
@@ -1933,7 +1934,7 @@
                 </div>
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Mật khẩu (Password):</label>
-                  <input type="password" id="zk-sw-password" class="form-control" value="123456" placeholder="******">
+                  <input type="password" id="zk-sw-password" class="form-control" value="THG@2026!" placeholder="******">
                 </div>
               </div>
 
@@ -2047,11 +2048,11 @@
               </span>
             </div>
             <div style="background: #0F172A; color: #E2E8F0; font-family: monospace; font-size: 11.5px; padding: 14px 16px; border-radius: var(--radius-sm); overflow-x: auto; max-height: 160px; line-height: 1.6; border: 1px solid #1E293B;" id="zk-agent-code-box">
-              <span style="color: #64748B;"># Đọc các lượt quẹt thẻ mới từ bảng CheckInOut của SQL Server / Access Ronald Jack Pro</span><br>
-              <span style="color: #38BDF8;">$query</span> = "SELECT c.UserEnrollNumber, c.TimeStr, c.MachineNo, c.VerifyMode FROM CheckInOut c WHERE c.TimeStr >= @LastSyncTime"<br>
+              <span style="color: #64748B;"># Đọc các lượt quẹt thẻ mới từ CSDL Mitaco / Ronald Jack Pro (113.161.53.133,1433)</span><br>
+              <span style="color: #38BDF8;">$query</span> = "SELECT c.ID, c.MaChamCong, nv.MaNhanVien, nv.TenNhanVien, c.GioCham, c.TenMay FROM CheckInOut c LEFT JOIN NHANVIEN nv ON c.MaChamCong = nv.MaChamCong WHERE c.GioCham >= @LastSyncTime"<br>
               <span style="color: #64748B;"># Gửi dữ liệu quẹt thẻ mới lên API Trung Hải HRM</span><br>
-              <span style="color: #38BDF8;">$res</span> = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json" -Body (<span style="color: #F59E0B;">@{ db_type="sql_server"; server_host="127.0.0.1"; database_name="RonaldJackPro"; punch_logs=$punches }</span> | ConvertTo-Json)<br>
-              <span style="color: #10B981;">Write-Host "Đã đồng bộ thành công: $($res.added_count) bản ghi quẹt thẻ mới."</span>
+              <span style="color: #38BDF8;">$res</span> = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json" -Body (<span style="color: #F59E0B;">@{ db_type="sql_server"; server_host="113.161.53.133"; database_name="mitaco"; punch_logs=$punches }</span> | ConvertTo-Json)<br>
+              <span style="color: #10B981;">Write-Host "Đã đồng bộ thành công: $($res.added_count) bản ghi quẹt thẻ mới từ CSDL Mitaco."</span>
             </div>
           </div>
         </div>

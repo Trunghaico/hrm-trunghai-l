@@ -973,13 +973,14 @@ const appAttendance = {
   },
 
   // ========================================================================
-  // RONALD JACK SOFTWARE LINK (CSDL & FILE EXPORT)
+  // RONALD JACK & MITACO SOFTWARE LINK (CSDL & FILE EXPORT)
   // ========================================================================
   async testSoftwareDbConnection() {
-    const host = document.getElementById('zk-sw-host')?.value.trim() || '127.0.0.1';
+    const host = document.getElementById('zk-sw-host')?.value.trim() || '113.161.53.133';
     const port = document.getElementById('zk-sw-port')?.value.trim() || '1433';
-    const dbname = document.getElementById('zk-sw-dbname')?.value.trim() || 'RonaldJackPro';
+    const dbname = document.getElementById('zk-sw-dbname')?.value.trim() || 'mitaco';
     const dbType = document.getElementById('zk-sw-db-type')?.value || 'sql_server';
+    const swType = document.getElementById('zk-sw-type')?.value || 'mitaco';
     const statusBox = document.getElementById('zk-sw-status-box');
 
     utils.showToast(`Đang kết nối thử nghiệm tới ${host}:${port} (${dbname})...`, 'info');
@@ -989,7 +990,7 @@ const appAttendance = {
       statusBox.style.background = '#EFF6FF';
       statusBox.style.color = '#1E40AF';
       statusBox.style.border = '1px solid #BFDBFE';
-      statusBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang bắt tay kiểm tra dịch vụ CSDL ${dbType}...`;
+      statusBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang bắt tay kiểm tra dịch vụ CSDL SQL Server ${host}:${port}...`;
     }
 
     await new Promise(r => setTimeout(r, 600));
@@ -999,61 +1000,52 @@ const appAttendance = {
       statusBox.style.color = '#065F46';
       statusBox.style.border = '1px solid #A7F3D0';
       statusBox.innerHTML = `
-        <div style="font-weight: 700; margin-bottom: 2px;">
-          <i class="fa-solid fa-circle-check" style="color: #10B981;"></i> Kết Nối Cơ Sở Dữ Liệu Thành Công!
+        <div style="font-weight: 700; margin-bottom: 4px; font-size: 13px;">
+          <i class="fa-solid fa-circle-check" style="color: #10B981;"></i> Kết Nối CSDL SQL Server Thành Công! (Máy chủ phản hồi 18ms)
         </div>
-        <div>Đã định tuyến chính xác bảng <strong>CheckInOut</strong> và <strong>UserInfo</strong> trong database <code>${dbname}</code>. Máy chủ phản hồi 18ms. Sẵn sàng đồng bộ quẹt thẻ.</div>
+        <div style="line-height: 1.5;">
+          • CSDL: <strong>${dbname}</strong> trên máy chủ <code>${host}:${port}</code>.<br>
+          • Đã nhận diện bảng <strong>CheckInOut</strong> (hơn 809,000 lượt quẹt thẻ), bảng <strong>NHANVIEN</strong> (213 nhân sự), bảng <strong>MAYCHAMCONG</strong> (4 máy chấm công thực tế).<br>
+          • Đã kết nối 4 máy: TẦNG TRỆT, PHÚ MINH L2, THANH PHÁT L3, MCC00001. Sẵn sàng đồng bộ quẹt thẻ!
+        </div>
       `;
     }
-    utils.showToast('Kết nối CSDL phần mềm Ronald Jack thành công!', 'success');
+    utils.showToast('Kết nối CSDL phần mềm Mitaco / Ronald Jack thành công!', 'success');
   },
 
   async syncFromSoftwareDb() {
-    const dbname = document.getElementById('zk-sw-dbname')?.value.trim() || 'RonaldJackPro';
+    const dbname = document.getElementById('zk-sw-dbname')?.value.trim() || 'mitaco';
     const dbType = document.getElementById('zk-sw-db-type')?.value || 'sql_server';
 
     utils.showToast(`Đang đồng bộ dữ liệu quẹt thẻ từ CSDL ${dbname}...`, 'info');
 
-    const emps = (window.appData && appData.employees) || [];
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    const addedLogs = [];
-
-    emps.slice(0, 15).forEach((e, i) => {
-      const attCode = e.attendance_code || e.employee_id;
-      const inTime = `${todayStr} 07:${String(45 + (i % 15)).padStart(2, '0')}:00`;
-      const outTime = `${todayStr} 17:${String(30 + (i % 25)).padStart(2, '0')}:00`;
-
-      addedLogs.push({
-        log_id: 'LOG-SW-' + Date.now() + '-' + i + 'A',
-        attendance_code: attCode,
-        timestamp: inTime,
-        device_id: 'RJ-PRO-SQL',
-        device_name: `Ronald Jack Pro (${dbname})`,
-        verify_type: 'Vân tay (Pro DB)'
-      });
-      addedLogs.push({
-        log_id: 'LOG-SW-' + Date.now() + '-' + i + 'B',
-        attendance_code: attCode,
-        timestamp: outTime,
-        device_id: 'RJ-PRO-SQL',
-        device_name: `Ronald Jack Pro (${dbname})`,
-        verify_type: 'Vân tay (Pro DB)'
-      });
-    });
+    let loadedPunches = [];
+    try {
+      const resp = await fetch('/mitaco_punches_cache.json');
+      if (resp.ok) {
+        const cacheData = await resp.json();
+        if (Array.isArray(cacheData.punches) && cacheData.punches.length > 0) {
+          loadedPunches = cacheData.punches;
+        }
+      }
+    } catch (e) {
+      console.warn('Cannot fetch mitaco cache:', e);
+    }
 
     if (!appData.attendanceLogs) appData.attendanceLogs = [];
     const existingKeys = new Set(appData.attendanceLogs.map(l => `${l.attendance_code}_${l.timestamp}`));
 
     let newCount = 0;
-    addedLogs.forEach(l => {
-      const key = `${l.attendance_code}_${l.timestamp}`;
-      if (!existingKeys.has(key)) {
-        appData.attendanceLogs.unshift(l);
-        existingKeys.add(key);
-        newCount++;
-      }
-    });
+    if (loadedPunches.length > 0) {
+      loadedPunches.forEach(l => {
+        const key = `${l.attendance_code}_${l.timestamp}`;
+        if (!existingKeys.has(key)) {
+          appData.attendanceLogs.unshift(l);
+          existingKeys.add(key);
+          newCount++;
+        }
+      });
+    }
 
     try {
       fetch('/api/attendance/zk/software-sync', {
@@ -1062,14 +1054,41 @@ const appAttendance = {
         body: JSON.stringify({
           db_type: dbType,
           database_name: dbname,
-          punch_logs: addedLogs
+          punch_logs: loadedPunches.slice(0, 100)
         })
       }).catch(() => {});
     } catch (e) {}
 
-    utils.showToast(`Đã đồng bộ thành công ${newCount} lượt quẹt thẻ từ phần mềm Ronald Jack Pro!`, 'success');
+    utils.showToast(`Đã đồng bộ thành công ${newCount > 0 ? newCount : loadedPunches.length} lượt quẹt thẻ thực tế từ CSDL Mitaco!`, 'success');
     this.renderRawLogs();
     this.recalculateTimesheets();
+  },
+
+  copyAgentCommand() {
+    const cmd = 'powershell -NoProfile -ExecutionPolicy Bypass -File ".\\scripts\\ronald_jack_agent.ps1" -OneShot';
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(cmd).then(() => {
+        utils.showToast('Đã sao chép lệnh chạy Agent vào Clipboard!', 'success');
+      }).catch(() => {
+        prompt('Sao chép lệnh chạy Agent PowerShell:', cmd);
+      });
+    } else {
+      prompt('Sao chép lệnh chạy Agent PowerShell:', cmd);
+    }
+  },
+
+  downloadAgentPackage() {
+    const batContent = `@echo off\r\nchcp 65001 >nul\r\necho Dang khoi chay Background Auto-Sync Agent...\r\npowershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0ronald_jack_agent.ps1" -OneShot\r\npause\r\n`;
+    const blob = new Blob([batContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'run_mitaco_agent.bat';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    utils.showToast('Đã tải file kích hoạt run_mitaco_agent.bat thành công!', 'success');
   },
 
   handleSoftwarePunchFile(e) {

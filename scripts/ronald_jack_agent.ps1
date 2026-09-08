@@ -1,12 +1,12 @@
 <#
 ================================================================================
- TRUNG HAI HRM - RONALD JACK PRO BACKGROUND AUTO-SYNC AGENT
+ TRUNG HẢI HRM - RONALD JACK PRO BACKGROUND AUTO-SYNC AGENT
 ================================================================================
- Script tu dong chay ngam tren may tinh cai phan mem Ronald Jack Pro / Wise Eye.
- Tu dong ket noi co so du lieu SQL Server / MS Access, trich xuat ban ghi quet the moi
- va day len he thong Trung Hai HRM qua REST API.
+ Script tự động chạy ngầm trên máy tính cài phần mềm Ronald Jack Pro / Wise Eye.
+ Tự động kết nối cơ sở dữ liệu SQL Server / MS Access, lấy các lượt quẹt thẻ mới
+ và đẩy trực tiếp lên hệ thống Trung Hải HRM qua REST API.
 
- Tan suat chay khuyen nghi: Moi 5 phut (qua Windows Task Scheduler).
+ Tần suất chạy khuyến nghị: Mỗi 5 phút hoặc 10 phút một lần (qua Windows Task Scheduler).
 ================================================================================
 #>
 
@@ -16,81 +16,90 @@ param (
 
 $ErrorActionPreference = "Continue"
 
-# 1. CAU HINH MAC DINH
+# 1. CẤU HÌNH MẶC ĐỊNH (Có thể ghi đè trong agent_config.json)
 $Config = @{
-    HrmApiUrl       = "https://trunghaico.vn/api/attendance/zk/software-sync"
-    DatabaseType    = "sql_server"
-    SqlHost         = "127.0.0.1\SQLEXPRESS"
-    SqlDatabase     = "RonaldJackPro"
-    SqlUser         = "sa"
-    SqlPassword     = "123"
-    UseWindowsAuth  = $false
-    AccessMdbPath   = "C:\Program Files (x86)\Ronald Jack Pro\att2000.mdb"
-    LastSyncFile    = "$PSScriptRoot\last_sync.txt"
-    LogFile         = "$PSScriptRoot\agent_sync.log"
+    # URL API hệ thống Trung Hải HRM
+    HrmApiUrl      = "https://trunghaico.vn/api/attendance/zk/software-sync"
+    
+    # Loại CSDL: "sql_server" hoặc "ms_access"
+    DatabaseType   = "sql_server"
+    
+    # Cấu hình SQL Server (Nếu dùng SQL Server)
+    SqlHost        = "127.0.0.1\SQLEXPRESS"   # Ví dụ: 127.0.0.1, localhost, .\SQLEXPRESS
+    SqlDatabase    = "RonaldJackPro"           # Tên CSDL: RonaldJackPro, Att2000, WiseEye
+    SqlUser        = "sa"
+    SqlPassword    = "123456"
+    UseWindowsAuth = $false                    # $true nếu dùng Windows Authentication
+    
+    # Cấu hình MS Access (Nếu Ronald Jack lưu file .mdb)
+    AccessMdbPath  = "C:\Program Files (x86)\Ronald Jack Pro\att2000.mdb"
+    
+    # File lưu mốc thời gian đồng bộ lần trước và file log
+    LastSyncFile   = "$PSScriptRoot\last_sync.txt"
+    LogFile        = "$PSScriptRoot\agent_sync.log"
 }
 
-# Doc cau hinh tu agent_config.json neu co
+# Tải cấu hình từ agent_config.json nếu có
 if (Test-Path $ConfigPath) {
     try {
-        $jsonContent = Get-Content $ConfigPath -Raw -Encoding UTF8
-        $jsonConfig = ConvertFrom-Json $jsonContent
-        if ($jsonConfig.HrmApiUrl) { $Config.HrmApiUrl = $jsonConfig.HrmApiUrl }
-        if ($jsonConfig.DatabaseType) { $Config.DatabaseType = $jsonConfig.DatabaseType }
-        if ($jsonConfig.SqlHost) { $Config.SqlHost = $jsonConfig.SqlHost }
-        if ($jsonConfig.SqlDatabase) { $Config.SqlDatabase = $jsonConfig.SqlDatabase }
-        if ($jsonConfig.SqlUser) { $Config.SqlUser = $jsonConfig.SqlUser }
-        if ($jsonConfig.SqlPassword) { $Config.SqlPassword = $jsonConfig.SqlPassword }
-        if ($null -ne $jsonConfig.UseWindowsAuth) { $Config.UseWindowsAuth = [bool]$jsonConfig.UseWindowsAuth }
-        if ($jsonConfig.AccessMdbPath) { $Config.AccessMdbPath = $jsonConfig.AccessMdbPath }
-    } catch {
-        Write-Warning "Khong doc duoc file config, su dung cau hinh mac dinh."
+        $jsonConfig = Get-Content $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($prop in $jsonConfig.PSObject.Properties) {
+            $Config[$prop.Name] = $prop.Value
+        }
+    }
+    catch {
+        Write-Warning "Không đọc được file config, dùng cấu hình mặc định."
     }
 }
 
+# Hàm ghi log có ngày giờ
 function Write-Log {
     param ([string]$Message, [string]$Level = "INFO")
     $timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
     $logLine = "[$timestamp] [$Level] $Message"
     Write-Host $logLine
     try {
-        Add-Content -Path $Config.LogFile -Value $logLine
-    } catch {}
+        Add-Content -Path $Config.LogFile -Value $logLine -Encoding UTF8
+    }
+    catch {}
 }
 
-Write-Log "=== BAT DAU CHU KY DONG BO MAY CHAM CONG RONALD JACK ==="
+Write-Log "=== BẮT ĐẦU CHU KỲ ĐỒNG BỘ MÁY CHẤM CÔNG RONALD JACK ==="
 
-# 2. XAC DINH MOC THOI GIAN DONG BO LAN TRUOC
+# 2. XÁC ĐỊNH MỐC THỜI GIAN ĐỒNG BỘ LẦN TRƯỚC
 $lastSyncTime = (Get-Date).AddDays(-1).ToString("yyyy-MM-dd 00:00:00")
 if (Test-Path $Config.LastSyncFile) {
-    $savedTime = (Get-Content $Config.LastSyncFile -Raw).Trim()
+    $savedTime = (Get-Content $Config.LastSyncFile -Raw -Encoding UTF8).Trim()
     if (![string]::IsNullOrWhiteSpace($savedTime)) {
         $lastSyncTime = $savedTime
     }
 }
-Write-Log "Lay du lieu quet the moi tu moc thoi gian: $lastSyncTime"
+Write-Log "Lấy dữ liệu quẹt thẻ mới từ thời điểm: $lastSyncTime"
 
-# 3. KET NOI CSDL VA TRICH XUAT BAN GHI
+# 3. KẾT NỐI CƠ SỞ DỮ LIỆU VÀ ĐỌC BẢN GHI
 $punchLogs = @()
 $maxPunchTime = $lastSyncTime
 
 if ($Config.DatabaseType -eq "sql_server") {
+    # Kết nối Microsoft SQL Server
     $connStr = ""
     if ($Config.UseWindowsAuth) {
         $connStr = "Server=$($Config.SqlHost);Database=$($Config.SqlDatabase);Integrated Security=True;TrustServerCertificate=True;"
-    } else {
+    }
+    else {
         $connStr = "Server=$($Config.SqlHost);Database=$($Config.SqlDatabase);User Id=$($Config.SqlUser);Password=$($Config.SqlPassword);TrustServerCertificate=True;"
     }
 
     try {
         $conn = New-Object System.Data.SqlClient.SqlConnection($connStr)
         $conn.Open()
-        Write-Log "Ket noi thanh cong SQL Server: $($Config.SqlHost) - Database: $($Config.SqlDatabase)"
+        Write-Log "Kết nối thành công tới SQL Server: $($Config.SqlHost) - Database: $($Config.SqlDatabase)"
 
+        # Query bảng CheckInOut của Ronald Jack Pro
         $query = "SELECT c.UserEnrollNumber, CONVERT(varchar(19), c.TimeStr, 120) AS CheckTimeString, ISNULL(c.MachineNo, 1) AS MachineNo, ISNULL(c.VerifyMode, 0) AS VerifyMode FROM CheckInOut c WHERE c.TimeStr >= @LastSyncTime ORDER BY c.TimeStr ASC"
         $cmd = $conn.CreateCommand()
         $cmd.CommandText = $query
-        [void]$cmd.Parameters.AddWithValue("@LastSyncTime", [datetime]$lastSyncTime)
+        $param = $cmd.Parameters.AddWithValue("@LastSyncTime", [datetime]$lastSyncTime)
 
         $adapter = New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
         $dataset = New-Object System.Data.DataSet
@@ -98,25 +107,25 @@ if ($Config.DatabaseType -eq "sql_server") {
         $conn.Close()
 
         $table = $dataset.Tables[0]
-        Write-Log "Tim thay $($table.Rows.Count) luot quet the moi tu phan mem."
+        Write-Log "Tìm thấy $($table.Rows.Count) lượt quẹt thẻ mới từ phần mềm."
 
         foreach ($row in $table.Rows) {
             $attCode = [string]$row["UserEnrollNumber"]
             $timeStr = [string]$row["CheckTimeString"]
-            $machNo  = [int]$row["MachineNo"]
-            $vMode   = [int]$row["VerifyMode"]
+            $machNo = [int]$row["MachineNo"]
+            $vMode = [int]$row["VerifyMode"]
 
-            $vTypeName = "Van tay"
-            if ($vMode -eq 1) { $vTypeName = "Van tay" }
-            elseif ($vMode -eq 2) { $vTypeName = "Khuon mat" }
-            elseif ($vMode -eq 3) { $vTypeName = "The tu" }
-            elseif ($vMode -eq 4) { $vTypeName = "Mat ma" }
+            $vTypeName = "Vân tay"
+            if ($vMode -eq 1) { $vTypeName = "Vân tay" }
+            elseif ($vMode -eq 2) { $vTypeName = "Khuôn mặt" }
+            elseif ($vMode -eq 3) { $vTypeName = "Thẻ từ" }
+            elseif ($vMode -eq 4) { $vTypeName = "Mật mã" }
 
             $punchLogs += @{
                 attendance_code = $attCode
                 timestamp       = $timeStr
                 device_id       = "RJ-PRO-M$machNo"
-                device_name     = "Ronald Jack Pro (May $machNo)"
+                device_name     = "Ronald Jack Pro (Máy $machNo)"
                 verify_type     = $vTypeName
             }
 
@@ -124,19 +133,23 @@ if ($Config.DatabaseType -eq "sql_server") {
                 $maxPunchTime = $timeStr
             }
         }
-    } catch {
-        Write-Log "Loi truy van SQL Server Ronald Jack: $($_.Exception.Message)" "ERROR"
     }
-} elseif ($Config.DatabaseType -eq "ms_access") {
+    catch {
+        Write-Log "Lỗi truy vấn SQL Server Ronald Jack: $($_.Exception.Message)" "ERROR"
+    }
+}
+elseif ($Config.DatabaseType -eq "ms_access") {
+    # Kết nối Microsoft Access .mdb
     $mdbPath = $Config.AccessMdbPath
     if (!(Test-Path $mdbPath)) {
-        Write-Log "Khong tim thay file CSDL Access: $mdbPath" "ERROR"
-    } else {
+        Write-Log "Không tìm thấy file CSDL Access: $mdbPath" "ERROR"
+    }
+    else {
         try {
             $connStr = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=$mdbPath;"
             $conn = New-Object System.Data.OleDb.OleDbConnection($connStr)
             $conn.Open()
-            Write-Log "Ket noi thanh cong file CSDL Access: $mdbPath"
+            Write-Log "Kết nối thành công tới file CSDL Access: $mdbPath"
 
             $query = "SELECT UserEnrollNumber, CHECKTIME, SENSORID FROM CheckInOut WHERE CHECKTIME >= #$lastSyncTime# ORDER BY CHECKTIME ASC"
             $cmd = New-Object System.Data.OleDb.OleDbCommand($query, $conn)
@@ -146,7 +159,7 @@ if ($Config.DatabaseType -eq "sql_server") {
             $conn.Close()
 
             $table = $dataset.Tables[0]
-            Write-Log "Tim thay $($table.Rows.Count) luot quet the moi tu Access DB."
+            Write-Log "Tìm thấy $($table.Rows.Count) lượt quẹt thẻ mới từ Access DB."
 
             foreach ($row in $table.Rows) {
                 $attCode = [string]$row["UserEnrollNumber"]
@@ -158,23 +171,24 @@ if ($Config.DatabaseType -eq "sql_server") {
                     attendance_code = $attCode
                     timestamp       = $timeStr
                     device_id       = "RJ-ACCESS-$sensor"
-                    device_name     = "Ronald Jack Access (Cong $sensor)"
-                    verify_type     = "Van tay"
+                    device_name     = "Ronald Jack Access (Cổng $sensor)"
+                    verify_type     = "Vân tay"
                 }
 
                 if ([string]::Compare($timeStr, $maxPunchTime) -gt 0) {
                     $maxPunchTime = $timeStr
                 }
             }
-        } catch {
-            Write-Log "Loi truy van Access MDB Ronald Jack: $($_.Exception.Message)" "ERROR"
+        }
+        catch {
+            Write-Log "Lỗi truy vấn Access MDB Ronald Jack: $($_.Exception.Message)" "ERROR"
         }
     }
 }
 
-# 4. GUI DU LIEU LEN TRUNG HAI HRM QUA REST API
+# 4. GỬI DỮ LIỆU LÊN TRUNG HẢI HRM QUA REST API
 if ($punchLogs.Count -gt 0) {
-    Write-Log "Dang gui $($punchLogs.Count) ban ghi quet the len he thong Trung Hai HRM..."
+    Write-Log "Đang đẩy $($punchLogs.Count) bản ghi quẹt thẻ lên hệ thống Trung Hải HRM..."
     
     $payload = @{
         db_type       = $Config.DatabaseType
@@ -188,16 +202,20 @@ if ($punchLogs.Count -gt 0) {
         $response = Invoke-RestMethod -Uri $Config.HrmApiUrl -Method Post -ContentType "application/json; charset=utf-8" -Body $payload
         
         if ($response.success) {
-            Write-Log "DONG BO THANH CONG: $($response.message)" "SUCCESS"
-            Set-Content -Path $Config.LastSyncFile -Value $maxPunchTime
-        } else {
-            Write-Log "May chu phan hoi: $($response.message)" "WARN"
+            Write-Log "ĐỒNG BỘ THÀNH CÔNG: $($response.message)" "SUCCESS"
+            # Lưu lại mốc thời gian đã đồng bộ
+            Set-Content -Path $Config.LastSyncFile -Value $maxPunchTime -Encoding UTF8
         }
-    } catch {
-        Write-Log "Loi khi gui du lieu qua API: $($_.Exception.Message)" "ERROR"
+        else {
+            Write-Log "Máy chủ phản hồi thất bại: $($response.message)" "WARN"
+        }
     }
-} else {
-    Write-Log "Khong co ban ghi quet the moi nao can dong bo."
+    catch {
+        Write-Log "Lỗi khi gửi dữ liệu qua API: $($_.Exception.Message)" "ERROR"
+    }
+}
+else {
+    Write-Log "Không có bản ghi quẹt thẻ mới nào cần đồng bộ."
 }
 
-Write-Log "=== KET THUC CHU KY DONG BO ==="
+Write-Log "=== KẾT THÚC CHU KỲ ĐỒNG BỘ ==="
