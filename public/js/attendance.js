@@ -328,15 +328,19 @@ const appAttendance = {
         ? `<i class="fa-solid fa-pen" style="font-size: 10px; color: #D97706; margin-left: 4px;" title="Đã hiệu chỉnh thủ công bởi HR"></i>`
         : '';
 
-      const attCodeDisplay = item.attendance_code
-        ? `<strong style="color: #B45309; font-family: monospace; background: #FFFBEB; padding: 2px 6px; border-radius: 4px; border: 1px solid #FDE68A;">${item.attendance_code}</strong>`
+      const emp = (appData.employees || []).find(e => e.employee_id === item.employee_id) || {};
+      const master = (appData.masterProfiles || []).find(m => m.employee_id === item.employee_id) || {};
+      const codeVal = item.attendance_code || emp.time_attendance_code || emp['Mã chấm công'] || master['Mã chấm công'] || master.time_attendance_code || '';
+
+      const attCodeDisplay = codeVal
+        ? `<strong style="color: #B45309; font-family: monospace; background: #FFFBEB; padding: 2px 6px; border-radius: 4px; border: 1px solid #FDE68A;">${codeVal}</strong>`
         : '<span style="color: #94A3B8; font-size: 11px; font-style: italic;">Không CC</span>';
 
       return `
         <tr style="${item.day_name === 'Chủ nhật' ? 'background: #FFFBEB;' : ''}">
           <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
           <td style="font-weight: 700; color: #1E40AF; font-family: monospace;">${item.employee_id}</td>
-          <td style="font-weight: 700; color: #B45309; font-family: monospace; text-align: center; background: #FFFBEB;">${attCodeDisplay}</td>
+          <td style="text-align: center;">${attCodeDisplay}</td>
           <td>
             <strong>${item.full_name}</strong>
             ${manualEditedIndicator}

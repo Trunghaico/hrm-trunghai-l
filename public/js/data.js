@@ -188,7 +188,7 @@ const appData = {
         this.employees.forEach(e => {
           const m = masterMap.get(e.employee_id);
           const rawCode = m ? (m['Mã chấm công'] || m.time_attendance_code || e.time_attendance_code || '') : (e.time_attendance_code || '');
-          const cleanCode = (rawCode && rawCode !== e.employee_id && !String(rawCode).startsWith('TH-') && !String(rawCode).startsWith('MISA')) ? String(rawCode).trim() : '';
+          const cleanCode = rawCode ? String(rawCode).trim() : '';
           e.time_attendance_code = cleanCode;
           e.attendance_code = cleanCode;
           if (m) {
