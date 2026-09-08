@@ -552,6 +552,16 @@ const appImport = {
     return '';
   },
 
+  hasField(normRow, ...aliases) {
+    for (const a of aliases) {
+      const target = this.cleanKey(a);
+      if (normRow[target] !== undefined && normRow[target] !== null && String(normRow[target]).trim() !== '') {
+        return true;
+      }
+    }
+    return false;
+  },
+
   formatDate(val) {
     if (!val) return '';
     if (typeof utils !== 'undefined' && utils.formatDate) {
@@ -727,95 +737,126 @@ const appImport = {
     });
 
     // 2. Comprehensive validation pass
-    normalizedRows.forEach(({ rowIdx, normMap, rawRow, empId, timeAttendanceCode, idNumber, email, fullName }) => {
-      const gender = this.getField(normMap, 'Giới tính', 'Giới tính (*)', 'gender', 'Phái') || 'Nam';
-      const dob = this.formatDate(this.getField(normMap, 'Ngày sinh', 'Ngày sinh (DD/MM/YYYY)', 'date_of_birth', 'DOB'));
-      const birthPlace = this.getField(normMap, 'Nơi sinh', 'birth_place');
-      const nativePlace = this.getField(normMap, 'Nguyên quán', 'native_place');
-      const ethnicity = this.getField(normMap, 'Dân tộc', 'ethnicity') || 'Kinh';
-      const religion = this.getField(normMap, 'Tôn giáo', 'religion') || 'Không';
-      const nationality = this.getField(normMap, 'Quốc tịch', 'nationality') || 'Việt Nam';
-      const maritalStatus = this.getField(normMap, 'Tình trạng hôn nhân', 'marital_status') || 'Độc thân';
-      const childrenCount = parseInt(this.getField(normMap, 'Số con', 'children_count') || 0, 10) || 0;
+    normalizedRows.forEach(({ rowIdx, normMap, rawRow, empId, timeAttendanceCode, idNumber: rawIdNumber, email: rawEmail, fullName: rawFullName }) => {
+      // Cross-check against existing database employee for Foreign Key linking
+      const dbEmpWithId = empId ? dbEmpById.get(empId) : null;
+      const isEmpExisting = !!dbEmpWithId;
+      const existingMaster = (isEmpExisting && typeof appEmployees !== 'undefined' && typeof appEmployees.buildFullMasterProfile === 'function')
+        ? appEmployees.buildFullMasterProfile(empId)
+        : (dbEmpWithId || {});
 
-      const dept = this.getField(normMap, 'Mã đơn vị công tác', 'Đơn vị công tác', 'Mã phòng ban', 'Phòng/Ban', 'department_id', 'Phòng ban', 'Bộ phận', 'Đơn vị');
-      const pos = this.getField(normMap, 'Mã vị trí công việc', 'Vị trí công việc', 'Mã chức danh / Vị trí', 'Mã chức danh', 'Chức danh', 'Vị trí', 'position_id', 'Chức vụ');
-      const jobRank = this.getField(normMap, 'Bậc', 'Cấp bậc nhân sự', 'Cấp bậc', 'job_rank') || 'Bậc 3';
-      const professionalTitle = this.getField(normMap, 'Chức danh', 'Chức danh chuyên môn', 'job_title') || pos || 'Chuyên viên';
-      const workLocation = this.getField(normMap, 'Địa điểm làm việc', 'work_location') || 'Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội';
-      const workArea = this.getField(normMap, 'Khu vực làm việc', 'Khối / Khu vực làm việc', 'Khối làm việc', 'work_area') || 'Khối Văn phòng Tổng công ty';
-      const directMgrId = this.getField(normMap, 'Mã quản lý trực tiếp', 'direct_manager_id');
-      const directMgrName = this.getField(normMap, 'Quản lý trực tiếp', 'Họ tên quản lý trực tiếp', 'direct_manager_name');
-      const indirectMgrId = this.getField(normMap, 'Mã quản lý gián tiếp', 'indirect_manager_id');
-      const indirectMgrName = this.getField(normMap, 'Quản lý gián tiếp', 'Họ tên quản lý gián tiếp', 'indirect_manager_name');
+      // Full Name
+      const fullName = (this.hasField(normMap, 'Họ và tên', 'Họ tên', 'full_name') ? rawFullName : (existingMaster['Họ và tên'] || rawFullName)) || '';
 
-      const laborNature = this.getField(normMap, 'Tính chất lao động', 'Tính chất', 'labor_nature') || 'Chính thức';
-      const status = this.getField(normMap, 'Trạng thái lao động', 'Trạng thái làm việc', 'Trạng thái', 'employment_status') || 'Đang làm việc';
-      const startDate = this.formatDate(this.getField(normMap, 'Ngày bắt đầu làm việc', 'Ngày thử việc', 'Ngày học việc', 'Ngày chính thức', 'Ngày vào làm', 'start_date')) || new Date().toISOString().split('T')[0];
-      const endDate = this.formatDate(this.getField(normMap, 'Ngày hết hiệu lực', 'Ngày kết thúc (HĐ/Nghỉ)', 'Ngày kết thúc', 'end_date')) || 'Không xác định';
-      const contractType = this.getField(normMap, 'Loại hợp đồng', 'contract_type') || 'Hợp đồng lao động không xác định thời hạn';
-      const trialStartDate = this.formatDate(this.getField(normMap, 'Ngày thử việc', 'Ngày bắt đầu thử việc', 'trial_start_date')) || startDate;
-      const officialDate = this.formatDate(this.getField(normMap, 'Ngày chính thức', 'Ngày ký HĐ chính thức', 'official_date')) || startDate;
+      // Gender (nếu file không có -> giữ nguyên giới tính từ DB, không tự ý gán Nam)
+      const gender = (this.hasField(normMap, 'Giới tính', 'Giới tính (*)', 'gender', 'Phái')
+        ? (this.getField(normMap, 'Giới tính', 'Giới tính (*)', 'gender', 'Phái') || 'Nam')
+        : (existingMaster['Giới tính'] || (isEmpExisting ? dbEmpWithId.gender : 'Nam'))) || 'Nam';
 
-      const phone = this.getField(normMap, 'ĐT di động', 'Số ĐT di động', 'Số điện thoại', 'Điện thoại', 'mobile_phone', 'SĐT');
-      const homePhone = this.getField(normMap, 'ĐT nhà riêng', 'Số ĐT bàn / Khác', 'Số ĐT bàn', 'home_phone');
-      const personalEmail = this.getField(normMap, 'Email cá nhân', 'personal_email');
-      const permAddress = this.getField(normMap, 'Hộ khẩu thường trú', 'Địa chỉ thường trú', 'Thường trú', 'permanent_address_full');
-      const currAddress = this.getField(normMap, 'Chỗ ở hiện nay', 'Địa chỉ tạm trú / Hiện tại', 'Địa chỉ hiện tại', 'Địa chỉ tạm trú', 'current_address_full') || permAddress;
+      // Date of birth
+      const dobVal = this.getField(normMap, 'Ngày sinh', 'Ngày sinh (DD/MM/YYYY)', 'date_of_birth', 'DOB');
+      const dob = dobVal ? this.formatDate(dobVal) : (existingMaster['Ngày sinh'] || (isEmpExisting ? dbEmpWithId.date_of_birth : ''));
 
-      const idIssueDate = this.formatDate(this.getField(normMap, 'Ngày cấp giấy tờ', 'Ngày cấp CCCD (DD/MM/YYYY)', 'Ngày cấp CCCD', 'Ngày cấp', 'id_issue_date'));
-      const idIssuePlace = this.getField(normMap, 'Nơi cấp giấy tờ', 'Nơi cấp CCCD', 'Nơi cấp', 'id_issue_place') || 'Cục Cảnh sát Quản lý hành chính về trật tự xã hội';
-      const idExpiryDate = this.formatDate(this.getField(normMap, 'Ngày hết hạn giấy tờ', 'Ngày hết hạn CCCD', 'id_expiry_date'));
-      const passportNumber = this.getField(normMap, 'Số Hộ chiếu', 'Số hộ chiếu (Passport)', 'Số hộ chiếu', 'passport_number');
-      const passportIssueDate = this.formatDate(this.getField(normMap, 'Ngày cấp Hộ chiếu', 'Ngày cấp hộ chiếu', 'passport_issue_date'));
-      const taxCode = this.getField(normMap, 'MST cá nhân', 'Mã số thuế cá nhân', 'Mã số thuế', 'tax_code');
+      const birthPlace = this.getField(normMap, 'Nơi sinh', 'birth_place') || existingMaster['Nơi sinh'] || '';
+      const nativePlace = this.getField(normMap, 'Nguyên quán', 'native_place') || existingMaster['Nguyên quán'] || '';
+      const ethnicity = this.getField(normMap, 'Dân tộc', 'ethnicity') || existingMaster['Dân tộc'] || 'Kinh';
+      const religion = this.getField(normMap, 'Tôn giáo', 'religion') || existingMaster['Tôn giáo'] || 'Không';
+      const nationality = this.getField(normMap, 'Quốc tịch', 'nationality') || existingMaster['Quốc tịch'] || 'Việt Nam';
+      const maritalStatus = this.getField(normMap, 'Tình trạng hôn nhân', 'marital_status') || existingMaster['Tình trạng hôn nhân'] || 'Độc thân';
+      const childrenCount = parseInt(this.getField(normMap, 'Số con', 'children_count') || existingMaster['Số con'] || 0, 10) || 0;
 
-      const salaryGrade = parseInt(this.getField(normMap, 'Bậc lương', 'Bậc', 'salary_grade') || 3, 10) || 3;
-      const baseSalary = parseFloat((this.getField(normMap, 'Lương cơ bản', 'Lương cơ bản (VNĐ)', 'base_salary') || '0').replace(/[^0-9.-]+/g, '')) || 0;
-      const salaryRate = this.getField(normMap, 'Tỷ lệ hưởng lương (%)', 'Tỷ lệ hưởng lương', 'salary_rate');
-      const totalSalary = parseFloat((this.getField(normMap, 'Tổng lương', 'Tổng lương / Thu nhập (VNĐ)', 'total_salary') || '0').replace(/[^0-9.-]+/g, '')) || 0;
-      const insuranceSalary = parseFloat((this.getField(normMap, 'Lương đóng BH', 'Lương đóng BHXH (VNĐ)', 'Lương đóng BHXH', 'insurance_salary') || '0').replace(/[^0-9.-]+/g, '')) || 0;
-      const bankAccount = this.getField(normMap, 'TK ngân hàng', 'Tài khoản ngân hàng', 'Số tài khoản ngân hàng', 'Số tài khoản', 'STK', 'bank_account_number');
-      const bankName = this.getField(normMap, 'Ngân hàng', 'Mở tại ngân hàng', 'Tên ngân hàng', 'bank_name') || 'Vietcombank';
-      const bankBranch = this.getField(normMap, 'Chi nhánh', 'Chi nhánh ngân hàng', 'bank_branch') || 'Chi nhánh Hà Nội';
+      // Organization & Position (nếu file không có -> giữ nguyên từ DB)
+      const dept = this.getField(normMap, 'Mã đơn vị công tác', 'Đơn vị công tác', 'Mã phòng ban', 'Phòng/Ban', 'department_id', 'Phòng ban', 'Bộ phận', 'Đơn vị') || existingMaster['Mã đơn vị công tác'] || (isEmpExisting ? dbEmpWithId.department_id : '');
+      const pos = this.getField(normMap, 'Mã vị trí công việc', 'Vị trí công việc', 'Mã chức danh / Vị trí', 'Mã chức danh', 'Chức danh', 'Vị trí', 'position_id', 'Chức vụ') || existingMaster['Mã vị trí công việc'] || (isEmpExisting ? dbEmpWithId.position_id : '');
+      const jobRank = this.getField(normMap, 'Bậc', 'Cấp bậc nhân sự', 'Cấp bậc', 'job_rank') || existingMaster['Bậc'] || 'Bậc 3';
+      const professionalTitle = this.getField(normMap, 'Chức danh', 'Chức danh chuyên môn', 'job_title') || existingMaster['Chức danh'] || pos || 'Chuyên viên';
+      const workLocation = this.getField(normMap, 'Địa điểm làm việc', 'work_location') || existingMaster['Địa điểm làm việc'] || '';
+      const workArea = this.getField(normMap, 'Khu vực làm việc', 'Khối / Khu vực làm việc', 'Khối làm việc', 'work_area') || existingMaster['Khu vực làm việc'] || '';
+      const directMgrId = this.getField(normMap, 'Mã quản lý trực tiếp', 'direct_manager_id') || existingMaster['Mã quản lý trực tiếp'] || '';
+      const directMgrName = this.getField(normMap, 'Quản lý trực tiếp', 'Họ tên quản lý trực tiếp', 'direct_manager_name') || existingMaster['Quản lý trực tiếp'] || '';
+      const indirectMgrId = this.getField(normMap, 'Mã quản lý gián tiếp', 'indirect_manager_id') || existingMaster['Mã quản lý gián tiếp'] || '';
+      const indirectMgrName = this.getField(normMap, 'Quản lý gián tiếp', 'Họ tên quản lý gián tiếp', 'indirect_manager_name') || existingMaster['Quản lý gián tiếp'] || '';
 
-      const hasInsurance = this.getField(normMap, 'Tham gia bảo hiểm', 'Tham gia BHXH', 'has_insurance') || 'Có';
-      const socialInsuranceBook = this.getField(normMap, 'Số sổ BHXH', 'Mã số BHXH', 'Số sổ / Mã số BHXH', 'social_insurance_book_no');
-      const insuranceJoinDate = this.formatDate(this.getField(normMap, 'Ngày tham gia BH', 'Ngày tham gia BHXH', 'insurance_join_date')) || startDate;
-      const hospitalRegistered = this.getField(normMap, 'Nơi đăng ký KCB', 'Nơi ĐK khám chữa bệnh ban đầu', 'Nơi ĐK KCB ban đầu', 'hospital_registered') || 'Bệnh viện Bạch Mai - Hà Nội';
-      const unionMember = this.getField(normMap, 'Tham gia công đoàn', 'Đoàn viên công đoàn', 'union_member') || 'Đoàn viên';
+      const laborNature = this.getField(normMap, 'Tính chất lao động', 'Tính chất', 'labor_nature') || existingMaster['Tính chất lao động'] || 'Chính thức';
+      const status = this.getField(normMap, 'Trạng thái lao động', 'Trạng thái làm việc', 'Trạng thái', 'employment_status') || existingMaster['Trạng thái lao động'] || 'Đang làm việc';
+      const rawStartDate = this.getField(normMap, 'Ngày bắt đầu làm việc', 'Ngày thử việc', 'Ngày học việc', 'Ngày chính thức', 'Ngày vào làm', 'start_date');
+      const startDate = rawStartDate ? this.formatDate(rawStartDate) : (existingMaster['Ngày chính thức'] || existingMaster['Ngày bắt đầu làm việc'] || (isEmpExisting ? dbEmpWithId.start_date : new Date().toISOString().split('T')[0]));
+      const rawEndDate = this.getField(normMap, 'Ngày hết hiệu lực', 'Ngày kết thúc (HĐ/Nghỉ)', 'Ngày kết thúc', 'end_date');
+      const endDate = rawEndDate ? this.formatDate(rawEndDate) : (existingMaster['Ngày hết hiệu lực'] || 'Không xác định');
+      const contractType = this.getField(normMap, 'Loại hợp đồng', 'contract_type') || existingMaster['Loại hợp đồng'] || 'Hợp đồng lao động không xác định thời hạn';
+      const trialStartDate = this.formatDate(this.getField(normMap, 'Ngày thử việc', 'Ngày bắt đầu thử việc', 'trial_start_date')) || existingMaster['Ngày thử việc'] || startDate;
+      const officialDate = this.formatDate(this.getField(normMap, 'Ngày chính thức', 'Ngày ký HĐ chính thức', 'official_date')) || existingMaster['Ngày chính thức'] || startDate;
 
-      const taxRate = this.getField(normMap, 'Thuế suất', 'tax_rate') || 'Theo biểu lũy tiến';
-      const dependentsCount = parseInt(this.getField(normMap, 'Số người phụ thuộc', 'dependents_count') || 0, 10) || 0;
-      const personalDeduction = this.getField(normMap, 'Giảm trừ bản thân', 'personal_deduction') || 'Có';
-      const empBhxhRate = this.getField(normMap, 'Tỷ lệ đóng BHXH của nhân viên (%)', 'Tỷ lệ đóng BHXH của NV (%)', 'emp_bhxh_rate') || '8%';
-      const empBhytRate = this.getField(normMap, 'Tỷ lệ đóng BHYT của nhân viên (%)', 'Tỷ lệ đóng BHYT của NV (%)', 'emp_bhyt_rate') || '1.5%';
-      const empBhtnRate = this.getField(normMap, 'Tỷ lệ đóng BHTN của nhân viên (%)', 'Tỷ lệ đóng BHTN của NV (%)', 'emp_bhtn_rate') || '1%';
-      const compBhxhRate = this.getField(normMap, 'Tỷ lệ đóng BHXH của doanh nghiệp (%)', 'Tỷ lệ đóng BHXH của DN (%)', 'comp_bhxh_rate') || '17.5%';
-      const compBhytRate = this.getField(normMap, 'Tỷ lệ đóng BHYT của doanh nghiệp (%)', 'Tỷ lệ đóng BHYT của DN (%)', 'comp_bhyt_rate') || '3%';
-      const compBhtnRate = this.getField(normMap, 'Tỷ lệ đóng BHTN của doanh nghiệp (%)', 'Tỷ lệ đóng BHTN của DN (%)', 'comp_bhtn_rate') || '1%';
-      const payslipPassword = this.getField(normMap, 'Mật khẩu phiếu lương', 'payslip_password');
+      // Contact
+      const phone = this.getField(normMap, 'ĐT di động', 'Số ĐT di động', 'Số điện thoại', 'Điện thoại', 'mobile_phone', 'SĐT') || existingMaster['ĐT di động'] || '';
+      const homePhone = this.getField(normMap, 'ĐT nhà riêng', 'Số ĐT bàn / Khác', 'Số ĐT bàn', 'home_phone') || existingMaster['ĐT nhà riêng'] || '';
+      const email = rawEmail || existingMaster['Email cơ quan'] || '';
+      const personalEmail = this.getField(normMap, 'Email cá nhân', 'personal_email') || existingMaster['Email cá nhân'] || '';
+      const permAddress = this.getField(normMap, 'Hộ khẩu thường trú', 'Địa chỉ thường trú', 'Thường trú', 'permanent_address_full') || existingMaster['Hộ khẩu thường trú'] || '';
+      const currAddress = this.getField(normMap, 'Chỗ ở hiện nay', 'Địa chỉ tạm trú / Hiện tại', 'Địa chỉ hiện tại', 'Địa chỉ tạm trú', 'current_address_full') || existingMaster['Chỗ ở hiện nay'] || permAddress;
 
-      const eduLevel = this.getField(normMap, 'Trình độ đào tạo', 'Trình độ học vấn', 'Trình độ', 'education_level') || 'Đại học';
-      const degreeType = this.getField(normMap, 'Hình thức đào tạo', 'degree_type') || 'Chính quy';
-      const institution = this.getField(normMap, 'Nơi đào tạo', 'Trường / Cơ sở đào tạo', 'Trường', 'institution') || 'Đại học';
-      const eduMajor = this.getField(normMap, 'Chuyên ngành', 'Chuyên ngành đào tạo', 'major');
-      const gradYear = parseInt(this.getField(normMap, 'Năm tốt nghiệp', 'graduation_year') || 2020, 10) || 2020;
-      const gradClassification = this.getField(normMap, 'Xếp loại', 'Xếp loại tốt nghiệp', 'classification') || 'Khá';
-      const otherCerts = this.getField(normMap, 'Bằng cấp chuyên môn khác & Chứng chỉ', 'Bằng cấp khác', 'other_certificates');
+      // Identity Docs
+      const idNumber = rawIdNumber || existingMaster['Số CMND'] || '';
+      const idIssueDate = this.formatDate(this.getField(normMap, 'Ngày cấp giấy tờ', 'Ngày cấp CCCD (DD/MM/YYYY)', 'Ngày cấp CCCD', 'Ngày cấp', 'id_issue_date')) || existingMaster['Ngày cấp giấy tờ'] || '';
+      const idIssuePlace = this.getField(normMap, 'Nơi cấp giấy tờ', 'Nơi cấp CCCD', 'Nơi cấp', 'id_issue_place') || existingMaster['Nơi cấp giấy tờ'] || 'Cục Cảnh sát Quản lý hành chính về trật tự xã hội';
+      const idExpiryDate = this.formatDate(this.getField(normMap, 'Ngày hết hạn giấy tờ', 'Ngày hết hạn CCCD', 'id_expiry_date')) || existingMaster['Ngày hết hạn giấy tờ'] || '';
+      const passportNumber = this.getField(normMap, 'Số Hộ chiếu', 'Số hộ chiếu (Passport)', 'Số hộ chiếu', 'passport_number') || existingMaster['Số Hộ chiếu'] || '';
+      const passportIssueDate = this.formatDate(this.getField(normMap, 'Ngày cấp Hộ chiếu', 'Ngày cấp hộ chiếu', 'passport_issue_date')) || existingMaster['Ngày cấp Hộ chiếu'] || '';
+      const taxCode = this.getField(normMap, 'MST cá nhân', 'Mã số thuế cá nhân', 'Mã số thuế', 'tax_code') || existingMaster['MST cá nhân'] || '';
 
-      const emergName = this.getField(normMap, 'Họ và tên (LHKC)', 'Họ tên người liên hệ khẩn cấp', 'Người liên hệ khẩn cấp', 'Người khẩn cấp', 'emergency_name');
-      const emergRelation = this.getField(normMap, 'Quan hệ (LHKC)', 'Mối quan hệ khẩn cấp', 'Quan hệ khẩn cấp', 'Quan hệ', 'emergency_relation') || 'Người thân';
-      const emergPhone = this.getField(normMap, 'ĐT di động (LHKC)', 'Số ĐT khẩn cấp', 'SĐT khẩn cấp', 'emergency_phone');
+      // Salaries & Banks
+      const salaryGrade = parseInt(this.getField(normMap, 'Bậc lương', 'Bậc', 'salary_grade') || existingMaster['Bậc lương'] || 3, 10) || 3;
+      const baseSalary = parseFloat((this.getField(normMap, 'Lương cơ bản', 'Lương cơ bản (VNĐ)', 'base_salary') || String(existingMaster['Lương cơ bản'] || 0)).replace(/[^0-9.-]+/g, '')) || 0;
+      const salaryRate = this.getField(normMap, 'Tỷ lệ hưởng lương (%)', 'Tỷ lệ hưởng lương', 'salary_rate') || existingMaster['Tỷ lệ hưởng lương'] || '100%';
+      const totalSalary = parseFloat((this.getField(normMap, 'Tổng lương', 'Tổng lương / Thu nhập (VNĐ)', 'total_salary') || String(existingMaster['Tổng lương'] || baseSalary)).replace(/[^0-9.-]+/g, '')) || 0;
+      const insuranceSalary = parseFloat((this.getField(normMap, 'Lương đóng BH', 'Lương đóng BHXH (VNĐ)', 'Lương đóng BHXH', 'insurance_salary') || String(existingMaster['Lương đóng BH'] || baseSalary)).replace(/[^0-9.-]+/g, '')) || 0;
+      const bankAccount = this.getField(normMap, 'TK ngân hàng', 'Tài khoản ngân hàng', 'Số tài khoản ngân hàng', 'Số tài khoản', 'STK', 'bank_account_number') || existingMaster['TK ngân hàng'] || '';
+      const bankName = this.getField(normMap, 'Ngân hàng', 'Mở tại ngân hàng', 'Tên ngân hàng', 'bank_name') || existingMaster['Ngân hàng'] || 'Vietcombank';
+      const bankBranch = this.getField(normMap, 'Chi nhánh', 'Chi nhánh ngân hàng', 'bank_branch') || existingMaster['Chi nhánh'] || 'Chi nhánh Hà Nội';
+
+      const hasInsurance = this.getField(normMap, 'Tham gia bảo hiểm', 'Tham gia BHXH', 'has_insurance') || existingMaster['Tham gia bảo hiểm'] || 'Có';
+      const socialInsuranceBook = this.getField(normMap, 'Số sổ BHXH', 'Mã số BHXH', 'Số sổ / Mã số BHXH', 'social_insurance_book_no') || existingMaster['Số sổ BHXH'] || '';
+      const insuranceJoinDate = this.formatDate(this.getField(normMap, 'Ngày tham gia BH', 'Ngày tham gia BHXH', 'insurance_join_date')) || existingMaster['Ngày tham gia BH'] || startDate;
+      const hospitalRegistered = this.getField(normMap, 'Nơi đăng ký KCB', 'Nơi ĐK khám chữa bệnh ban đầu', 'Nơi ĐK KCB ban đầu', 'hospital_registered') || existingMaster['Nơi đăng ký KCB'] || 'Bệnh viện Bạch Mai - Hà Nội';
+      const unionMember = this.getField(normMap, 'Tham gia công đoàn', 'Đoàn viên công đoàn', 'union_member') || existingMaster['Tham gia công đoàn'] || 'Đoàn viên';
+
+      const taxRate = this.getField(normMap, 'Thuế suất', 'tax_rate') || existingMaster['Thuế suất'] || 'Theo biểu lũy tiến';
+      const dependentsCount = parseInt(this.getField(normMap, 'Số người phụ thuộc', 'dependents_count') || existingMaster['Số người phụ thuộc'] || 0, 10) || 0;
+      const personalDeduction = this.getField(normMap, 'Giảm trừ bản thân', 'personal_deduction') || existingMaster['Giảm trừ bản thân'] || 'Có';
+      const empBhxhRate = this.getField(normMap, 'Tỷ lệ đóng BHXH của nhân viên (%)', 'Tỷ lệ đóng BHXH của NV (%)', 'emp_bhxh_rate') || existingMaster['Tỷ lệ đóng BHXH của NV'] || '8%';
+      const empBhytRate = this.getField(normMap, 'Tỷ lệ đóng BHYT của nhân viên (%)', 'Tỷ lệ đóng BHYT của NV (%)', 'emp_bhyt_rate') || existingMaster['Tỷ lệ đóng BHYT của NV'] || '1.5%';
+      const empBhtnRate = this.getField(normMap, 'Tỷ lệ đóng BHTN của nhân viên (%)', 'Tỷ lệ đóng BHTN của NV (%)', 'emp_bhtn_rate') || existingMaster['Tỷ lệ đóng BHTN của NV'] || '1%';
+      const compBhxhRate = this.getField(normMap, 'Tỷ lệ đóng BHXH của doanh nghiệp (%)', 'Tỷ lệ đóng BHXH của DN (%)', 'comp_bhxh_rate') || existingMaster['Tỷ lệ đóng BHXH của DN'] || '17.5%';
+      const compBhytRate = this.getField(normMap, 'Tỷ lệ đóng BHYT của doanh nghiệp (%)', 'Tỷ lệ đóng BHYT của DN (%)', 'comp_bhyt_rate') || existingMaster['Tỷ lệ đóng BHYT của DN'] || '3%';
+      const compBhtnRate = this.getField(normMap, 'Tỷ lệ đóng BHTN của doanh nghiệp (%)', 'Tỷ lệ đóng BHTN của DN (%)', 'comp_bhtn_rate') || existingMaster['Tỷ lệ đóng BHTN của DN'] || '1%';
+      const payslipPassword = this.getField(normMap, 'Mật khẩu phiếu lương', 'payslip_password') || existingMaster['Mật khẩu phiếu lương'] || '';
+
+      // Allowances & Deductions
+      const totalAllowance = parseFloat((this.getField(normMap, 'Tổng phụ cấp', 'total_allowance') || String(existingMaster['Tổng phụ cấp'] || 0)).replace(/[^0-9.-]+/g, '')) || 0;
+      const allowanceCount = parseInt(this.getField(normMap, 'Số khoản phụ cấp', 'allowance_count') || existingMaster['Số khoản phụ cấp'] || 0, 10) || 0;
+      const totalDeduction = parseFloat((this.getField(normMap, 'Tổng giảm trừ', 'total_deduction') || String(existingMaster['Tổng giảm trừ'] || 0)).replace(/[^0-9.-]+/g, '')) || 0;
+      const salaryNote = this.getField(normMap, 'Ghi chú phụ cấp', 'salary_note') || existingMaster['Ghi chú phụ cấp'] || '';
+
+      const eduLevel = this.getField(normMap, 'Trình độ đào tạo', 'Trình độ học vấn', 'Trình độ', 'education_level') || existingMaster['Trình độ đào tạo'] || 'Đại học';
+      const degreeType = this.getField(normMap, 'Hình thức đào tạo', 'degree_type') || existingMaster['Hình thức đào tạo'] || 'Chính quy';
+      const institution = this.getField(normMap, 'Nơi đào tạo', 'Trường / Cơ sở đào tạo', 'Trường', 'institution') || existingMaster['Nơi đào tạo'] || 'Đại học';
+      const eduMajor = this.getField(normMap, 'Chuyên ngành', 'Chuyên ngành đào tạo', 'major') || existingMaster['Chuyên ngành'] || '';
+      const gradYear = parseInt(this.getField(normMap, 'Năm tốt nghiệp', 'graduation_year') || existingMaster['Năm tốt nghiệp'] || 2020, 10) || 2020;
+      const gradClassification = this.getField(normMap, 'Xếp loại', 'Xếp loại tốt nghiệp', 'classification') || existingMaster['Xếp loại'] || 'Khá';
+      const otherCerts = this.getField(normMap, 'Bằng cấp chuyên môn khác & Chứng chỉ', 'Bằng cấp khác', 'other_certificates') || existingMaster['Bằng cấp chuyên môn khác & Chứng chỉ'] || '';
+
+      const emergName = this.getField(normMap, 'Họ và tên (LHKC)', 'Họ tên người liên hệ khẩn cấp', 'Người liên hệ khẩn cấp', 'Người khẩn cấp', 'emergency_name') || existingMaster['Họ và tên (LHKC)'] || '';
+      const emergRelation = this.getField(normMap, 'Quan hệ (LHKC)', 'Mối quan hệ khẩn cấp', 'Quan hệ khẩn cấp', 'Quan hệ', 'emergency_relation') || existingMaster['Quan hệ (LHKC)'] || 'Người thân';
+      const emergPhone = this.getField(normMap, 'ĐT di động (LHKC)', 'Số ĐT khẩn cấp', 'SĐT khẩn cấp', 'emergency_phone') || existingMaster['ĐT di động (LHKC)'] || '';
 
       const errors = [];
       const warnings = [];
-      let rowStatus = 'VALID'; // 'VALID' | 'OVERWRITE' | 'CONFLICT'
+      let rowStatus = 'VALID'; // 'VALID' | 'LINKED' | 'CONFLICT'
 
       // Check 1: Required Fields
       const isSelectedScope = this.scopeMode === 'selected';
       if (!fullName) errors.push('Thiếu Họ và tên (*)');
-      if (!isSelectedScope) {
+      if (!isSelectedScope && !isEmpExisting) {
         if (!dept) warnings.push('Chưa có Mã phòng ban (sẽ dùng mặc định)');
         if (!pos) warnings.push('Chưa có Mã vị trí (sẽ dùng mặc định)');
       }
@@ -824,43 +865,40 @@ const appImport = {
       if (empId && fileEmpIdCounts.get(empId) > 1) {
         errors.push(`Trùng Mã nhân viên ${empId} với dòng khác trong file Excel`);
       }
-      if (idNumber && fileIdNumCounts.get(idNumber) > 1) {
-        errors.push(`Trùng số CCCD ${idNumber} với dòng khác trong file Excel`);
+      if (rawIdNumber && fileIdNumCounts.get(rawIdNumber) > 1) {
+        errors.push(`Trùng số CCCD ${rawIdNumber} với dòng khác trong file Excel`);
       }
-      if (email && fileEmailCounts.get(email) > 1) {
-        errors.push(`Trùng Email ${email} với dòng khác trong file Excel`);
-      }
-
-      // Check 3: Cross-check against Database Records
-      const dbEmpWithId = empId ? dbEmpById.get(empId) : null;
-      if (dbEmpWithId) {
-        if (overwrite || isSelectedScope) {
-          rowStatus = 'OVERWRITE';
-        } else {
-          errors.push(`Mã NV ${empId} đã tồn tại trong hệ thống (Đang tắt chế độ ghi đè)`);
-        }
+      if (rawEmail && fileEmailCounts.get(rawEmail) > 1) {
+        errors.push(`Trùng Email ${rawEmail} với dòng khác trong file Excel`);
       }
 
-      // Check 4: CCCD uniqueness against DB
-      if (idNumber) {
-        const existingCCCD = dbEmpByIdNumber.get(idNumber);
+      // Check 3: Database Link Key Recognition
+      if (isEmpExisting) {
+        rowStatus = 'LINKED'; // Khóa liên kết thành công với nhân sự đã có trong CSDL
+      }
+
+      // Check 4: CCCD uniqueness against DB (chỉ kiểm tra nếu file có cột CCCD và khác nhân sự hiện tại)
+      if (rawIdNumber) {
+        const existingCCCD = dbEmpByIdNumber.get(rawIdNumber);
         if (existingCCCD && (!empId || existingCCCD.employee_id !== empId)) {
-          errors.push(`Số CCCD ${idNumber} trùng với NV ${existingCCCD.employee_id} (${existingCCCD.full_name}) trong hệ thống`);
+          errors.push(`Số CCCD ${rawIdNumber} trùng với NV ${existingCCCD.employee_id} (${existingCCCD.full_name}) trong hệ thống`);
         }
       }
 
-      // Check 5: Work Email uniqueness against DB
-      if (email && email.includes('@')) {
-        const existingEmail = dbEmpByEmail.get(email);
+      // Check 5: Work Email uniqueness against DB (chỉ kiểm tra nếu file có cột Email và khác nhân sự hiện tại)
+      if (rawEmail && rawEmail.includes('@')) {
+        const existingEmail = dbEmpByEmail.get(rawEmail);
         if (existingEmail && (!empId || existingEmail.employee_id !== empId)) {
-          errors.push(`Email ${email} trùng với NV ${existingEmail.employee_id} (${existingEmail.full_name}) trong hệ thống`);
+          errors.push(`Email ${rawEmail} trùng với NV ${existingEmail.employee_id} (${existingEmail.full_name}) trong hệ thống`);
         }
       }
 
       // Final status assignment
       if (errors.length > 0) {
         rowStatus = 'CONFLICT';
-      } else if (rowStatus !== 'OVERWRITE') {
+      } else if (isEmpExisting) {
+        rowStatus = 'LINKED';
+      } else {
         rowStatus = 'VALID';
       }
 
@@ -942,6 +980,9 @@ const appImport = {
         emergency_relation: emergRelation,
         emergency_phone: emergPhone,
         status: rowStatus,
+        is_linked: isEmpExisting,
+        raw_data: rawRow,
+        provided_fields: Object.keys(normMap),
         errors,
         warnings
       };
@@ -949,7 +990,7 @@ const appImport = {
       this.parsedEmployees.push(item);
       if (rowStatus === 'VALID') {
         this.validEmployees.push(item);
-      } else if (rowStatus === 'OVERWRITE') {
+      } else if (rowStatus === 'LINKED' || rowStatus === 'OVERWRITE') {
         this.overwriteEmployees.push(item);
       } else {
         this.conflictEmployees.push(item);
@@ -969,9 +1010,9 @@ const appImport = {
       const tab = document.getElementById(`import-tab-${f}`);
       if (tab) {
         if (f === filter) {
-          tab.style.background = 'var(--primary-navy)';
+          tab.style.background = f === 'overwrite' ? '#2563EB' : (f === 'valid' ? '#059669' : (f === 'conflict' ? '#DC2626' : 'var(--primary-navy)'));
           tab.style.color = '#FFFFFF';
-          tab.style.borderColor = 'var(--primary-navy)';
+          tab.style.borderColor = tab.style.background;
         } else {
           tab.style.background = '#FFFFFF';
           tab.style.color = 'var(--text-secondary)';
@@ -996,10 +1037,10 @@ const appImport = {
             <i class="fa-solid fa-list"></i> Tất cả (${total})
           </button>
           <button type="button" id="import-tab-valid" onclick="appImport.setFilter('valid')" class="btn btn-sm" style="font-size: 12px; padding: 4px 10px; border-radius: 4px; ${this.currentFilter === 'valid' ? 'background: #059669; color: #fff; border-color: #059669;' : 'background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;'}">
-            <i class="fa-solid fa-circle-check"></i> Hợp lệ mới (${validCount})
+            <i class="fa-solid fa-user-plus"></i> Nhân sự mới (${validCount})
           </button>
-          <button type="button" id="import-tab-overwrite" onclick="appImport.setFilter('overwrite')" class="btn btn-sm" style="font-size: 12px; padding: 4px 10px; border-radius: 4px; ${this.currentFilter === 'overwrite' ? 'background: #D97706; color: #fff; border-color: #D97706;' : 'background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;'}">
-            <i class="fa-solid fa-arrows-rotate"></i> Trùng Mã NV (${overwriteCount})
+          <button type="button" id="import-tab-overwrite" onclick="appImport.setFilter('overwrite')" class="btn btn-sm" style="font-size: 12px; padding: 4px 10px; border-radius: 4px; ${this.currentFilter === 'overwrite' ? 'background: #2563EB; color: #fff; border-color: #2563EB;' : 'background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;'}">
+            <i class="fa-solid fa-link"></i> Liên kết Mã NV (${overwriteCount})
           </button>
           <button type="button" id="import-tab-conflict" onclick="appImport.setFilter('conflict')" class="btn btn-sm" style="font-size: 12px; padding: 4px 10px; border-radius: 4px; ${this.currentFilter === 'conflict' ? 'background: #DC2626; color: #fff; border-color: #DC2626;' : 'background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA;'}">
             <i class="fa-solid fa-triangle-exclamation"></i> Xung đột / Lỗi (${conflictCount})
@@ -1038,9 +1079,9 @@ const appImport = {
       let errorMsgHtml = '';
 
       if (e.status === 'VALID') {
-        statusBadge = '<span class="badge badge-active" style="font-size: 10.5px;"><i class="fa-solid fa-check"></i> Hợp lệ (Mới)</span>';
-      } else if (e.status === 'OVERWRITE') {
-        statusBadge = '<span class="badge" style="background: #FEF3C7; color: #92400E; font-size: 10.5px; border: 1px solid #FDE68A;"><i class="fa-solid fa-arrows-rotate"></i> Ghi đè (Mã NV)</span>';
+        statusBadge = '<span class="badge badge-active" style="font-size: 10.5px;"><i class="fa-solid fa-user-plus"></i> Nhân sự mới</span>';
+      } else if (e.status === 'LINKED' || e.status === 'OVERWRITE') {
+        statusBadge = '<span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-size: 10.5px; border: 1px solid #BFDBFE; font-weight: 600;"><i class="fa-solid fa-link"></i> Liên kết Mã NV</span>';
       } else {
         statusBadge = '<span class="badge badge-resigned" style="font-size: 10.5px;"><i class="fa-solid fa-triangle-exclamation"></i> Xung đột Primary Key</span>';
       }
@@ -1059,20 +1100,30 @@ const appImport = {
       const cccdStyle = hasCccdError ? 'color: #DC2626; font-weight: 700; background: #FEF2F2; padding: 2px 4px; border-radius: 3px;' : '';
       const emailStyle = hasEmailError ? 'color: #DC2626; font-weight: 700; background: #FEF2F2; padding: 2px 4px; border-radius: 3px;' : '';
 
+      const linkKeyHtml = e.is_linked
+        ? `<div style="font-size: 10px; color: #059669; font-weight: 600; margin-top: 2px; white-space: nowrap;"><i class="fa-solid fa-database"></i> Khóa liên kết CSDL</div>`
+        : '';
+
+      const deptDisplay = (typeof appData !== 'undefined' && appData.deptMap?.[e.department_id]) || e.department_id || 'Mặc định';
+      const posDisplay = (typeof appData !== 'undefined' && appData.posMap?.[e.position_id]) || e.position_id || 'Mặc định';
+
       return `
         <tr style="${e.status === 'CONFLICT' ? 'background: #FFF5F5;' : ''}">
           <td style="text-align: center; color: var(--text-secondary); font-size: 11.5px;">${e.stt}</td>
           <td style="text-align: center;">${statusBadge}</td>
-          <td><span style="${idStyle}; font-family: monospace;">${e.employee_id || '(Tự tạo)'}</span></td>
+          <td>
+            <span style="${idStyle}; font-family: monospace;">${e.employee_id || '(Tự tạo)'}</span>
+            ${linkKeyHtml}
+          </td>
           <td>
             <strong>${e.full_name}</strong>
             ${errorMsgHtml}
           </td>
-          <td>${e.gender}</td>
+          <td>${e.gender || '-'}</td>
           <td><span style="${cccdStyle}">${e.id_number || '-'}</span></td>
           <td><span style="${emailStyle}">${e.work_email || '-'}</span></td>
-          <td><span class="badge badge-navy">${e.department_id || 'Mặc định'}</span></td>
-          <td>${e.position_id || 'Mặc định'}</td>
+          <td><span class="badge badge-navy" title="${deptDisplay}">${deptDisplay}</span></td>
+          <td><span title="${posDisplay}">${posDisplay}</span></td>
         </tr>
       `;
     }).join('');
@@ -1101,9 +1152,9 @@ const appImport = {
       submitBtn.style.background = '#10B981';
       submitBtn.style.borderColor = '#059669';
       if (conflictCount > 0) {
-        submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Xác Nhận Nhập ${readyCount} Nhân Sự (Bỏ qua ${conflictCount} dòng lỗi)`;
+        submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Xác Nhận Nhập & Liên Kết ${readyCount} Nhân Sự (Bỏ qua ${conflictCount} dòng lỗi)`;
       } else {
-        submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Xác Nhận Nhập ${readyCount} Nhân Sự Hợp Lệ`;
+        submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Xác Nhận Nhập & Liên Kết ${readyCount} Nhân Sự Hợp Lệ`;
       }
     }
   },

@@ -1085,6 +1085,28 @@ app.post('/api/employees/import-excel', async (req, res) => {
             return '';
         }
 
+        function hasVal(obj, ...keys) {
+            for (const key of keys) {
+                if (obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== '' && String(obj[key]).trim() !== '-') {
+                    return true;
+                }
+            }
+            if (obj.raw_data && typeof obj.raw_data === 'object') {
+                for (const key of keys) {
+                    if (obj.raw_data[key] !== undefined && obj.raw_data[key] !== null && String(obj.raw_data[key]).trim() !== '' && String(obj.raw_data[key]).trim() !== '-') {
+                        return true;
+                    }
+                }
+            }
+            if (obj.provided_fields && Array.isArray(obj.provided_fields)) {
+                const normKeys = keys.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                if (obj.provided_fields.some(f => normKeys.includes(f.toLowerCase().replace(/[^a-z0-9]/g, '')))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         // 1. First Pass: Validate batch for duplicates
         importedList.forEach((item, idx) => {
             const rowNum = idx + 1;
@@ -1438,77 +1460,77 @@ app.post('/api/employees/import-excel', async (req, res) => {
                 const updatedEmp = { ...currentEmp };
 
                 if (isTabSelected('tab-p-personal')) {
-                    if (fullName) updatedEmp.full_name = fullName;
-                    if (aliasName) updatedEmp.alias_name = aliasName;
-                    if (gender) updatedEmp.gender = gender;
-                    if (dob) updatedEmp.date_of_birth = dob;
-                    if (birthPlace) updatedEmp.birth_place = birthPlace;
-                    if (nativePlace) updatedEmp.native_place = nativePlace;
-                    if (ethnicity) updatedEmp.ethnicity = ethnicity;
-                    if (religion) updatedEmp.religion = religion;
-                    if (nationality) updatedEmp.nationality = nationality;
-                    if (maritalStatus) updatedEmp.marital_status = maritalStatus;
-                    if (childrenCount !== undefined) updatedEmp.children_count = childrenCount;
-                    if (taxCode) updatedEmp.tax_code = taxCode;
+                    if (hasVal(item, 'Họ và tên', 'Họ tên', 'full_name') && fullName) updatedEmp.full_name = fullName;
+                    if (hasVal(item, 'Tên gọi khác', 'alias_name') && aliasName) updatedEmp.alias_name = aliasName;
+                    if (hasVal(item, 'Giới tính', 'gender') && gender) updatedEmp.gender = gender;
+                    if (hasVal(item, 'Ngày sinh', 'date_of_birth') && dob) updatedEmp.date_of_birth = dob;
+                    if (hasVal(item, 'Nơi sinh', 'birth_place') && birthPlace) updatedEmp.birth_place = birthPlace;
+                    if (hasVal(item, 'Nguyên quán', 'native_place') && nativePlace) updatedEmp.native_place = nativePlace;
+                    if (hasVal(item, 'Dân tộc', 'ethnicity') && ethnicity) updatedEmp.ethnicity = ethnicity;
+                    if (hasVal(item, 'Tôn giáo', 'religion') && religion) updatedEmp.religion = religion;
+                    if (hasVal(item, 'Quốc tịch', 'nationality') && nationality) updatedEmp.nationality = nationality;
+                    if (hasVal(item, 'Tình trạng hôn nhân', 'marital_status') && maritalStatus) updatedEmp.marital_status = maritalStatus;
+                    if (hasVal(item, 'Số con', 'children_count') && childrenCount !== undefined) updatedEmp.children_count = childrenCount;
+                    if (hasVal(item, 'MST cá nhân', 'tax_code') && taxCode) updatedEmp.tax_code = taxCode;
                 }
 
                 if (isTabSelected('tab-p-org')) {
-                    if (deptId) updatedEmp.department_id = deptId;
-                    if (deptName) updatedEmp.department_name = deptName;
-                    if (posId) updatedEmp.position_id = posId;
-                    if (jobLevel) updatedEmp.job_level = jobLevel;
-                    if (jobRank) updatedEmp.job_rank = jobRank;
-                    if (professionalTitle) updatedEmp.job_title = professionalTitle;
-                    if (workLocation) updatedEmp.work_location = workLocation;
-                    if (workArea) updatedEmp.work_area = workArea;
-                    if (timeAttendanceCode) updatedEmp.time_attendance_code = timeAttendanceCode;
-                    if (directMgrId) updatedEmp.direct_manager_id = directMgrId;
-                    if (directMgrName) updatedEmp.direct_manager_name = directMgrName;
-                    if (indirectMgrId) updatedEmp.indirect_manager_id = indirectMgrId;
-                    if (indirectMgrName) updatedEmp.indirect_manager_name = indirectMgrName;
-                    if (empStatus) updatedEmp.employment_status = empStatus;
-                    if (laborNature) updatedEmp.labor_nature = laborNature;
-                    if (recruiterName) updatedEmp.recruiter_name = recruiterName;
-                    if (candidateSource) updatedEmp.candidate_source = candidateSource;
-                    if (laborBookNumber) updatedEmp.labor_book_number = laborBookNumber;
+                    if (hasVal(item, 'Mã đơn vị công tác', 'Mã phòng ban', 'department_id') && deptId) updatedEmp.department_id = deptId;
+                    if (hasVal(item, 'Đơn vị công tác', 'Phòng ban', 'department_name') && deptName) updatedEmp.department_name = deptName;
+                    if (hasVal(item, 'Mã vị trí công việc', 'position_id') && posId) updatedEmp.position_id = posId;
+                    if (hasVal(item, 'Cấp', 'job_level') && jobLevel) updatedEmp.job_level = jobLevel;
+                    if (hasVal(item, 'Bậc', 'job_rank') && jobRank) updatedEmp.job_rank = jobRank;
+                    if (hasVal(item, 'Chức danh', 'job_title') && professionalTitle) updatedEmp.job_title = professionalTitle;
+                    if (hasVal(item, 'Địa điểm làm việc', 'work_location') && workLocation) updatedEmp.work_location = workLocation;
+                    if (hasVal(item, 'Khu vực làm việc', 'work_area') && workArea) updatedEmp.work_area = workArea;
+                    if (hasVal(item, 'Mã chấm công', 'time_attendance_code') && timeAttendanceCode) updatedEmp.time_attendance_code = timeAttendanceCode;
+                    if (hasVal(item, 'Mã quản lý trực tiếp', 'direct_manager_id') && directMgrId) updatedEmp.direct_manager_id = directMgrId;
+                    if (hasVal(item, 'Quản lý trực tiếp', 'direct_manager_name') && directMgrName) updatedEmp.direct_manager_name = directMgrName;
+                    if (hasVal(item, 'Mã quản lý gián tiếp', 'indirect_manager_id') && indirectMgrId) updatedEmp.indirect_manager_id = indirectMgrId;
+                    if (hasVal(item, 'Quản lý gián tiếp', 'indirect_manager_name') && indirectMgrName) updatedEmp.indirect_manager_name = indirectMgrName;
+                    if (hasVal(item, 'Trạng thái lao động', 'employment_status') && empStatus) updatedEmp.employment_status = empStatus;
+                    if (hasVal(item, 'Tính chất lao động', 'labor_nature') && laborNature) updatedEmp.labor_nature = laborNature;
+                    if (hasVal(item, 'Nhân sự khai thác', 'recruiter_name') && recruiterName) updatedEmp.recruiter_name = recruiterName;
+                    if (hasVal(item, 'Nguồn ứng viên', 'candidate_source') && candidateSource) updatedEmp.candidate_source = candidateSource;
+                    if (hasVal(item, 'Số sổ QL lao động', 'labor_book_number') && laborBookNumber) updatedEmp.labor_book_number = laborBookNumber;
                 }
 
                 if (isTabSelected('tab-p-contract')) {
-                    if (contractType) updatedEmp.contract_type = contractType;
-                    if (startDate) updatedEmp.start_date = startDate;
-                    if (endDate) updatedEmp.end_date = endDate;
-                    if (apprenticeStartDate) updatedEmp.apprentice_start_date = apprenticeStartDate;
-                    if (trialStartDate) {
+                    if (hasVal(item, 'Loại hợp đồng', 'contract_type') && contractType) updatedEmp.contract_type = contractType;
+                    if (hasVal(item, 'Ngày bắt đầu làm việc', 'start_date') && startDate) updatedEmp.start_date = startDate;
+                    if (hasVal(item, 'Ngày hết hiệu lực', 'end_date') && endDate) updatedEmp.end_date = endDate;
+                    if (hasVal(item, 'Ngày học việc', 'apprentice_start_date') && apprenticeStartDate) updatedEmp.apprentice_start_date = apprenticeStartDate;
+                    if (hasVal(item, 'Ngày thử việc', 'trial_start_date') && trialStartDate) {
                         updatedEmp.probation_start_date = trialStartDate;
                         updatedEmp.trial_start_date = trialStartDate;
                     }
-                    if (officialDate) updatedEmp.official_date = officialDate;
-                    if (resignationDate) updatedEmp.resignation_date = resignationDate;
-                    if (resignationReason) updatedEmp.resignation_reason = resignationReason;
-                    if (resignationReasonGroup) updatedEmp.resignation_reason_group = resignationReasonGroup;
-                    if (expectedRetirementDate) updatedEmp.expected_retirement_date = expectedRetirementDate;
-                    if (isBlacklisted !== undefined) updatedEmp.is_blacklisted = isBlacklisted;
-                    if (approverName) updatedEmp.approved_by = approverName;
-                    if (seniority) updatedEmp.seniority_text = seniority;
+                    if (hasVal(item, 'Ngày chính thức', 'official_date') && officialDate) updatedEmp.official_date = officialDate;
+                    if (hasVal(item, 'Ngày nghỉ việc', 'resignation_date') && resignationDate) updatedEmp.resignation_date = resignationDate;
+                    if (hasVal(item, 'Lý do nghỉ', 'resignation_reason') && resignationReason) updatedEmp.resignation_reason = resignationReason;
+                    if (hasVal(item, 'Nhóm lý do nghỉ', 'resignation_reason_group') && resignationReasonGroup) updatedEmp.resignation_reason_group = resignationReasonGroup;
+                    if (hasVal(item, 'Ngày nghỉ hưu dự kiến', 'expected_retirement_date') && expectedRetirementDate) updatedEmp.expected_retirement_date = expectedRetirementDate;
+                    if (hasVal(item, 'Thuộc danh sách đen', 'is_blacklisted') && isBlacklisted !== undefined) updatedEmp.is_blacklisted = isBlacklisted;
+                    if (hasVal(item, 'Người duyệt', 'approved_by') && approverName) updatedEmp.approved_by = approverName;
+                    if (hasVal(item, 'Thâm niên', 'seniority') && seniority) updatedEmp.seniority_text = seniority;
                 }
 
                 if (isTabSelected('tab-p-education')) {
-                    if (otherCerts) updatedEmp.other_certificates = otherCerts;
+                    if (hasVal(item, 'Bằng cấp chuyên môn khác & Chứng chỉ', 'other_certificates') && otherCerts) updatedEmp.other_certificates = otherCerts;
                 }
 
                 if (isTabSelected('tab-p-salary')) {
-                    if (baseSalary) updatedEmp.base_salary = baseSalary;
-                    if (totalSalary) updatedEmp.total_salary = totalSalary;
-                    if (bankAccount) updatedEmp.bank_account_number = bankAccount;
-                    if (bankName) updatedEmp.bank_name = bankName;
-                    if (bankBranch) updatedEmp.bank_branch = bankBranch;
+                    if (hasVal(item, 'Lương cơ bản', 'base_salary') && baseSalary) updatedEmp.base_salary = baseSalary;
+                    if (hasVal(item, 'Tổng lương', 'total_salary') && totalSalary) updatedEmp.total_salary = totalSalary;
+                    if (hasVal(item, 'TK ngân hàng', 'bank_account_number') && bankAccount) updatedEmp.bank_account_number = bankAccount;
+                    if (hasVal(item, 'Ngân hàng', 'bank_name') && bankName) updatedEmp.bank_name = bankName;
+                    if (hasVal(item, 'Chi nhánh', 'bank_branch') && bankBranch) updatedEmp.bank_branch = bankBranch;
                 }
 
                 if (isTabSelected('tab-p-allowance')) {
                     const totalAllow = parseFloat(getVal(item, 'Tổng phụ cấp', 'total_allowance') || 0);
                     const allowCount = parseInt(getVal(item, 'Số khoản phụ cấp', 'allowance_count') || 0, 10);
-                    if (totalAllow) updatedEmp.total_allowance = totalAllow;
-                    if (allowCount) updatedEmp.allowance_count = allowCount;
+                    if (hasVal(item, 'Tổng phụ cấp', 'total_allowance') && totalAllow) updatedEmp.total_allowance = totalAllow;
+                    if (hasVal(item, 'Số khoản phụ cấp', 'allowance_count') && allowCount) updatedEmp.allowance_count = allowCount;
                 }
 
                 employees[existingIdx] = updatedEmp;
@@ -1645,27 +1667,27 @@ app.post('/api/employees/import-excel', async (req, res) => {
                     }
                 }
 
-                // Update master profiles (selective update: only update columns of selected tabs)
-                const mpIdx = masterProfiles.findIndex(m => m['Mã nhân viên'] === empId);
+                // Update master profiles (selective update: only update columns provided in Excel)
+                const mpIdx = masterProfiles.findIndex(m => (m['Mã nhân viên'] === empId || m.employee_id === empId));
                 if (mpIdx >= 0) {
-                    if (!selected_tabs || selected_tabs.includes('all')) {
-                        masterProfiles[mpIdx] = {
-                            ...masterProfiles[mpIdx],
-                            ...masterRow
-                        };
-                    } else {
-                        const updatedMaster = { ...masterProfiles[mpIdx] };
-                        Object.keys(TAB_FIELDS_MAP).forEach(tabId => {
-                            if (isTabSelected(tabId)) {
-                                TAB_FIELDS_MAP[tabId].forEach(fKey => {
-                                    if (masterRow[fKey] !== undefined && masterRow[fKey] !== null && masterRow[fKey] !== '') {
-                                        updatedMaster[fKey] = masterRow[fKey];
-                                    }
-                                });
+                    const currentMaster = { ...masterProfiles[mpIdx] };
+                    if (item.raw_data && typeof item.raw_data === 'object') {
+                        Object.keys(item.raw_data).forEach(k => {
+                            if (item.raw_data[k] !== undefined && item.raw_data[k] !== null && String(item.raw_data[k]).trim() !== '') {
+                                currentMaster[k] = item.raw_data[k];
                             }
                         });
-                        masterProfiles[mpIdx] = updatedMaster;
                     }
+                    Object.keys(TAB_FIELDS_MAP).forEach(tabId => {
+                        if (isTabSelected(tabId)) {
+                            TAB_FIELDS_MAP[tabId].forEach(fKey => {
+                                if (hasVal(item, fKey) && masterRow[fKey] !== undefined && masterRow[fKey] !== null && masterRow[fKey] !== '') {
+                                    currentMaster[fKey] = masterRow[fKey];
+                                }
+                            });
+                        }
+                    });
+                    masterProfiles[mpIdx] = currentMaster;
                 }
 
                 updatedCount++;

@@ -625,79 +625,235 @@ export async function onRequest(context) {
         return jsonResponse({ success: false, message: "Không tìm thấy dữ liệu nhân viên để import!" }, 400);
       }
 
+      const hasVal = (val) => (val !== undefined && val !== null && String(val).trim() !== '' && String(val).trim() !== '-');
+
+      const isKeyProvided = (emp, ...keys) => {
+        if (emp.provided_fields && Array.isArray(emp.provided_fields) && emp.provided_fields.length > 0) {
+          const normKeys = keys.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
+          return emp.provided_fields.some(f => normKeys.includes(f.toLowerCase().replace(/[^a-z0-9]/g, '')));
+        }
+        if (emp.raw_data && typeof emp.raw_data === 'object') {
+          const rawKeys = Object.keys(emp.raw_data);
+          const normKeys = keys.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
+          return rawKeys.some(rk => normKeys.includes(rk.toLowerCase().replace(/[^a-z0-9]/g, '')) && hasVal(emp.raw_data[rk]));
+        }
+        return keys.some(k => hasVal(emp[k]));
+      };
+
       const data = await loadAllFromD1(db);
+
+      // 1. Cập nhật 03_Employees (Bảo toàn dữ liệu cũ của các trường không có trong Excel)
       const existing = data.tables["03_Employees"] || [];
-      const empMap = new Map(existing.map(e => [e.employee_id, e]));
+      const empMap = new Map(existing.map(e => [e.employee_id, { ...e }]));
 
       employees.forEach(emp => {
-        if (emp.employee_id) {
-          if (emp.date_of_birth) emp.date_of_birth = fixExcelSerialDate(emp.date_of_birth);
-          if (emp['Ngày sinh']) emp['Ngày sinh'] = fixExcelSerialDate(emp['Ngày sinh']);
-          if (emp.start_date) emp.start_date = fixExcelSerialDate(emp.start_date);
-          if (emp.trial_start_date) emp.trial_start_date = fixExcelSerialDate(emp.trial_start_date);
-          if (emp.official_date) emp.official_date = fixExcelSerialDate(emp.official_date);
-          empMap.set(emp.employee_id, { ...empMap.get(emp.employee_id), ...emp });
+        if (!emp.employee_id) return;
+        if (emp.date_of_birth) emp.date_of_birth = fixExcelSerialDate(emp.date_of_birth);
+        if (emp['Ngày sinh']) emp['Ngày sinh'] = fixExcelSerialDate(emp['Ngày sinh']);
+        if (emp.start_date) emp.start_date = fixExcelSerialDate(emp.start_date);
+        if (emp.trial_start_date) emp.trial_start_date = fixExcelSerialDate(emp.trial_start_date);
+        if (emp.official_date) emp.official_date = fixExcelSerialDate(emp.official_date);
+
+        if (empMap.has(emp.employee_id)) {
+          // Nhân sự đã có: CHỈ CẬP NHẬT TRƯỜNG CÓ TRONG EXCEL, BẢO TOÀN 100% CÁC TRƯỜNG CÒN LẠI!
+          const cur = empMap.get(emp.employee_id);
+          const updated = { ...cur };
+
+          if (isTabSelected('tab-p-personal')) {
+            if (isKeyProvided(emp, 'full_name', 'Họ và tên')) updated.full_name = emp.full_name;
+            if (isKeyProvided(emp, 'gender', 'Giới tính')) updated.gender = emp.gender;
+            if (isKeyProvided(emp, 'date_of_birth', 'Ngày sinh')) updated.date_of_birth = emp.date_of_birth;
+            if (isKeyProvided(emp, 'birth_place', 'Nơi sinh')) updated.birth_place = emp.birth_place;
+            if (isKeyProvided(emp, 'native_place', 'Nguyên quán')) updated.native_place = emp.native_place;
+            if (isKeyProvided(emp, 'ethnicity', 'Dân tộc')) updated.ethnicity = emp.ethnicity;
+            if (isKeyProvided(emp, 'religion', 'Tôn giáo')) updated.religion = emp.religion;
+            if (isKeyProvided(emp, 'nationality', 'Quốc tịch')) updated.nationality = emp.nationality;
+            if (isKeyProvided(emp, 'marital_status', 'Tình trạng hôn nhân')) updated.marital_status = emp.marital_status;
+            if (isKeyProvided(emp, 'children_count', 'Số con')) updated.children_count = emp.children_count;
+            if (isKeyProvided(emp, 'tax_code', 'MST cá nhân')) updated.tax_code = emp.tax_code;
+          }
+
+          if (isTabSelected('tab-p-org')) {
+            if (isKeyProvided(emp, 'department_id', 'Mã đơn vị công tác', 'Mã phòng ban')) updated.department_id = emp.department_id;
+            if (isKeyProvided(emp, 'position_id', 'Mã vị trí công việc', 'Mã chức danh')) updated.position_id = emp.position_id;
+            if (isKeyProvided(emp, 'job_rank', 'Bậc')) updated.job_rank = emp.job_rank;
+            if (isKeyProvided(emp, 'job_title', 'Chức danh')) updated.job_title = emp.job_title;
+            if (isKeyProvided(emp, 'work_location', 'Địa điểm làm việc')) updated.work_location = emp.work_location;
+            if (isKeyProvided(emp, 'work_area', 'Khu vực làm việc')) updated.work_area = emp.work_area;
+            if (isKeyProvided(emp, 'direct_manager_id', 'Mã quản lý trực tiếp')) updated.direct_manager_id = emp.direct_manager_id;
+            if (isKeyProvided(emp, 'direct_manager_name', 'Quản lý trực tiếp')) updated.direct_manager_name = emp.direct_manager_name;
+            if (isKeyProvided(emp, 'indirect_manager_id', 'Mã quản lý gián tiếp')) updated.indirect_manager_id = emp.indirect_manager_id;
+            if (isKeyProvided(emp, 'indirect_manager_name', 'Quản lý gián tiếp')) updated.indirect_manager_name = emp.indirect_manager_name;
+            if (isKeyProvided(emp, 'labor_nature', 'Tính chất lao động')) updated.labor_nature = emp.labor_nature;
+            if (isKeyProvided(emp, 'employment_status', 'Trạng thái lao động')) updated.employment_status = emp.employment_status;
+          }
+
+          if (isTabSelected('tab-p-contract')) {
+            if (isKeyProvided(emp, 'start_date', 'Ngày bắt đầu làm việc', 'Ngày vào làm')) updated.start_date = emp.start_date;
+            if (isKeyProvided(emp, 'end_date', 'Ngày hết hiệu lực', 'Ngày kết thúc')) updated.end_date = emp.end_date;
+            if (isKeyProvided(emp, 'contract_type', 'Loại hợp đồng')) updated.contract_type = emp.contract_type;
+            if (isKeyProvided(emp, 'trial_start_date', 'Ngày thử việc')) updated.trial_start_date = emp.trial_start_date;
+            if (isKeyProvided(emp, 'official_date', 'Ngày chính thức')) updated.official_date = emp.official_date;
+          }
+
+          if (isTabSelected('tab-p-salary')) {
+            if (isKeyProvided(emp, 'salary_grade', 'Bậc lương')) updated.salary_grade = emp.salary_grade;
+            if (isKeyProvided(emp, 'base_salary', 'Lương cơ bản')) updated.base_salary = emp.base_salary;
+            if (isKeyProvided(emp, 'salary_rate', 'Tỷ lệ hưởng lương')) updated.salary_rate = emp.salary_rate;
+            if (isKeyProvided(emp, 'total_salary', 'Tổng lương')) updated.total_salary = emp.total_salary;
+            if (isKeyProvided(emp, 'insurance_salary', 'Lương đóng BH')) updated.insurance_salary = emp.insurance_salary;
+            if (isKeyProvided(emp, 'bank_account_number', 'TK ngân hàng', 'Số tài khoản')) updated.bank_account_number = emp.bank_account_number;
+            if (isKeyProvided(emp, 'bank_name', 'Ngân hàng')) updated.bank_name = emp.bank_name;
+            if (isKeyProvided(emp, 'bank_branch', 'Chi nhánh')) updated.bank_branch = emp.bank_branch;
+            if (isKeyProvided(emp, 'has_insurance', 'Tham gia bảo hiểm')) updated.has_insurance = emp.has_insurance;
+            if (isKeyProvided(emp, 'social_insurance_book_no', 'Số sổ BHXH')) updated.social_insurance_book_no = emp.social_insurance_book_no;
+            if (isKeyProvided(emp, 'hospital_registered', 'Nơi đăng ký KCB')) updated.hospital_registered = emp.hospital_registered;
+            if (isKeyProvided(emp, 'union_member', 'Tham gia công đoàn')) updated.union_member = emp.union_member;
+          }
+
+          if (isTabSelected('tab-p-allowance')) {
+            if (isKeyProvided(emp, 'total_allowance', 'Tổng phụ cấp')) updated.total_allowance = emp.total_allowance;
+            if (isKeyProvided(emp, 'allowance_count', 'Số khoản phụ cấp')) updated.allowance_count = emp.allowance_count;
+            if (isKeyProvided(emp, 'total_deduction', 'Tổng giảm trừ')) updated.total_deduction = emp.total_deduction;
+          }
+
+          empMap.set(emp.employee_id, updated);
+        } else {
+          empMap.set(emp.employee_id, emp);
         }
       });
 
       const updatedEmployees = Array.from(empMap.values());
       await saveTableToD1(db, "03_Employees", updatedEmployees);
-      await saveTableToD1(db, "00_Master_Profiles", updatedEmployees);
 
-      // Đồng bộ vào 10_Contracts (Nếu tab hợp đồng được chọn)
-      if (isTabSelected('tab-p-contract')) {
-        const existingContracts = data.tables["10_Contracts"] || [];
-        const contractMap = new Map(existingContracts.map(c => [c.employee_id, c]));
+      // 2. Cập nhật 00_Master_Profiles (Bảo toàn 100% các cột tiếng Việt hiện có, chỉ merge cột từ Excel)
+      const existingMaster = data.tables["00_Master_Profiles"] || [];
+      const masterMap = new Map();
+      existingMaster.forEach(m => {
+        const id = m['Mã nhân viên'] || m.employee_id;
+        if (id) masterMap.set(id, { ...m });
+      });
+
+      employees.forEach(emp => {
+        if (!emp.employee_id) return;
+        let mRow = masterMap.get(emp.employee_id);
+        if (mRow) {
+          const raw = emp.raw_data || {};
+          Object.keys(raw).forEach(k => {
+            if (hasVal(raw[k])) {
+              mRow[k] = raw[k];
+            }
+          });
+          if (isKeyProvided(emp, 'full_name', 'Họ và tên')) mRow['Họ và tên'] = emp.full_name;
+          if (isKeyProvided(emp, 'gender', 'Giới tính')) mRow['Giới tính'] = emp.gender;
+          if (isKeyProvided(emp, 'date_of_birth', 'Ngày sinh')) mRow['Ngày sinh'] = emp.date_of_birth;
+          if (isKeyProvided(emp, 'id_number', 'Số CMND', 'Số CCCD')) mRow['Số CMND'] = emp.id_number;
+          if (isKeyProvided(emp, 'work_email', 'Email cơ quan')) mRow['Email cơ quan'] = emp.work_email;
+          if (isKeyProvided(emp, 'department_id', 'Mã đơn vị công tác')) mRow['Mã đơn vị công tác'] = emp.department_id;
+          if (isKeyProvided(emp, 'position_id', 'Mã vị trí công việc')) mRow['Mã vị trí công việc'] = emp.position_id;
+          if (isKeyProvided(emp, 'base_salary', 'Lương cơ bản')) mRow['Lương cơ bản'] = emp.base_salary;
+          if (isKeyProvided(emp, 'total_salary', 'Tổng lương')) mRow['Tổng lương'] = emp.total_salary;
+          if (isKeyProvided(emp, 'bank_account_number', 'TK ngân hàng')) mRow['TK ngân hàng'] = emp.bank_account_number;
+          if (isKeyProvided(emp, 'bank_name', 'Ngân hàng')) mRow['Ngân hàng'] = emp.bank_name;
+          if (isKeyProvided(emp, 'bank_branch', 'Chi nhánh')) mRow['Chi nhánh'] = emp.bank_branch;
+          if (isKeyProvided(emp, 'total_allowance', 'Tổng phụ cấp')) mRow['Tổng phụ cấp'] = emp.total_allowance;
+          if (isKeyProvided(emp, 'allowance_count', 'Số khoản phụ cấp')) mRow['Số khoản phụ cấp'] = emp.allowance_count;
+          masterMap.set(emp.employee_id, mRow);
+        } else {
+          masterMap.set(emp.employee_id, {
+            'Mã nhân viên': emp.employee_id,
+            'Họ và tên': emp.full_name,
+            'Giới tính': emp.gender || 'Nam',
+            'Ngày sinh': emp.date_of_birth || '',
+            'Số CMND': emp.id_number || '',
+            'Email cơ quan': emp.work_email || '',
+            'ĐT di động': emp.mobile_phone || '',
+            'Mã đơn vị công tác': emp.department_id || '',
+            'Mã vị trí công việc': emp.position_id || '',
+            'Bậc lương': emp.salary_grade || 3,
+            'Lương cơ bản': emp.base_salary || 0,
+            'Tổng lương': emp.total_salary || 0,
+            'TK ngân hàng': emp.bank_account_number || '',
+            'Ngân hàng': emp.bank_name || '',
+            'Chi nhánh': emp.bank_branch || '',
+            ...(emp.raw_data || {})
+          });
+        }
+      });
+      await saveTableToD1(db, "00_Master_Profiles", Array.from(masterMap.values()));
+
+      // 3. Đồng bộ vào 08_Salaries_Banks
+      if (isTabSelected('tab-p-salary') || employees.some(e => isKeyProvided(e, 'base_salary', 'Lương cơ bản', 'TK ngân hàng', 'bank_account_number'))) {
+        const existingSalaries = data.tables["08_Salaries_Banks"] || [];
+        const salMap = new Map(existingSalaries.map(s => [s.employee_id, { ...s }]));
         employees.forEach(emp => {
-          if (emp.employee_id) {
-            contractMap.set(emp.employee_id, {
-              contract_id: emp.contract_id || emp.employee_id,
-              employee_id: emp.employee_id,
-              full_name: emp.full_name,
-              contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
-              trial_start_date: emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
-              official_date: emp.official_date || emp.start_date || '',
-              start_date: emp.start_date || '',
-              end_date: emp.end_date || '',
-              effective_date: emp.effective_date || emp.start_date || '',
-              expiry_date: emp.expiry_date || emp.end_date || '',
-              contract_status: emp.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
-            });
-          }
+          if (!emp.employee_id) return;
+          const curSal = salMap.get(emp.employee_id) || { employee_id: emp.employee_id, full_name: emp.full_name };
+          if (isKeyProvided(emp, 'base_salary', 'Lương cơ bản')) curSal.base_salary = emp.base_salary;
+          if (isKeyProvided(emp, 'salary_grade', 'Bậc lương')) curSal.salary_grade = emp.salary_grade;
+          if (isKeyProvided(emp, 'salary_rate', 'Tỷ lệ hưởng lương')) curSal.salary_rate = emp.salary_rate;
+          if (isKeyProvided(emp, 'total_salary', 'Tổng lương')) curSal.total_salary = emp.total_salary;
+          if (isKeyProvided(emp, 'insurance_salary', 'Lương đóng BH')) curSal.insurance_salary = emp.insurance_salary;
+          if (isKeyProvided(emp, 'bank_account_number', 'TK ngân hàng', 'Số tài khoản')) curSal.bank_account_number = emp.bank_account_number;
+          if (isKeyProvided(emp, 'bank_name', 'Ngân hàng')) curSal.bank_name = emp.bank_name;
+          if (isKeyProvided(emp, 'bank_branch', 'Chi nhánh')) curSal.bank_branch = emp.bank_branch;
+          salMap.set(emp.employee_id, curSal);
+        });
+        await saveTableToD1(db, "08_Salaries_Banks", Array.from(salMap.values()));
+      }
+
+      // 4. Đồng bộ vào 10_Contracts (Nếu tab hợp đồng được chọn hoặc có dữ liệu hợp đồng)
+      if (isTabSelected('tab-p-contract') || employees.some(e => isKeyProvided(e, 'contract_type', 'Loại hợp đồng', 'start_date'))) {
+        const existingContracts = data.tables["10_Contracts"] || [];
+        const contractMap = new Map(existingContracts.map(c => [c.employee_id, { ...c }]));
+        employees.forEach(emp => {
+          if (!emp.employee_id) return;
+          const curCt = contractMap.get(emp.employee_id) || {
+            contract_id: emp.contract_id || emp.employee_id,
+            employee_id: emp.employee_id,
+            full_name: emp.full_name
+          };
+          if (isKeyProvided(emp, 'contract_type', 'Loại hợp đồng')) curCt.contract_type = emp.contract_type;
+          if (isKeyProvided(emp, 'trial_start_date', 'Ngày thử việc')) curCt.trial_start_date = emp.trial_start_date;
+          if (isKeyProvided(emp, 'official_date', 'Ngày chính thức')) curCt.official_date = emp.official_date;
+          if (isKeyProvided(emp, 'start_date', 'Ngày bắt đầu làm việc')) curCt.start_date = emp.start_date;
+          if (isKeyProvided(emp, 'end_date', 'Ngày hết hiệu lực')) curCt.end_date = emp.end_date;
+          if (emp.employment_status === 'Đã nghỉ việc') curCt.contract_status = 'HẾT HẠN';
+          else if (!curCt.contract_status) curCt.contract_status = 'HIỆU LỰC';
+          contractMap.set(emp.employee_id, curCt);
         });
         await saveTableToD1(db, "10_Contracts", Array.from(contractMap.values()));
       }
 
-      // Đồng bộ vào 04_Contacts_Addresses (Nếu tab liên hệ được chọn)
-      if (isTabSelected('tab-p-contact')) {
+      // 5. Đồng bộ vào 04_Contacts_Addresses (Nếu tab liên hệ được chọn hoặc có dữ liệu liên hệ)
+      if (isTabSelected('tab-p-contact') || employees.some(e => isKeyProvided(e, 'work_email', 'mobile_phone', 'permanent_address_full'))) {
         const existingContacts = data.tables["04_Contacts_Addresses"] || [];
-        const contactMap = new Map(existingContacts.map(c => [c.employee_id, c]));
+        const contactMap = new Map(existingContacts.map(c => [c.employee_id, { ...c }]));
         employees.forEach(emp => {
-          if (emp.employee_id) {
-            contactMap.set(emp.employee_id, {
-              employee_id: emp.employee_id,
-              mobile_phone: emp.mobile_phone || emp['ĐT di động'] || '',
-              work_email: emp.work_email || emp['Email cơ quan'] || '',
-              permanent_address_full: emp.permanent_address_full || emp.permanent_address || emp['Hộ khẩu thường trú'] || '',
-              current_address_full: emp.current_address_full || emp.current_address || emp['Chỗ ở hiện nay'] || ''
-            });
-          }
+          if (!emp.employee_id) return;
+          const curC = contactMap.get(emp.employee_id) || { employee_id: emp.employee_id };
+          if (isKeyProvided(emp, 'mobile_phone', 'ĐT di động')) curC.mobile_phone = emp.mobile_phone;
+          if (isKeyProvided(emp, 'work_email', 'Email cơ quan')) curC.work_email = emp.work_email;
+          if (isKeyProvided(emp, 'permanent_address_full', 'Hộ khẩu thường trú')) curC.permanent_address_full = emp.permanent_address_full;
+          if (isKeyProvided(emp, 'current_address_full', 'Chỗ ở hiện nay')) curC.current_address_full = emp.current_address_full;
+          contactMap.set(emp.employee_id, curC);
         });
         await saveTableToD1(db, "04_Contacts_Addresses", Array.from(contactMap.values()));
       }
 
-      // Đồng bộ vào 05_Identity_Docs (Nếu tab định danh được chọn)
-      if (isTabSelected('tab-p-identity')) {
+      // 6. Đồng bộ vào 05_Identity_Docs (Nếu tab định danh được chọn hoặc có dữ liệu CCCD)
+      if (isTabSelected('tab-p-identity') || employees.some(e => isKeyProvided(e, 'id_number', 'Số CMND', 'Số CCCD'))) {
         const existingIdentity = data.tables["05_Identity_Docs"] || [];
-        const idMap = new Map(existingIdentity.map(i => [i.employee_id, i]));
+        const idMap = new Map(existingIdentity.map(i => [i.employee_id, { ...i }]));
         employees.forEach(emp => {
-          if (emp.employee_id) {
-            idMap.set(emp.employee_id, {
-              employee_id: emp.employee_id,
-              id_number: emp.id_number || emp.tax_code || emp['Số CMND'] || '',
-              doc_type: emp.doc_type || emp['Loại giấy tờ'] || 'CCCD'
-            });
-          }
+          if (!emp.employee_id) return;
+          const curId = idMap.get(emp.employee_id) || { employee_id: emp.employee_id };
+          if (isKeyProvided(emp, 'id_number', 'Số CMND', 'Số CCCD')) curId.id_number = emp.id_number;
+          if (isKeyProvided(emp, 'id_issue_date', 'Ngày cấp giấy tờ')) curId.id_issue_date = emp.id_issue_date;
+          if (isKeyProvided(emp, 'id_issue_place', 'Nơi cấp giấy tờ')) curId.id_issue_place = emp.id_issue_place;
+          if (isKeyProvided(emp, 'id_expiry_date', 'Ngày hết hạn giấy tờ')) curId.id_expiry_date = emp.id_expiry_date;
+          if (isKeyProvided(emp, 'doc_type', 'Loại giấy tờ')) curId.doc_type = emp.doc_type || 'CCCD';
+          idMap.set(emp.employee_id, curId);
         });
         await saveTableToD1(db, "05_Identity_Docs", Array.from(idMap.values()));
       }
@@ -706,7 +862,7 @@ export async function onRequest(context) {
         success: true,
         importedCount: employees.length,
         totalCount: updatedEmployees.length,
-        message: `Đã lưu vĩnh viễn ${employees.length} nhân viên và dữ liệu liên quan vào Cloudflare D1!`
+        message: `Đã liên kết và cập nhật thành công ${employees.length} nhân viên vào Cloudflare D1!`
       });
     }
 
