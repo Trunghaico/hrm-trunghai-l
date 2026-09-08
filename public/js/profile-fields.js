@@ -130,26 +130,38 @@ const MASTER_FIELDS_CONFIG = [
   { key: 'Năm tốt nghiệp', tab: 'tab-p-education', label: 'Năm tốt nghiệp', type: 'number', placeholder: 'VD: 2020' },
   { key: 'Xếp loại', tab: 'tab-p-education', label: 'Xếp loại tốt nghiệp', type: 'select', options: ['Xuất sắc', 'Giỏi', 'Khá', 'Trung bình khá', 'Trung bình'] },
 
-  // TAB 8: LƯƠNG, NGÂN HÀNG & BHXH (19 trường)
+  // TAB 8: LƯƠNG, NGÂN HÀNG & BHXH (Cập nhật chuẩn theo file Danh sách nhân viên.xlsx)
   { key: 'Bậc lương', tab: 'tab-p-salary', label: 'Bậc lương', type: 'text', placeholder: 'VD: 1, 2, Bậc 3...' },
   { key: 'Hệ số lương', tab: 'tab-p-salary', label: 'Hệ số lương', type: 'number', placeholder: 'VD: 2.34' },
   { key: 'Lương cơ bản', tab: 'tab-p-salary', label: 'Lương cơ bản (VNĐ)', type: 'number', placeholder: 'VD: 10000000' },
+  { key: 'Tỷ lệ hưởng lương', tab: 'tab-p-salary', label: 'Tỷ lệ hưởng lương (%)', type: 'text', placeholder: 'VD: 100%, 85%...' },
   { key: 'Lương đóng BH', tab: 'tab-p-salary', label: 'Lương đóng BH (VNĐ)', type: 'number', placeholder: 'VD: 5000000' },
   { key: 'Tổng lương', tab: 'tab-p-salary', label: 'Tổng lương (VNĐ)', type: 'number', placeholder: 'VD: 15000000' },
   { key: 'TK ngân hàng', tab: 'tab-p-salary', label: 'Số TK ngân hàng', type: 'text', placeholder: 'Số tài khoản' },
   { key: 'Ngân hàng', tab: 'tab-p-salary', label: 'Ngân hàng', type: 'text', placeholder: 'Tên ngân hàng mở thẻ' },
   { key: 'Chi nhánh', tab: 'tab-p-salary', label: 'Chi nhánh ngân hàng', type: 'text', placeholder: 'Chi nhánh mở tài khoản' },
-  { key: 'Tham gia bảo hiểm', tab: 'tab-p-salary', label: 'Tham gia bảo hiểm', type: 'select', options: ['Đang tham gia', 'Chưa tham gia', 'Đã dừng đóng'] },
+  { key: 'Thuế suất', tab: 'tab-p-salary', label: 'Thuế suất', type: 'text', placeholder: 'Theo biểu lũy tiến / 10%' },
+  { key: 'Số người phụ thuộc', tab: 'tab-p-salary', label: 'Số người phụ thuộc', type: 'number', placeholder: '0' },
+  { key: 'Giảm trừ bản thân', tab: 'tab-p-salary', label: 'Giảm trừ bản thân', type: 'select', options: ['Có', 'Không'] },
+  { key: 'Tham gia công đoàn', tab: 'tab-p-salary', label: 'Tham gia công đoàn', type: 'select', options: ['Có', 'Không'] },
+  { key: 'Tham gia bảo hiểm', tab: 'tab-p-salary', label: 'Tham gia bảo hiểm', type: 'select', options: ['Đang tham gia', 'Không tham gia', 'Chưa tham gia', 'Đã dừng đóng'] },
+  { key: 'Tỷ lệ đóng BHXH của NV', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHXH của NV (%)', type: 'text', defaultValue: '8%' },
+  { key: 'Tỷ lệ đóng BHYT của NV', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHYT của NV (%)', type: 'text', defaultValue: '1.5%' },
+  { key: 'Tỷ lệ đóng BHTN của NV', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHTN của NV (%)', type: 'text', defaultValue: '1%' },
+  { key: 'Tỷ lệ đóng BHXH của DN', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHXH của DN (%)', type: 'text', defaultValue: '17.5%' },
+  { key: 'Tỷ lệ đóng BHYT của DN', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHYT của DN (%)', type: 'text', defaultValue: '3%' },
+  { key: 'Tỷ lệ đóng BHTN của DN', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHTN của DN (%)', type: 'text', defaultValue: '1%' },
+  { key: 'Tỷ lệ đóng BH', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BH', type: 'text', defaultValue: '32%' },
+  { key: 'Tỷ lệ đóng BHXH', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHXH', type: 'text', defaultValue: '25.5%' },
+  { key: 'Tỷ lệ đóng BHYT', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHYT', type: 'text', defaultValue: '4.5%' },
+  { key: 'Tỷ lệ đóng BHTN', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHTN', type: 'text', defaultValue: '2%' },
   { key: 'Ngày tham gia BH', tab: 'tab-p-salary', label: 'Ngày tham gia BH', type: 'date' },
   { key: 'Số sổ BHXH', tab: 'tab-p-salary', label: 'Số sổ BHXH', type: 'text', placeholder: 'Số sổ BHXH' },
   { key: 'Mã số BHXH', tab: 'tab-p-salary', label: 'Mã số BHXH', type: 'text', placeholder: 'Mã số BHXH' },
   { key: 'Mã tỉnh cấp', tab: 'tab-p-salary', label: 'Mã tỉnh cấp', type: 'text', placeholder: 'Mã tỉnh cấp thẻ/sổ' },
   { key: 'Số thẻ BHYT', tab: 'tab-p-salary', label: 'Số thẻ BHYT', type: 'text', placeholder: 'Mã số trên thẻ BHYT' },
   { key: 'Nơi đăng ký KCB', tab: 'tab-p-salary', label: 'Nơi đăng ký KCB', type: 'text', placeholder: 'Bệnh viện / Cơ sở y tế KCB ban đầu', colSpan: 2 },
-  { key: 'Tỷ lệ đóng BH', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BH', type: 'text', defaultValue: '32%' },
-  { key: 'Tỷ lệ đóng BHXH', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHXH', type: 'text', defaultValue: '25.5%' },
-  { key: 'Tỷ lệ đóng BHYT', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHYT', type: 'text', defaultValue: '4.5%' },
-  { key: 'Tỷ lệ đóng BHTN', tab: 'tab-p-salary', label: 'Tỷ lệ đóng BHTN', type: 'text', defaultValue: '2%' },
+  { key: 'Mật khẩu phiếu lương', tab: 'tab-p-salary', label: 'Mật khẩu phiếu lương', type: 'text', placeholder: 'Mật khẩu tra cứu' },
 
   // TAB 9: TÀI KHOẢN & CKS (5 trường)
   { key: 'ĐT tài khoản', tab: 'tab-p-account', label: 'ĐT tài khoản', type: 'text', placeholder: 'Số ĐT đăng nhập' },
@@ -324,10 +336,15 @@ function fillDetailModalData(masterData) {
     if (val === undefined || val === null || val === '') {
       el.textContent = '-';
       el.style.color = 'var(--text-muted)';
-    } else if (typeof val === 'number' && (f.key.includes('lương') || f.key.includes('Lương'))) {
+    } else if (typeof val === 'number' && (f.key.includes('lương') || f.key.includes('Lương')) && !f.key.includes('Tỷ lệ') && !f.key.includes('Bậc') && !f.key.includes('Hệ số')) {
       el.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
       el.style.color = '#059669';
       el.style.fontWeight = '700';
+    } else if ((f.key.includes('Tỷ lệ') || f.label.includes('(%)')) && val !== undefined && val !== null && val !== '') {
+      const sVal = String(val).trim();
+      el.textContent = sVal.endsWith('%') ? sVal : (sVal + '%');
+      el.style.color = 'var(--text-primary)';
+      el.style.fontWeight = '600';
     } else if (f.type === 'date' || (typeof f.key === 'string' && (f.key.startsWith('Ngày') || f.key.includes('ngày') || f.key.includes('Ngày')))) {
       const formatted = (typeof utils !== 'undefined' && utils.formatDate) ? utils.formatDate(val) : val;
       el.textContent = (formatted && formatted !== '-') ? formatted : '-';

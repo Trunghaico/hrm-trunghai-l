@@ -639,12 +639,13 @@ const appImport = {
       const passportIssueDate = this.formatDate(this.getField(normMap, 'Ngày cấp Hộ chiếu', 'Ngày cấp hộ chiếu', 'passport_issue_date'));
       const taxCode = this.getField(normMap, 'MST cá nhân', 'Mã số thuế cá nhân', 'Mã số thuế', 'tax_code');
 
-      const salaryGrade = parseInt(this.getField(normMap, 'Bậc lương', 'salary_grade') || 3, 10) || 3;
+      const salaryGrade = parseInt(this.getField(normMap, 'Bậc lương', 'Bậc', 'salary_grade') || 3, 10) || 3;
       const baseSalary = parseFloat((this.getField(normMap, 'Lương cơ bản', 'Lương cơ bản (VNĐ)', 'base_salary') || '0').replace(/[^0-9.-]+/g, '')) || 0;
+      const salaryRate = this.getField(normMap, 'Tỷ lệ hưởng lương (%)', 'Tỷ lệ hưởng lương', 'salary_rate');
       const totalSalary = parseFloat((this.getField(normMap, 'Tổng lương', 'Tổng lương / Thu nhập (VNĐ)', 'total_salary') || '0').replace(/[^0-9.-]+/g, '')) || 0;
       const insuranceSalary = parseFloat((this.getField(normMap, 'Lương đóng BH', 'Lương đóng BHXH (VNĐ)', 'Lương đóng BHXH', 'insurance_salary') || '0').replace(/[^0-9.-]+/g, '')) || 0;
-      const bankAccount = this.getField(normMap, 'TK ngân hàng', 'Số tài khoản ngân hàng', 'Số tài khoản', 'STK', 'bank_account_number');
-      const bankName = this.getField(normMap, 'Ngân hàng', 'Tên ngân hàng', 'bank_name') || 'Vietcombank';
+      const bankAccount = this.getField(normMap, 'TK ngân hàng', 'Tài khoản ngân hàng', 'Số tài khoản ngân hàng', 'Số tài khoản', 'STK', 'bank_account_number');
+      const bankName = this.getField(normMap, 'Ngân hàng', 'Mở tại ngân hàng', 'Tên ngân hàng', 'bank_name') || 'Vietcombank';
       const bankBranch = this.getField(normMap, 'Chi nhánh', 'Chi nhánh ngân hàng', 'bank_branch') || 'Chi nhánh Hà Nội';
 
       const hasInsurance = this.getField(normMap, 'Tham gia bảo hiểm', 'Tham gia BHXH', 'has_insurance') || 'Có';
@@ -652,6 +653,17 @@ const appImport = {
       const insuranceJoinDate = this.formatDate(this.getField(normMap, 'Ngày tham gia BH', 'Ngày tham gia BHXH', 'insurance_join_date')) || startDate;
       const hospitalRegistered = this.getField(normMap, 'Nơi đăng ký KCB', 'Nơi ĐK khám chữa bệnh ban đầu', 'Nơi ĐK KCB ban đầu', 'hospital_registered') || 'Bệnh viện Bạch Mai - Hà Nội';
       const unionMember = this.getField(normMap, 'Tham gia công đoàn', 'Đoàn viên công đoàn', 'union_member') || 'Đoàn viên';
+
+      const taxRate = this.getField(normMap, 'Thuế suất', 'tax_rate') || 'Theo biểu lũy tiến';
+      const dependentsCount = parseInt(this.getField(normMap, 'Số người phụ thuộc', 'dependents_count') || 0, 10) || 0;
+      const personalDeduction = this.getField(normMap, 'Giảm trừ bản thân', 'personal_deduction') || 'Có';
+      const empBhxhRate = this.getField(normMap, 'Tỷ lệ đóng BHXH của nhân viên (%)', 'Tỷ lệ đóng BHXH của NV (%)', 'emp_bhxh_rate') || '8%';
+      const empBhytRate = this.getField(normMap, 'Tỷ lệ đóng BHYT của nhân viên (%)', 'Tỷ lệ đóng BHYT của NV (%)', 'emp_bhyt_rate') || '1.5%';
+      const empBhtnRate = this.getField(normMap, 'Tỷ lệ đóng BHTN của nhân viên (%)', 'Tỷ lệ đóng BHTN của NV (%)', 'emp_bhtn_rate') || '1%';
+      const compBhxhRate = this.getField(normMap, 'Tỷ lệ đóng BHXH của doanh nghiệp (%)', 'Tỷ lệ đóng BHXH của DN (%)', 'comp_bhxh_rate') || '17.5%';
+      const compBhytRate = this.getField(normMap, 'Tỷ lệ đóng BHYT của doanh nghiệp (%)', 'Tỷ lệ đóng BHYT của DN (%)', 'comp_bhyt_rate') || '3%';
+      const compBhtnRate = this.getField(normMap, 'Tỷ lệ đóng BHTN của doanh nghiệp (%)', 'Tỷ lệ đóng BHTN của DN (%)', 'comp_bhtn_rate') || '1%';
+      const payslipPassword = this.getField(normMap, 'Mật khẩu phiếu lương', 'payslip_password');
 
       const eduLevel = this.getField(normMap, 'Trình độ đào tạo', 'Trình độ học vấn', 'Trình độ', 'education_level') || 'Đại học';
       const degreeType = this.getField(normMap, 'Hình thức đào tạo', 'degree_type') || 'Chính quy';
@@ -764,6 +776,7 @@ const appImport = {
         tax_code: taxCode,
         salary_grade: salaryGrade,
         base_salary: baseSalary,
+        salary_rate: salaryRate,
         total_salary: totalSalary,
         insurance_salary: insuranceSalary,
         bank_account_number: bankAccount,
@@ -774,6 +787,16 @@ const appImport = {
         insurance_join_date: insuranceJoinDate,
         hospital_registered: hospitalRegistered,
         union_member: unionMember,
+        tax_rate: taxRate,
+        dependents_count: dependentsCount,
+        personal_deduction: personalDeduction,
+        emp_bhxh_rate: empBhxhRate,
+        emp_bhyt_rate: empBhytRate,
+        emp_bhtn_rate: empBhtnRate,
+        comp_bhxh_rate: compBhxhRate,
+        comp_bhyt_rate: compBhytRate,
+        comp_bhtn_rate: compBhtnRate,
+        payslip_password: payslipPassword,
         education_level: eduLevel,
         degree_type: degreeType,
         institution: institution,

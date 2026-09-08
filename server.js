@@ -1860,7 +1860,7 @@ app.get('/api/employees/:id', (req, res) => {
     const cont = contracts.filter(c => c.employee_id === id);
     const acc = accounts.find(a => a.employee_id === id) || {};
     const masterProfiles = db.tables['00_Master_Profiles'] || [];
-    const masterProfile = masterProfiles.find(m => m['Mã nhân viên'] === id) || null;
+    const masterProfile = masterProfiles.find(m => m['Mã nhân viên'] === id || m.employee_id === id) || null;
 
     res.json({
         success: true,
