@@ -484,20 +484,37 @@ const appAttendance = {
 
     tbody.innerHTML = list.map((item, idx) => {
       let statusBadge = '';
-      if (item.status === 'VALID') {
+      if (item.status === 'VALID' || item.status === 'HỢP LỆ' || item.status === 'ĐỦ CÔNG') {
         statusBadge = '<span class="badge badge-active"><i class="fa-solid fa-check"></i> Hợp lệ</span>';
-      } else if (item.status === 'LATE') {
+      } else if (item.status === 'LATE' || item.status === 'ĐI MUỘN') {
         statusBadge = '<span class="badge" style="background:#FEF3C7; color:#D97706; border:1px solid #FCD34D;"><i class="fa-solid fa-clock"></i> Đi muộn</span>';
-      } else if (item.status === 'EARLY') {
+      } else if (item.status === 'EARLY' || item.status === 'VỀ SỚM') {
         statusBadge = '<span class="badge" style="background:#EDE9FE; color:#7C3AED; border:1px solid #DDD6FE;"><i class="fa-solid fa-person-walking-arrow-right"></i> Về sớm</span>';
-      } else if (item.status === 'ABSENT') {
-        statusBadge = '<span class="badge badge-resigned"><i class="fa-solid fa-xmark"></i> Vắng</span>';
-      } else if (item.status === 'LEAVE') {
+      } else if (item.status === 'ABSENT' || item.status === 'VẮNG' || item.status === 'VẮNG MẶT') {
+        statusBadge = '<span class="badge badge-resigned"><i class="fa-solid fa-xmark"></i> Vắng mặt</span>';
+      } else if (item.status === 'LEAVE' || item.status === 'NGHỈ PHÉP') {
         statusBadge = '<span class="badge" style="background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE;"><i class="fa-solid fa-umbrella-beach"></i> Nghỉ phép</span>';
-      } else if (item.status === 'NO_CODE') {
+      } else if (item.status === 'HOLIDAY' || item.status === 'NGHỈ LỄ') {
+        statusBadge = '<span class="badge" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA;"><i class="fa-solid fa-calendar-day"></i> Nghỉ lễ</span>';
+      } else if (item.status === 'NO_CODE' || item.status === 'KHÔNG CC') {
         statusBadge = '<span class="badge" style="background:#F8FAFC; color:#64748B; border:1px solid #E2E8F0;"><i class="fa-solid fa-ban"></i> Không CC</span>';
       } else {
-        statusBadge = `<span class="badge">${item.status}</span>`;
+        const translatedStatus = {
+          'VALID': 'Hợp lệ',
+          'LATE': 'Đi muộn',
+          'EARLY': 'Về sớm',
+          'ABSENT': 'Vắng mặt',
+          'LEAVE': 'Nghỉ phép',
+          'HOLIDAY': 'Nghỉ lễ',
+          'NO_CODE': 'Không CC',
+          'PENDING': 'Chờ duyệt',
+          'APPROVED': 'Đã duyệt',
+          'REJECTED': 'Từ chối',
+          'ONLINE': 'Trực tuyến',
+          'OFFLINE': 'Ngoại tuyến',
+          'STANDBY': 'Chờ kết nối'
+        }[item.status] || item.status;
+        statusBadge = `<span class="badge">${translatedStatus}</span>`;
       }
 
       const lateHtml = item.late_minutes > 0
@@ -912,6 +929,7 @@ const appAttendance = {
           const devId = dev.device_id || dev.id;
           const devName = dev.device_name || dev.name || 'Ronald Jack 009';
           const isOnline = dev.status === 'ONLINE';
+          const stText = dev.status === 'ONLINE' ? 'Trực tuyến' : (dev.status === 'STANDBY' ? 'Chờ kết nối' : (dev.status === 'OFFLINE' ? 'Ngoại tuyến' : (dev.status || 'Chờ kết nối')));
 
           return `
             <div class="card att-device-card" style="border: 1px solid ${dev.enabled ? '#BFDBFE' : '#E2E8F0'}; background: ${dev.enabled ? '#FFFFFF' : '#F8FAFC'}; padding: 18px; border-radius: var(--radius-md); box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
@@ -926,7 +944,7 @@ const appAttendance = {
                   </div>
                 </div>
                 <span class="badge" style="background: ${isOnline ? '#ECFDF5' : '#F1F5F9'}; color: ${isOnline ? '#047857' : '#64748B'}; border: 1px solid ${isOnline ? '#A7F3D0' : '#CBD5E1'}; font-weight: 700;">
-                  <i class="fa-solid fa-circle" style="font-size: 8px; margin-right: 4px;"></i> ${dev.status || 'STANDBY'}
+                  <i class="fa-solid fa-circle" style="font-size: 8px; margin-right: 4px;"></i> ${stText}
                 </span>
               </div>
 
@@ -1030,6 +1048,20 @@ const appAttendance = {
         String(e.attendance_code || '').trim() === String(l.attendance_code || '').trim() ||
         e.employee_id === l.attendance_code
       );
+      const verifyTypeMap = {
+        'Van tay': 'Vân tay',
+        'Finger': 'Vân tay',
+        'FINGER': 'Vân tay',
+        'Card': 'Thẻ từ',
+        'The tu': 'Thẻ từ',
+        'CARD': 'Thẻ từ',
+        'Face': 'Khuôn mặt',
+        'FACE': 'Khuôn mặt',
+        'Password': 'Mật mã',
+        'PASSWORD': 'Mật mã'
+      };
+      const verifyTypeVn = verifyTypeMap[l.verify_type] || l.verify_type || 'Vân tay';
+
       return `
         <tr>
           <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
@@ -1038,7 +1070,7 @@ const appAttendance = {
           <td style="color: #64748B; font-size: 11.5px;">${emp ? (emp.department || '---') : '---'}</td>
           <td style="font-family: monospace; color: #047857; font-weight: 600;">${l.timestamp}</td>
           <td style="font-size: 11.5px;">${l.device_name || 'Ronald Jack 009'} ${l.device_ip ? `(${l.device_ip}:${l.device_port || 5005})` : ''}</td>
-          <td style="text-align: center;"><span class="badge" style="background: #F1F5F9; color: #334155;">${l.verify_type || 'Vân tay'}</span></td>
+          <td style="text-align: center;"><span class="badge" style="background: #F1F5F9; color: #334155;">${verifyTypeVn}</span></td>
         </tr>
       `;
     }).join('');
@@ -2597,6 +2629,19 @@ const appAttendance = {
       'Ghi chú'
     ];
 
+    const statusVietnameseMap = {
+      'VALID': 'Hợp lệ / Đủ công',
+      'LATE': 'Đi muộn',
+      'EARLY': 'Về sớm',
+      'ABSENT': 'Vắng mặt',
+      'LEAVE': 'Nghỉ phép',
+      'HOLIDAY': 'Nghỉ lễ',
+      'NO_CODE': 'Không áp dụng CC máy',
+      'PENDING': 'Chờ duyệt',
+      'APPROVED': 'Đã duyệt',
+      'REJECTED': 'Từ chối'
+    };
+
     const rows = list.map((item, idx) => [
       idx + 1,
       item.employee_id || '',
@@ -2614,7 +2659,7 @@ const appAttendance = {
       item.ot_hours || 0,
       item.total_all_hours || 0,
       item.shift_name || 'Ca Hành Chính',
-      item.status || '',
+      statusVietnameseMap[item.status] || item.status || 'Hợp lệ',
       item.note || ''
     ]);
 
