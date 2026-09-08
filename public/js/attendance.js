@@ -645,17 +645,32 @@ const appAttendance = {
   // ========================================================================
   switchZkSubTab(tabName) {
     this.currentZkSubTab = tabName;
+    const targetPaneId = tabName.startsWith('zk-tab-') ? tabName : `zk-tab-${tabName.replace(/^zk-/, '')}`;
+
     document.querySelectorAll('.zk-nav-tab').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
-    });
-    document.querySelectorAll('.zk-tab-content').forEach(pane => {
-      pane.classList.toggle('active', pane.id === tabName);
-      pane.style.display = (pane.id === tabName) ? 'block' : 'none';
+      const dataTab = btn.getAttribute('data-tab');
+      const isActive = (dataTab === tabName || dataTab === targetPaneId || `zk-tab-${(dataTab || '').replace(/^zk-/, '')}` === targetPaneId);
+      btn.classList.toggle('active', isActive);
+      if (isActive) {
+        btn.style.background = '#2563EB';
+        btn.style.color = '#FFFFFF';
+        btn.style.borderColor = '#2563EB';
+      } else {
+        btn.style.background = '#FFFFFF';
+        btn.style.color = 'var(--text-primary)';
+        btn.style.borderColor = 'var(--border-color)';
+      }
     });
 
-    if (tabName === 'zk-hardware') {
+    document.querySelectorAll('.zk-tab-content').forEach(pane => {
+      const isMatch = (pane.id === targetPaneId || pane.id === tabName);
+      pane.classList.toggle('active', isMatch);
+      pane.style.display = isMatch ? 'block' : 'none';
+    });
+
+    if (tabName === 'zk-hardware' || targetPaneId === 'zk-tab-hardware') {
       this.renderDevices();
-    } else if (tabName === 'zk-rawlogs') {
+    } else if (tabName === 'zk-rawlogs' || targetPaneId === 'zk-tab-rawlogs') {
       this.populateRawLogFilters();
       this.renderRawLogs();
     }
