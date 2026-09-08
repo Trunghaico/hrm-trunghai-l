@@ -1124,9 +1124,18 @@ export default {
           const employees = data.tables["03_Employees"] || [];
           const index = employees.findIndex(e => e.employee_id === targetId || (body.employee_id && e.employee_id === body.employee_id));
 
+          const masterProfileData = body.master_profile ? { ...body.master_profile } : {};
+          if (masterProfileData['Ngày sinh']) masterProfileData['Ngày sinh'] = fixExcelSerialDate(masterProfileData['Ngày sinh']);
+          if (masterProfileData.date_of_birth) masterProfileData.date_of_birth = fixExcelSerialDate(masterProfileData.date_of_birth);
+
+          const timeCode = body.time_attendance_code !== undefined ? body.time_attendance_code : (masterProfileData['Mã chấm công'] !== undefined ? masterProfileData['Mã chấm công'] : (body['Mã chấm công'] !== undefined ? body['Mã chấm công'] : (index >= 0 ? employees[index].time_attendance_code : '')));
+          const cleanTimeCode = timeCode !== undefined && timeCode !== null ? timeCode.toString().trim() : '';
+
           const updatedEmp = {
             ...(index >= 0 ? employees[index] : {}),
             ...body,
+            time_attendance_code: cleanTimeCode,
+            attendance_code: cleanTimeCode,
             employee_id: body.employee_id || targetId,
             updated_at: new Date().toISOString()
           };
@@ -1143,9 +1152,6 @@ export default {
           // Đồng bộ 00_Master_Profiles
           let masterList = data.tables["00_Master_Profiles"] || [];
           const mIdx = masterList.findIndex(m => m.employee_id === targetId || m['Mã nhân viên'] === targetId || (body.employee_id && (m.employee_id === body.employee_id || m['Mã nhân viên'] === body.employee_id)));
-          const masterProfileData = body.master_profile ? { ...body.master_profile } : {};
-          if (masterProfileData['Ngày sinh']) masterProfileData['Ngày sinh'] = fixExcelSerialDate(masterProfileData['Ngày sinh']);
-          if (masterProfileData.date_of_birth) masterProfileData.date_of_birth = fixExcelSerialDate(masterProfileData.date_of_birth);
 
           const mergedMaster = {
             ...(mIdx >= 0 ? masterList[mIdx] : {}),
@@ -1154,6 +1160,8 @@ export default {
             employee_id: body.employee_id || targetId,
             'Họ và tên': body.full_name || masterProfileData['Họ và tên'] || targetId,
             full_name: body.full_name || masterProfileData['Họ và tên'] || targetId,
+            'Mã chấm công': cleanTimeCode,
+            time_attendance_code: cleanTimeCode,
             updated_at: new Date().toISOString()
           };
 

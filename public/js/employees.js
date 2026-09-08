@@ -1373,9 +1373,15 @@ const appEmployees = {
     masterData['position_name'] = boundPosName;
     masterData['job_title'] = boundPosName;
 
+    const timeAttendanceCode = (masterData['Mã chấm công'] !== undefined ? masterData['Mã chấm công'] : (masterData.time_attendance_code || '')).toString().trim();
+    masterData['Mã chấm công'] = timeAttendanceCode;
+    masterData['time_attendance_code'] = timeAttendanceCode;
+
     const payload = {
       master_profile: masterData,
       employee_id: empId,
+      time_attendance_code: timeAttendanceCode,
+      attendance_code: timeAttendanceCode,
       full_name: fullName,
       gender: masterData['Giới tính'] || 'Nam',
       date_of_birth: masterData['Ngày sinh'] || null,
@@ -1472,6 +1478,9 @@ const appEmployees = {
           ...payload,
           employee_id: empId,
           full_name: fullName,
+          time_attendance_code: timeAttendanceCode,
+          attendance_code: timeAttendanceCode,
+          'Mã chấm công': timeAttendanceCode,
           department_id: boundDeptId,
           department_name: boundDeptName,
           position_id: boundPosId,
@@ -1487,10 +1496,18 @@ const appEmployees = {
         }
         if (appData.masterProfiles) {
           const mpIdx = appData.masterProfiles.findIndex(m => (m['Mã nhân viên'] === targetIdForUrl || m.employee_id === targetIdForUrl || m['Mã nhân viên'] === empId || m.employee_id === empId));
+          const updatedMaster = {
+            ...(mpIdx >= 0 ? appData.masterProfiles[mpIdx] : {}),
+            ...masterData,
+            'Mã nhân viên': empId,
+            employee_id: empId,
+            'Mã chấm công': timeAttendanceCode,
+            time_attendance_code: timeAttendanceCode
+          };
           if (mpIdx >= 0) {
-            appData.masterProfiles[mpIdx] = { ...appData.masterProfiles[mpIdx], ...masterData, 'Mã nhân viên': empId, employee_id: empId };
+            appData.masterProfiles[mpIdx] = updatedMaster;
           } else {
-            appData.masterProfiles.push({ ...masterData, 'Mã nhân viên': empId, employee_id: empId });
+            appData.masterProfiles.push(updatedMaster);
           }
         }
       }

@@ -2397,6 +2397,7 @@ const updateEmployeeHandler = (req, res) => {
         ...employees[empIdx],
         ...body,
         employee_id: targetId,
+        time_attendance_code: (masterData['Mã chấm công'] !== undefined ? masterData['Mã chấm công'] : (body.time_attendance_code !== undefined ? body.time_attendance_code : employees[empIdx].time_attendance_code || '')).toString().trim(),
         full_name: fullName,
         gender: masterData['Giới tính'] || body.gender || employees[empIdx].gender,
         date_of_birth: masterData['Ngày sinh'] !== undefined ? masterData['Ngày sinh'] : (body.date_of_birth || employees[empIdx].date_of_birth),
