@@ -1,4 +1,4 @@
-{
+﻿{
     "success":  true,
     "tables":  {
                    "06_Emergency_Contacts":  [
@@ -31701,17 +31701,6 @@
                                                           ]
                                           },
                                           {
-                                              "_row":  10,
-                                              "_sheet":  "02_Phong_Ban",
-                                              "department_id":  "CTY",
-                                              "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
-                                              "company_id":  "THG",
-                                              "parent_dept_id":  "",
-                                              "_errors":  [
-
-                                                          ]
-                                          },
-                                          {
                                               "_row":  11,
                                               "_sheet":  "02_Phong_Ban",
                                               "department_id":  "GIANTIEP_BDHDA.PM",
@@ -31844,28 +31833,6 @@
                                                           ]
                                           },
                                           {
-                                              "_row":  23,
-                                              "_sheet":  "02_Phong_Ban",
-                                              "department_id":  "THG",
-                                              "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
-                                              "company_id":  "THG",
-                                              "parent_dept_id":  "",
-                                              "_errors":  [
-
-                                                          ]
-                                          },
-                                          {
-                                              "_row":  24,
-                                              "_sheet":  "02_Phong_Ban",
-                                              "department_id":  "TN",
-                                              "department_name":  "CÔNG TY TNHH ĐẦU TƯ VÀ KINH DOANH TRUNG NAM",
-                                              "company_id":  "TN",
-                                              "parent_dept_id":  "",
-                                              "_errors":  [
-
-                                                          ]
-                                          },
-                                          {
                                               "_row":  25,
                                               "_sheet":  "02_Phong_Ban",
                                               "department_id":  "TRUCTIEP_BDHDA.PM",
@@ -31915,6 +31882,11 @@
                                               "company_id":  "PM",
                                               "is_active":  true,
                                               "department_id":  "BDHDA.PM"
+                                          },
+                                          {
+                                              "department_id":  "BGD.TN",
+                                              "department_name":  "BAN GIÁM ĐỐC TRUNG NAM",
+                                              "company_id":  "TN"
                                           }
                                       ],
                    "02_Positions":  [
@@ -59714,7 +59686,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Độc thân",
                                             "children_count":  0,
-                                            "department_id":  "THG",
+                                            "department_id":  "GIANTIEP_BDHDA.TH",
                                             "position_id":  "THG_CB_KTHT",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Cán bộ kỹ thuật hiện trường",
@@ -59787,7 +59759,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Cán bộ kỹ thuật hiện trường",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "KHỐI GIÁN TIẾP- DỰ ÁN TRUNG HẢI"
                                         },
                                         {
                                             "stt":  303,
@@ -59892,7 +59864,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Độc thân",
                                             "children_count":  0,
-                                            "department_id":  "THG",
+                                            "department_id":  "GIANTIEP_BDHDA.TH",
                                             "position_id":  "THG_CB_NN",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Cán bộ nội nghiệp",
@@ -59965,7 +59937,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Cán bộ nội nghiệp",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "KHỐI GIÁN TIẾP- DỰ ÁN TRUNG HẢI"
                                         },
                                         {
                                             "stt":  305,
@@ -59981,7 +59953,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Độc thân",
                                             "children_count":  0,
-                                            "department_id":  "THG",
+                                            "department_id":  "BTCKT.TH",
                                             "position_id":  "THG_NV_KT",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Nhân viên Kế toán",
@@ -60054,7 +60026,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Nhân viên Kế toán",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "BAN TÀI CHÍNH KẾ TOÁN TRUNG HẢI"
                                         },
                                         {
                                             "stt":  306,
@@ -60070,7 +60042,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Đã có gia đình",
                                             "children_count":  0,
-                                            "department_id":  "THG",
+                                            "department_id":  "BTCHC.TH",
                                             "position_id":  "THG_CAP_DUONG",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Cấp dưỡng",
@@ -60143,7 +60115,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Cấp dưỡng",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI"
                                         },
                                         {
                                             "stt":  307,
@@ -60159,7 +60131,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Đã có gia đình",
                                             "children_count":  0,
-                                            "department_id":  "CTY",
+                                            "department_id":  "BTCHC.TH",
                                             "position_id":  "THG_CAP_DUONG",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Cấp dưỡng",
@@ -60232,7 +60204,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Cấp dưỡng",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI"
                                         },
                                         {
                                             "stt":  308,
@@ -60426,7 +60398,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Độc thân",
                                             "children_count":  0,
-                                            "department_id":  "TN",
+                                            "department_id":  "BGD.TN",
                                             "position_id":  "THG_PTGD",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Phó Tổng Giám Đốc",
@@ -60499,7 +60471,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Phó Tổng Giám Đốc",
-                                            "department_name":  "CÔNG TY TNHH ĐẦU TƯ VÀ KINH DOANH TRUNG NAM"
+                                            "department_name":  "BAN GIÁM ĐỐC TRUNG NAM"
                                         },
                                         {
                                             "stt":  311,
@@ -60515,7 +60487,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Độc thân",
                                             "children_count":  0,
-                                            "department_id":  "THG",
+                                            "department_id":  "TRUCTIEP_BDHDA.TH",
                                             "position_id":  "THG_NV _ LÁI LU",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "NV Lái lu",
@@ -60588,7 +60560,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "NV Lái lu",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI"
                                         },
                                         {
                                             "stt":  312,
@@ -60604,7 +60576,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Đã có gia đình",
                                             "children_count":  0,
-                                            "department_id":  "THG",
+                                            "department_id":  "TRUCTIEP_BDHDA.TH",
                                             "position_id":  "THG_NV _ LÁI LU",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "NV Lái lu",
@@ -60677,7 +60649,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "NV Lái lu",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI"
                                         },
                                         {
                                             "stt":  313,
@@ -60693,7 +60665,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Đã có gia đình",
                                             "children_count":  0,
-                                            "department_id":  "THG",
+                                            "department_id":  "TRUCTIEP_BDHDA.TH",
                                             "position_id":  "THG_LX_DK",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Lái Xe Đầu Kéo",
@@ -60766,7 +60738,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Lái Xe Đầu Kéo",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI"
                                         },
                                         {
                                             "stt":  314,
@@ -60782,7 +60754,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Độc thân",
                                             "children_count":  0,
-                                            "department_id":  "THG",
+                                            "department_id":  "TRUCTIEP_BDHDA.TH",
                                             "position_id":  "THG_NV _ LÁI MÁY SAN",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Lái máy san",
@@ -60855,7 +60827,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Lái máy san",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI"
                                         },
                                         {
                                             "stt":  315,
@@ -62651,7 +62623,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Độc thân",
                                             "children_count":  0,
-                                            "department_id":  "THG",
+                                            "department_id":  "BTCHC.TH",
                                             "position_id":  "THG_NV_NS",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Nhân viên nhân sự",
@@ -62724,7 +62696,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Nhân viên nhân sự",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI"
                                         },
                                         {
                                             "stt":  336,
@@ -108403,7 +108375,7 @@
                                             "nationality":  "Việt Nam",
                                             "marital_status":  "Độc thân",
                                             "children_count":  0,
-                                            "department_id":  "CTY",
+                                            "department_id":  "BTGD.TH",
                                             "position_id":  "THG_TTS_HCNS",
                                             "job_rank":  "Bậc 3",
                                             "job_title":  "Thực tập sinh HCNS",
@@ -108480,7 +108452,7 @@
                                             "total_allowance":  0,
                                             "allowance_count":  0,
                                             "position_name":  "Thực tập sinh HCNS",
-                                            "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI"
+                                            "department_name":  "BAN TỔNG GIÁM ĐỐC TRUNG HẢI"
                                         },
                                         {
                                             "stt":  285,
@@ -138848,8 +138820,8 @@
                                                   "current_address_full":  "Khu phố Uất Lâm, Phường Hòa Hiệp, Đắk Lắk, Việt Nam",
                                                   "date_of_birth":  "25/04/1988",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "THG",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "GIANTIEP_BDHDA.TH",
+                                                  "department_name":  "KHỐI GIÁN TIẾP- DỰ ÁN TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -138888,7 +138860,7 @@
                                                   "major":  "Xây Dựng Cầu Đường",
                                                   "marital_status":  "Độc thân",
                                                   "mobile_phone":  "0906751527",
-                                                  "Mã đơn vị công tác":  "THG",
+                                                  "Mã đơn vị công tác":  "GIANTIEP_BDHDA.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Phú Yên",
                                                   "official_date":  "09/04/2026",
@@ -138924,7 +138896,7 @@
                                                   "work_area":  "Dự án",
                                                   "work_email":  "",
                                                   "work_location":  "BĐH CTVP",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "KHỐI GIÁN TIẾP- DỰ ÁN TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_CB_KTHT"
                                               },
                                               {
@@ -139042,8 +139014,8 @@
                                                   "current_address_full":  "451/21 Trần Hưng Đạo, KV3, Xã Vị Thanh 1, Cần Thơ, Việt Nam",
                                                   "date_of_birth":  "26/08/1981",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "THG",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "GIANTIEP_BDHDA.TH",
+                                                  "department_name":  "KHỐI GIÁN TIẾP- DỰ ÁN TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -139082,7 +139054,7 @@
                                                   "major":  "Xây Dựng",
                                                   "marital_status":  "Độc thân",
                                                   "mobile_phone":  "0909558190",
-                                                  "Mã đơn vị công tác":  "THG",
+                                                  "Mã đơn vị công tác":  "GIANTIEP_BDHDA.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Giồng Riềng, Kiên Giang",
                                                   "official_date":  "29/05/2026",
@@ -139118,7 +139090,7 @@
                                                   "work_area":  "Khối Văn phòng Tổng công ty",
                                                   "work_email":  "",
                                                   "work_location":  "Trung lương- Mỹ Thuận",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "KHỐI GIÁN TIẾP- DỰ ÁN TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_CB_NN"
                                               },
                                               {
@@ -139139,8 +139111,8 @@
                                                   "current_address_full":  "11 Trần Thị Trọng, Phường Tân Sơn, Hồ Chí Minh, Việt Nam",
                                                   "date_of_birth":  "20/08/1999",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "THG",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "BTCKT.TH",
+                                                  "department_name":  "BAN TÀI CHÍNH KẾ TOÁN TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -139179,7 +139151,7 @@
                                                   "major":  "Tài chính-ngân hàng",
                                                   "marital_status":  "Độc thân",
                                                   "mobile_phone":  "0867170499",
-                                                  "Mã đơn vị công tác":  "THG",
+                                                  "Mã đơn vị công tác":  "BTCKT.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Quảng Bình",
                                                   "official_date":  "15/06/2026",
@@ -139215,7 +139187,7 @@
                                                   "work_area":  "Khối Văn phòng Tổng công ty",
                                                   "work_email":  "",
                                                   "work_location":  "Trung Lương- Mỹ Thuận",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "BAN TÀI CHÍNH KẾ TOÁN TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_NV_KT"
                                               },
                                               {
@@ -139236,8 +139208,8 @@
                                                   "current_address_full":  "xóm Đức Phong, Xã Tiền Phong, Phú Thọ, Việt Nam",
                                                   "date_of_birth":  "29/05/1981",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "THG",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "BTCHC.TH",
+                                                  "department_name":  "BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -139276,7 +139248,7 @@
                                                   "major":  "",
                                                   "marital_status":  "Đã có gia đình",
                                                   "mobile_phone":  "",
-                                                  "Mã đơn vị công tác":  "THG",
+                                                  "Mã đơn vị công tác":  "BTCHC.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Tân Thành, Mai Châu, Hòa Bình",
                                                   "official_date":  "17/04/2026",
@@ -139312,7 +139284,7 @@
                                                   "work_area":  "Khối Văn phòng Tổng công ty",
                                                   "work_email":  "",
                                                   "work_location":  "Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_CAP_DUONG"
                                               },
                                               {
@@ -139333,8 +139305,8 @@
                                                   "current_address_full":  "Thôn Đan Nhiễm, Huyện Văn Giang, Hưng Yên, Việt Nam",
                                                   "date_of_birth":  "05/07/1959",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "CTY",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "BTCHC.TH",
+                                                  "department_name":  "BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -139373,7 +139345,7 @@
                                                   "major":  "",
                                                   "marital_status":  "Đã có gia đình",
                                                   "mobile_phone":  "",
-                                                  "Mã đơn vị công tác":  "CTY",
+                                                  "Mã đơn vị công tác":  "BTCHC.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Thôn Đan Nhiễm, xã Văn Giang, tỉnh Hưng Yên",
                                                   "official_date":  "27/03/2026",
@@ -139409,7 +139381,7 @@
                                                   "work_area":  "Dự án",
                                                   "work_email":  "",
                                                   "work_location":  "Cầu Ngọc Hồi",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_CAP_DUONG"
                                               },
                                               {
@@ -139624,8 +139596,8 @@
                                                   "current_address_full":  "Khu phố Tân Hòa, Phường Đông Hòa, Hồ Chí Minh, Việt Nam",
                                                   "date_of_birth":  "06/07/1984",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "TN",
-                                                  "department_name":  "CÔNG TY TNHH ĐẦU TƯ VÀ KINH DOANH TRUNG NAM",
+                                                  "department_id":  "BGD.TN",
+                                                  "department_name":  "BAN GIÁM ĐỐC TRUNG NAM",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -139664,7 +139636,7 @@
                                                   "major":  "Kinh tế xây dựng",
                                                   "marital_status":  "Độc thân",
                                                   "mobile_phone":  "0905987566",
-                                                  "Mã đơn vị công tác":  "TN",
+                                                  "Mã đơn vị công tác":  "BGD.TN",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Phú Yên",
                                                   "official_date":  "11/03/2026",
@@ -139700,7 +139672,7 @@
                                                   "work_area":  "Văn phòng",
                                                   "work_email":  "uyentran@trungnaminvt.vn",
                                                   "work_location":  "Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội",
-                                                  "Đơn vị công tác":  "CÔNG TY TNHH ĐẦU TƯ VÀ KINH DOANH TRUNG NAM",
+                                                  "Đơn vị công tác":  "BAN GIÁM ĐỐC TRUNG NAM",
                                                   "Mã vị trí công việc":  "THG_PTGD"
                                               },
                                               {
@@ -139721,8 +139693,8 @@
                                                   "current_address_full":  "Thôn Ngân Điền, Xã Sơn Hòa, Đắk Lắk, Việt Nam",
                                                   "date_of_birth":  "16/12/1990",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "THG",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "TRUCTIEP_BDHDA.TH",
+                                                  "department_name":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -139761,7 +139733,7 @@
                                                   "major":  "",
                                                   "marital_status":  "Độc thân",
                                                   "mobile_phone":  "",
-                                                  "Mã đơn vị công tác":  "THG",
+                                                  "Mã đơn vị công tác":  "TRUCTIEP_BDHDA.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Phú Yên",
                                                   "official_date":  "04/03/2026",
@@ -139797,7 +139769,7 @@
                                                   "work_area":  "Dự án",
                                                   "work_email":  "",
                                                   "work_location":  "Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_NV _ LÁI LU"
                                               },
                                               {
@@ -139818,8 +139790,8 @@
                                                   "current_address_full":  "Thôn Ngân Điền, Xã Sơn Hòa, Đắk Lắk, Việt Nam",
                                                   "date_of_birth":  "18/06/1980",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "THG",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "TRUCTIEP_BDHDA.TH",
+                                                  "department_name":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -139858,7 +139830,7 @@
                                                   "major":  "",
                                                   "marital_status":  "Đã có gia đình",
                                                   "mobile_phone":  "",
-                                                  "Mã đơn vị công tác":  "THG",
+                                                  "Mã đơn vị công tác":  "TRUCTIEP_BDHDA.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Đắk Lắk",
                                                   "official_date":  "04/03/2026",
@@ -139894,7 +139866,7 @@
                                                   "work_area":  "Dự án",
                                                   "work_email":  "",
                                                   "work_location":  "Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_NV _ LÁI LU"
                                               },
                                               {
@@ -139915,8 +139887,8 @@
                                                   "current_address_full":  "Khu phố Phú Ân, Phường Tuy Hòa, Đắk Lắk, Việt Nam",
                                                   "date_of_birth":  "24/04/1972",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "THG",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "TRUCTIEP_BDHDA.TH",
+                                                  "department_name":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -139955,7 +139927,7 @@
                                                   "major":  "",
                                                   "marital_status":  "Đã có gia đình",
                                                   "mobile_phone":  "",
-                                                  "Mã đơn vị công tác":  "THG",
+                                                  "Mã đơn vị công tác":  "TRUCTIEP_BDHDA.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Phú Yên",
                                                   "official_date":  "15/03/2026",
@@ -139991,7 +139963,7 @@
                                                   "work_area":  "Dự án",
                                                   "work_email":  "",
                                                   "work_location":  "BĐH CTVP",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_LX_DK"
                                               },
                                               {
@@ -140012,8 +139984,8 @@
                                                   "current_address_full":  "192 Lạc Long Quân, Phú Lâm 3, Phường Phú Yên, Đắk Lắk, Việt Nam",
                                                   "date_of_birth":  "31/07/1984",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "THG",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "TRUCTIEP_BDHDA.TH",
+                                                  "department_name":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -140052,7 +140024,7 @@
                                                   "major":  "Vận hành xe máy cơ giới",
                                                   "marital_status":  "Độc thân",
                                                   "mobile_phone":  "0917167462",
-                                                  "Mã đơn vị công tác":  "THG",
+                                                  "Mã đơn vị công tác":  "TRUCTIEP_BDHDA.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Phú Yên",
                                                   "official_date":  "06/03/2026",
@@ -140088,7 +140060,7 @@
                                                   "work_area":  "Dự án",
                                                   "work_email":  "",
                                                   "work_location":  "CTVP",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_NV _ LÁI MÁY SAN"
                                               },
                                               {
@@ -142049,8 +142021,8 @@
                                                   "current_address_full":  "1/27 Cú Chính Lan, Khu phố 11, Quận Tân Bình, Hồ Chí Minh, Việt Nam",
                                                   "date_of_birth":  "11/06/1996",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "THG",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "BTCHC.TH",
+                                                  "department_name":  "BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "Hoàng Văn Chung",
@@ -142089,7 +142061,7 @@
                                                   "major":  "Luật Kinh Tế",
                                                   "marital_status":  "Độc thân",
                                                   "mobile_phone":  "0968381106",
-                                                  "Mã đơn vị công tác":  "THG",
+                                                  "Mã đơn vị công tác":  "BTCHC.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "Ninh Thuận",
                                                   "official_date":  "20/03/2026",
@@ -142125,7 +142097,7 @@
                                                   "work_area":  "Khối Văn phòng Tổng công ty",
                                                   "work_email":  "nguyenhtt@trunghaico.vn",
                                                   "work_location":  "Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_NV_NS"
                                               },
                                               {
@@ -191913,8 +191885,8 @@
                                                   "current_address_full":  "",
                                                   "date_of_birth":  "",
                                                   "degree_type":  "Chính quy",
-                                                  "department_id":  "CTY",
-                                                  "department_name":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "department_id":  "BTGD.TH",
+                                                  "department_name":  "BAN TỔNG GIÁM ĐỐC TRUNG HẢI",
                                                   "dependents_count":  0,
                                                   "direct_manager_id":  "",
                                                   "direct_manager_name":  "",
@@ -191953,7 +191925,7 @@
                                                   "major":  "",
                                                   "marital_status":  "Độc thân",
                                                   "mobile_phone":  "",
-                                                  "Mã đơn vị công tác":  "CTY",
+                                                  "Mã đơn vị công tác":  "BTGD.TH",
                                                   "nationality":  "Việt Nam",
                                                   "native_place":  "",
                                                   "official_date":  "17/11/2025",
@@ -191993,7 +191965,7 @@
                                                   "work_area":  "Khối Văn phòng Tổng công ty",
                                                   "work_email":  "",
                                                   "work_location":  "Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội",
-                                                  "Đơn vị công tác":  "CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI",
+                                                  "Đơn vị công tác":  "BAN TỔNG GIÁM ĐỐC TRUNG HẢI",
                                                   "Mã vị trí công việc":  "THG_TTS_HCNS"
                                               },
                                               {

@@ -60,10 +60,18 @@ const app = {
     this.setupGlobalSearch();
     this.setupQuickActions();
 
-    // Global listener: Click on modal backdrop (outside modal container) closes the modal
+    // Global listener: Click on modal backdrop or outside popovers
     document.addEventListener('click', (e) => {
       if (e.target && e.target.classList && e.target.classList.contains('modal-backdrop')) {
         this.closeAllModalsAndOverlays();
+      }
+      // Click outside department multi-select dropdown closes it
+      const deptWrapper = document.querySelector('.dept-multiselect-wrapper');
+      if (deptWrapper && !deptWrapper.contains(e.target)) {
+        const deptDropdown = document.getElementById('dept-multiselect-dropdown');
+        if (deptDropdown && deptDropdown.classList.contains('show')) {
+          deptDropdown.classList.remove('show');
+        }
       }
     });
 
@@ -169,7 +177,7 @@ const app = {
 
     // 4. Close dropdown menus
     try {
-      document.querySelectorAll('.dropdown-menu.show, .action-dropdown.show, .export-dropdown-menu.show, #emp-action-dropdown.show').forEach(el => {
+      document.querySelectorAll('.dropdown-menu.show, .action-dropdown.show, .export-dropdown-menu.show, #emp-action-dropdown.show, #dept-multiselect-dropdown.show').forEach(el => {
         el.classList.remove('show');
       });
       const colConfigDropdown = document.getElementById('col-config-dropdown');

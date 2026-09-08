@@ -257,11 +257,12 @@ function normalizeDepartmentCode(codeOrName) {
   }
 
   if (low.includes('trung nam') || low.includes('.tn')) {
+    if (low.includes('giám đốc') || low === 'bgd.tn') return 'BGD.TN';
     if (low.includes('điều hành dự án') || low === 'bđhda.tn') return 'BĐHDA.TN';
     if (low.includes('hành chính nhân sự') || low === 'phcns.tn') return 'PHCNS.TN';
     if (low.includes('thương mại') || low.includes('kinh doanh') || low === 'pkdtm.tn') return 'PKDTM.TN';
     if (low.includes('kế toán') || low === 'ptckt.tn') return 'PTCKT.TN';
-    if (low === 'tn' || low.includes('công ty')) return 'TN';
+    if (low === 'tn' || low.includes('công ty')) return 'BĐHDA.TN';
   }
 
   return s;
@@ -281,7 +282,7 @@ function normalizeDepartmentName(codeOrName) {
   if (low.includes('trực tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI';
   if (low.includes('gián tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'KHỐI GIÁN TIẾP- DỰ ÁN TRUNG HẢI';
   if (low.includes('văn phòng') && (low.includes('trung hải') || low.includes('.th'))) return 'KHỐI VĂN PHÒNG-DỰ ÁN TRUNG HẢI';
-  if (low === 'cty' || low === 'thg' || (low.includes('trung hải') && !low.includes('dự án') && !low.includes('ban') && !low.includes('phòng'))) return 'CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI';
+  if (low === 'cty' || low === 'thg' || (low.includes('trung hải') && !low.includes('dự án') && !low.includes('ban') && !low.includes('phòng'))) return 'KHỐI VĂN PHÒNG-DỰ ÁN TRUNG HẢI';
 
   if (low.includes('phú minh') || low.includes('.pm')) {
     if (low.includes('giám đốc') || low === 'bgd.pm') return 'BAN GIÁM ĐỐC PHÚ MINH';
@@ -302,11 +303,12 @@ function normalizeDepartmentName(codeOrName) {
   }
 
   if (low.includes('trung nam') || low.includes('.tn')) {
+    if (low.includes('giám đốc') || low === 'bgd.tn') return 'BAN GIÁM ĐỐC TRUNG NAM';
     if (low.includes('điều hành dự án') || low === 'bđhda.tn') return 'BAN ĐIỀU HÀNH DỰ ÁN TRUNG NAM';
     if (low.includes('hành chính nhân sự') || low === 'phcns.tn') return 'PHÒNG HÀNH CHÍNH NHÂN SỰ TRUNG NAM';
     if (low.includes('thương mại') || low.includes('kinh doanh') || low === 'pkdtm.tn') return 'PHÒNG KINH DOANH THƯƠNG MẠI TRUNG NAM';
     if (low.includes('kế toán') || low === 'ptckt.tn') return 'PHÒNG TÀI CHÍNH KẾ TOÁN TRUNG NAM';
-    if (low === 'tn' || low.includes('công ty')) return 'CÔNG TY TNHH ĐẦU TƯ VÀ KINH DOANH TRUNG NAM';
+    if (low === 'tn' || low.includes('công ty')) return 'BAN ĐIỀU HÀNH DỰ ÁN TRUNG NAM';
   }
 
   return s;

@@ -222,6 +222,26 @@ const appData = {
 
     this.deptMap = {};
     this.deptIdMap = {};
+
+    // Filter out dummy department entries that clone the company
+    if (Array.isArray(this.departments)) {
+      this.departments = this.departments.filter(d => {
+        if (!d) return false;
+        if (d.department_id === 'TN' || d.department_id === 'THG' || d.department_id === 'CTY') return false;
+        const comp = (this.companies || []).find(c => c.company_id === d.company_id);
+        if (comp && d.department_name && d.department_name.trim().toLowerCase() === comp.company_name.trim().toLowerCase()) return false;
+        return true;
+      });
+      // Ensure BGD.TN exists
+      if (!this.departments.some(d => d.department_id === 'BGD.TN')) {
+        this.departments.push({
+          department_id: 'BGD.TN',
+          department_name: 'BAN GIÁM ĐỐC TRUNG NAM',
+          company_id: 'TN'
+        });
+      }
+    }
+
     (this.departments || []).forEach(d => {
       if (!d) return;
       if (d.department_id && d.department_name) {
@@ -318,7 +338,7 @@ const appData = {
     if (low.includes('trực tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI';
     if (low.includes('gián tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'KHỐI GIÁN TIẾP- DỰ ÁN TRUNG HẢI';
     if (low.includes('văn phòng') && (low.includes('trung hải') || low.includes('.th'))) return 'KHỐI VĂN PHÒNG-DỰ ÁN TRUNG HẢI';
-    if (low === 'cty' || low === 'thg' || (low.includes('trung hải') && !low.includes('dự án') && !low.includes('ban') && !low.includes('phòng'))) return 'CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI';
+    if (low === 'cty' || low === 'thg' || (low.includes('trung hải') && !low.includes('dự án') && !low.includes('ban') && !low.includes('phòng'))) return 'KHỐI VĂN PHÒNG-DỰ ÁN TRUNG HẢI';
 
     if (low.includes('phú minh') || low.includes('.pm')) {
       if (low.includes('giám đốc') || low === 'bgd.pm') return 'BAN GIÁM ĐỐC PHÚ MINH';
@@ -339,11 +359,12 @@ const appData = {
     }
 
     if (low.includes('trung nam') || low.includes('.tn')) {
+      if (low.includes('giám đốc') || low === 'bgd.tn') return 'BAN GIÁM ĐỐC TRUNG NAM';
       if (low.includes('điều hành dự án') || low === 'bđhda.tn') return 'BAN ĐIỀU HÀNH DỰ ÁN TRUNG NAM';
       if (low.includes('hành chính nhân sự') || low === 'phcns.tn') return 'PHÒNG HÀNH CHÍNH NHÂN SỰ TRUNG NAM';
       if (low.includes('thương mại') || low.includes('kinh doanh') || low === 'pkdtm.tn') return 'PHÒNG KINH DOANH THƯƠNG MẠI TRUNG NAM';
       if (low.includes('kế toán') || low === 'ptckt.tn') return 'PHÒNG TÀI CHÍNH KẾ TOÁN TRUNG NAM';
-      if (low === 'tn' || low.includes('công ty')) return 'CÔNG TY TNHH ĐẦU TƯ VÀ KINH DOANH TRUNG NAM';
+      if (low === 'tn' || low.includes('công ty')) return 'BAN ĐIỀU HÀNH DỰ ÁN TRUNG NAM';
     }
 
     return s;
@@ -377,7 +398,7 @@ const appData = {
     if (low.includes('trực tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'TRUCTIEP_BDHDA.TH';
     if (low.includes('gián tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'GIANTIEP_BDHDA.TH';
     if (low.includes('văn phòng') && (low.includes('trung hải') || low.includes('.th'))) return 'VP_BDHDA.TH';
-    if (low === 'cty' || low === 'thg' || (low.includes('trung hải') && !low.includes('dự án') && !low.includes('ban') && !low.includes('phòng'))) return 'CTY';
+    if (low === 'cty' || low === 'thg' || (low.includes('trung hải') && !low.includes('dự án') && !low.includes('ban') && !low.includes('phòng'))) return 'VP_BDHDA.TH';
 
     if (low.includes('phú minh') || low.includes('.pm')) {
       if (low.includes('giám đốc') || low === 'bgd.pm') return 'BGD.PM';
@@ -398,11 +419,12 @@ const appData = {
     }
 
     if (low.includes('trung nam') || low.includes('.tn')) {
+      if (low.includes('giám đốc') || low === 'bgd.tn') return 'BGD.TN';
       if (low.includes('điều hành dự án') || low === 'bđhda.tn') return 'BĐHDA.TN';
       if (low.includes('hành chính nhân sự') || low === 'phcns.tn') return 'PHCNS.TN';
       if (low.includes('thương mại') || low.includes('kinh doanh') || low === 'pkdtm.tn') return 'PKDTM.TN';
       if (low.includes('kế toán') || low === 'ptckt.tn') return 'PTCKT.TN';
-      if (low === 'tn' || low.includes('công ty')) return 'TN';
+      if (low === 'tn' || low.includes('công ty')) return 'BĐHDA.TN';
     }
 
     return s;
