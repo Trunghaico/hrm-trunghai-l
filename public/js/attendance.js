@@ -1755,6 +1755,41 @@ const appAttendance = {
     const fileName = `Bang_Cham_Cong_Thang_${this.currentMonth.replace('-', '_')}_TRUNGHAI.xlsx`;
     XLSX.writeFile(wb, fileName);
     utils.showToast(`Đã xuất bảng công ra file Excel: ${fileName}!`, 'success');
+  },
+
+  copyAgentCommand() {
+    const cmd = `schtasks /create /tn "TrungHai_RonaldJack_AutoSync" /tr "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \\"%~dp0ronald_jack_agent.ps1\\"" /sc MINUTE /mo 5 /f /ru SYSTEM`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cmd).then(() => {
+        utils.showToast('Đã sao chép lệnh Task Scheduler vào bộ nhớ tạm!', 'success');
+      }).catch(() => {
+        utils.showToast('Lệnh cài đặt: ' + cmd, 'info');
+      });
+    } else {
+      prompt('Sao chép lệnh cài đặt Task Scheduler:', cmd);
+    }
+  },
+
+  downloadAgentPackage() {
+    const batContent = `@echo off\r\nchcp 65001 >nul\r\necho Dang cai dat tien trinh dong bo Ronald Jack Pro chay ngam moi 5 phut...\r\nset SCRIPT_DIR=%~dp0\r\nschtasks /create /tn "TrungHai_RonaldJack_AutoSync" /tr "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \\"%SCRIPT_DIR%ronald_jack_agent.ps1\\"" /sc MINUTE /mo 5 /f /ru SYSTEM\r\nif %ERRORLEVEL% equ 0 (\r\n  echo [THANH CONG] Da dang ky task chay ngam moi 5 phut!\r\n  schtasks /run /tn "TrungHai_RonaldJack_AutoSync"\r\n) else (\r\n  echo [LUU Y] Vui long click chuot phai chon 'Run as administrator'\r\n)\r\npause\r\n`;
+
+    const blob = new Blob([batContent], { type: 'application/x-bat' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'install_agent_task.bat';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => {
+      const a2 = document.createElement('a');
+      a2.href = 'scripts/ronald_jack_agent.ps1';
+      a2.download = 'ronald_jack_agent.ps1';
+      document.body.appendChild(a2);
+      a2.click();
+      document.body.removeChild(a2);
+      utils.showToast('Đã tải xuống bộ cài đặt Agent tự động (install_agent_task.bat & ronald_jack_agent.ps1)!', 'success');
+    }, 400);
   }
 };
 

@@ -1,0 +1,10 @@
+{
+  "HrmApiUrl": "https://trunghaico.vn/api/attendance/zk/software-sync",
+  "DatabaseType": "sql_server",
+  "SqlHost": "127.0.0.1\\SQLEXPRESS",
+  "SqlDatabase": "RonaldJackPro",
+  "SqlUser": "sa",
+  "SqlPassword": "123",
+  "UseWindowsAuth": false,
+  "AccessMdbPath": "C:\\Program Files (x86)\\Ronald Jack Pro\\att2000.mdb"
+}

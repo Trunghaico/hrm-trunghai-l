@@ -1987,17 +1987,71 @@
           </div>
 
           <!-- Bottom: Automated Background Worker / Agent Script Guide -->
-          <div class="card" style="padding: 18px;">
-            <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #1E293B;">
-              <i class="fa-solid fa-robot" style="color: #2563EB;"></i> Tự Động Hóa Đồng Bộ Định Kỳ (Background Auto-Sync Agent)
-            </h4>
-            <p style="margin: 0 0 12px 0; font-size: 12.5px; color: var(--text-secondary);">
-              Nếu doanh nghiệp cài Ronald Jack Pro trên máy tính Windows văn phòng, có thể lên lịch Windows Task Scheduler chạy ngầm script sau mỗi 10 phút để tự động đẩy dữ liệu sang Trung Hải HRM:
-            </p>
-            <div style="background: #0F172A; color: #38BDF8; font-family: monospace; font-size: 12px; padding: 12px 16px; border-radius: var(--radius-sm); overflow-x: auto; line-height: 1.5;">
-              # PowerShell script đồng bộ dữ liệu quẹt thẻ Ronald Jack Pro sang Trung Hải HRM API<br>
-              $res = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json" -Body (@{ db_type="sql_server"; server_host="127.0.0.1"; database_name="RonaldJackPro" } | ConvertTo-Json)<br>
-              Write-Host "Đồng bộ thành công: $($res.message)"
+          <div class="card" style="padding: 22px; border-top: 3px solid #2563EB;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+              <div>
+                <h4 style="margin: 0 0 4px 0; font-size: 15px; font-weight: 700; color: #1E293B;">
+                  <i class="fa-solid fa-robot" style="color: #2563EB;"></i> Kịch Bản Tự Động Hóa Agent (Background Auto-Sync Service)
+                </h4>
+                <p style="margin: 0; font-size: 12.5px; color: var(--text-secondary);">
+                  Giải pháp chuyên nghiệp dành cho doanh nghiệp: Chạy ngầm định kỳ 5 - 10 phút trên Windows Task Scheduler của máy chủ/PC cài Ronald Jack Pro.
+                </p>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="appAttendance.copyAgentCommand()">
+                  <i class="fa-solid fa-copy"></i> Sao Chép Lệnh Chạy
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="appAttendance.downloadAgentPackage()">
+                  <i class="fa-solid fa-download"></i> Tải Bộ Cài Agent (.bat & .ps1)
+                </button>
+              </div>
+            </div>
+
+            <!-- 3 Steps Visual Guide -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 18px;">
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-sm); padding: 14px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #1E40AF; margin-bottom: 6px; font-size: 13px;">
+                  <span style="width: 22px; height: 22px; border-radius: 50%; background: #2563EB; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;">1</span>
+                  Tải script về máy tính
+                </div>
+                <p style="margin: 0; font-size: 11.5px; color: #475569; line-height: 1.5;">
+                  Bấm nút <strong>"Tải Bộ Cài Agent"</strong> để tải file <code>ronald_jack_agent.ps1</code> và <code>install_agent_task.bat</code> về thư mục trên máy cài Ronald Jack Pro.
+                </p>
+              </div>
+
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-sm); padding: 14px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #1E40AF; margin-bottom: 6px; font-size: 13px;">
+                  <span style="width: 22px; height: 22px; border-radius: 50%; background: #2563EB; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;">2</span>
+                  Kiểm tra cấu hình CSDL
+                </div>
+                <p style="margin: 0; font-size: 11.5px; color: #475569; line-height: 1.5;">
+                  Mở file <code>agent_config.json</code> để kiểm tra tên database SQL Server (mặc định: <code>RonaldJackPro</code>) hoặc đường dẫn Access <code>att2000.mdb</code>.
+                </p>
+              </div>
+
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-sm); padding: 14px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #1E40AF; margin-bottom: 6px; font-size: 13px;">
+                  <span style="width: 22px; height: 22px; border-radius: 50%; background: #2563EB; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;">3</span>
+                  Kích hoạt tự động hóa
+                </div>
+                <p style="margin: 0; font-size: 11.5px; color: #475569; line-height: 1.5;">
+                  Click chuột phải vào <code>install_agent_task.bat</code> chọn <strong>"Run as administrator"</strong>. Windows Task Scheduler sẽ tự động đồng bộ ngầm mỗi 5 phút!
+                </p>
+              </div>
+            </div>
+
+            <!-- Code viewer snippet with toggle -->
+            <div style="margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 600; color: #334155;">
+                <i class="fa-solid fa-code"></i> Mã lệnh Agent PowerShell tự động (scripts/ronald_jack_agent.ps1):
+              </span>
+            </div>
+            <div style="background: #0F172A; color: #E2E8F0; font-family: monospace; font-size: 11.5px; padding: 14px 16px; border-radius: var(--radius-sm); overflow-x: auto; max-height: 160px; line-height: 1.6; border: 1px solid #1E293B;" id="zk-agent-code-box">
+              <span style="color: #64748B;"># Đọc các lượt quẹt thẻ mới từ bảng CheckInOut của SQL Server / Access Ronald Jack Pro</span><br>
+              <span style="color: #38BDF8;">$query</span> = "SELECT c.UserEnrollNumber, c.TimeStr, c.MachineNo, c.VerifyMode FROM CheckInOut c WHERE c.TimeStr >= @LastSyncTime"<br>
+              <span style="color: #64748B;"># Gửi dữ liệu quẹt thẻ mới lên API Trung Hải HRM</span><br>
+              <span style="color: #38BDF8;">$res</span> = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json" -Body (<span style="color: #F59E0B;">@{ db_type="sql_server"; server_host="127.0.0.1"; database_name="RonaldJackPro"; punch_logs=$punches }</span> | ConvertTo-Json)<br>
+              <span style="color: #10B981;">Write-Host "Đã đồng bộ thành công: $($res.added_count) bản ghi quẹt thẻ mới."</span>
             </div>
           </div>
         </div>
