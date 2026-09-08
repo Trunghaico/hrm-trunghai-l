@@ -168,18 +168,29 @@ const appAttendance = {
     if (panel) panel.style.display = 'none';
   },
 
+  getCanonicalDeptName(val) {
+    if (!val) return '';
+    const s = String(val).trim();
+    if (!s) return '';
+    if (appData.deptMap && appData.deptMap[s]) {
+      return appData.deptMap[s];
+    }
+    const found = (appData.departments || []).find(d =>
+      (d.department_id && d.department_id.toLowerCase() === s.toLowerCase()) ||
+      (d.department_name && d.department_name.toLowerCase() === s.toLowerCase())
+    );
+    if (found && found.department_name) return found.department_name;
+    return s;
+  },
+
   getAllDepartmentNames() {
     const set = new Set();
     (appData.departments || []).forEach(d => {
-      const name = (d.department_name || d.department_id || '').trim();
+      const name = (d.department_name || '').trim();
       if (name) set.add(name);
     });
     (appData.employees || []).forEach(e => {
-      const name = (e.department_name || e.department_id || '').trim();
-      if (name) set.add(name);
-    });
-    (appData.timesheets || []).forEach(t => {
-      const name = (t.department_name || '').trim();
+      const name = this.getCanonicalDeptName(e.department_name || e.department_id);
       if (name) set.add(name);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
@@ -206,7 +217,10 @@ const appAttendance = {
 
     listEl.innerHTML = filteredDepts.map(d => {
       const isChecked = this.allDeptsSelected || this.selectedDepts.includes(d);
-      const empCount = (appData.employees || []).filter(e => (e.department_name || e.department_id || '').trim() === d).length;
+      const empCount = (appData.employees || []).filter(e => {
+        const eDept = this.getCanonicalDeptName(e.department_name || e.department_id);
+        return eDept.toLowerCase() === d.toLowerCase();
+      }).length;
       const safeDept = d.replace(/"/g, '&quot;').replace(/'/g, "\\'");
 
       return `
@@ -423,7 +437,7 @@ const appAttendance = {
         const empMap = new Map((appData.employees || []).map(e => [e.employee_id, e]));
         list = list.filter(t => {
           const emp = empMap.get(t.employee_id);
-          const dept = (t.department_name || (emp ? (emp.department_name || emp.department_id) : '') || '').toLowerCase().trim();
+          const dept = this.getCanonicalDeptName(t.department_name || (emp ? (emp.department_name || emp.department_id) : '')).toLowerCase().trim();
           return selectedSet.has(dept);
         });
       }
@@ -2541,7 +2555,7 @@ const appAttendance = {
         const empMap = new Map((appData.employees || []).map(e => [e.employee_id, e]));
         filteredList = filteredList.filter(t => {
           const emp = empMap.get(t.employee_id);
-          const dept = (t.department_name || (emp ? (emp.department_name || emp.department_id) : '') || '').toLowerCase().trim();
+          const dept = this.getCanonicalDeptName(t.department_name || (emp ? (emp.department_name || emp.department_id) : '')).toLowerCase().trim();
           return set.has(dept);
         });
       }
