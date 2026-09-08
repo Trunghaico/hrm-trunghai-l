@@ -1636,35 +1636,113 @@
 
         <!-- SUBTAB 3: SHIFTS & ROSTERS -->
         <div class="att-tab-content" id="att-tab-shifts">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <div>
-              <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Danh Mục Ca Làm Việc Cấu Hình Chuẩn</h3>
-              <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-secondary);">Thiết lập giờ bắt đầu, kết thúc, thời gian cho phép đi muộn/về sớm và hệ số tính công</p>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="appAttendance.openAddShiftModal()">
-              <i class="fa-solid fa-plus"></i> Thêm Ca Mới
+          <!-- Subtab Navigation Switcher -->
+          <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #E2E8F0; padding-bottom: 8px;">
+            <button type="button" class="btn btn-sm btn-primary att-shift-subtab-btn" id="btn-shift-subtab-roster" onclick="appAttendance.switchShiftSubTab('roster')" style="font-weight: 600;">
+              <i class="fa-solid fa-users-gear"></i> 1. Phân Ca Theo Phòng Ban & Nhân Sự
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary att-shift-subtab-btn" id="btn-shift-subtab-list" onclick="appAttendance.switchShiftSubTab('list')" style="font-weight: 600;">
+              <i class="fa-solid fa-sliders"></i> 2. Danh Mục & Cấu Hình Ca Làm Việc
             </button>
           </div>
 
-          <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-            <table class="table" style="width: 100%; font-size: 12.5px;">
-              <thead>
-                <tr>
-                  <th style="width: 50px; text-align: center;">STT</th>
-                  <th style="width: 110px;">Mã Ca</th>
-                  <th>Tên Ca Làm Việc</th>
-                  <th>Loại Ca</th>
-                  <th>Khung Giờ Ca</th>
-                  <th>Nghỉ Giữa Ca</th>
-                  <th style="text-align: center;">Du Di Đi Muộn</th>
-                  <th style="text-align: center;">Định Mức Công</th>
-                  <th style="width: 100px; text-align: center;">Thao Tác</th>
-                </tr>
-              </thead>
-              <tbody id="att-shifts-tbody">
-                <!-- Shifts populated by attendance.js -->
-              </tbody>
-            </table>
+          <!-- PANEL 1: DEPARTMENT ROSTER ASSIGNMENT -->
+          <div id="panel-shift-subtab-roster">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+              <div>
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Bảng Phân Ca Làm Việc Theo Phòng Ban & Nhân Sự</h3>
+                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-secondary);">Gán ca làm việc mặc định hàng loạt theo từng phòng ban hoặc thiết lập riêng cho từng nhân viên</p>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-sm" onclick="appAttendance.openAssignDeptShiftModal()" style="background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%); color: #fff; font-weight: 600; border: none; padding: 7px 14px; border-radius: 6px; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
+                  <i class="fa-solid fa-bolt"></i> ⚡ Phân Ca Theo Phòng Ban
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="appAttendance.openAssignEmpShiftModal()" style="font-weight: 600;">
+                  <i class="fa-solid fa-user-plus"></i> Phân Ca Từng Nhân Viên
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter Toolbar -->
+            <div class="filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; background: #F8FAFC; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); align-items: center;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="font-size: 12px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Phòng ban:</label>
+                <select id="att-roster-dept-filter" class="filter-select" onchange="appAttendance.onRosterFilterChange()" style="height: 32px; font-size: 12px; min-width: 220px;">
+                  <option value="ALL">-- Tất cả phòng ban --</option>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="font-size: 12px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Ca làm việc:</label>
+                <select id="att-roster-shift-filter" class="filter-select" onchange="appAttendance.onRosterFilterChange()" style="height: 32px; font-size: 12px; min-width: 170px;">
+                  <option value="ALL">-- Tất cả ca --</option>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <div style="flex: 1; min-width: 180px;">
+                <input type="text" id="att-roster-search" placeholder="🔍 Tìm theo mã NV, họ tên, mã CC..." oninput="appAttendance.onRosterFilterChange()" style="width: 100%; height: 32px; font-size: 12px; padding: 4px 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+              </div>
+              <div id="att-roster-count-badge" style="font-size: 11.5px; font-weight: 600; color: #64748B; background: #E2E8F0; padding: 4px 10px; border-radius: 20px; white-space: nowrap;">
+                Đang hiển thị: 0 nhân sự
+              </div>
+            </div>
+
+            <!-- Roster Table -->
+            <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); max-height: 520px; overflow-y: auto;">
+              <table class="table" style="width: 100%; font-size: 12.5px;">
+                <thead style="position: sticky; top: 0; background: #F8FAFC; z-index: 2;">
+                  <tr>
+                    <th style="width: 45px; text-align: center;">STT</th>
+                    <th style="width: 95px;">Mã NV</th>
+                    <th style="width: 95px; text-align: center;">Mã CC</th>
+                    <th>Họ & Tên Nhân Viên</th>
+                    <th>Phòng Ban</th>
+                    <th>Ca Làm Việc Áp Dụng</th>
+                    <th>Khung Giờ Ca</th>
+                    <th style="text-align: center;">Định Mức Công</th>
+                    <th style="width: 140px; text-align: center;">Lịch Làm Việc</th>
+                    <th style="width: 90px; text-align: center;">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody id="att-roster-tbody">
+                  <!-- Populated dynamically by attendance.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- PANEL 2: SHIFTS LIST CONFIGURATION -->
+          <div id="panel-shift-subtab-list" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Danh Mục Ca Làm Việc Cấu Hình Chuẩn</h3>
+                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-secondary);">Thiết lập giờ bắt đầu, kết thúc, thời gian cho phép đi muộn/về sớm và hệ số tính công</p>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="appAttendance.openAddShiftModal()">
+                <i class="fa-solid fa-plus"></i> Thêm Ca Mới
+              </button>
+            </div>
+
+            <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <table class="table" style="width: 100%; font-size: 12.5px;">
+                <thead>
+                  <tr>
+                    <th style="width: 50px; text-align: center;">STT</th>
+                    <th style="width: 110px;">Mã Ca</th>
+                    <th>Tên Ca Làm Việc</th>
+                    <th>Loại Ca</th>
+                    <th>Khung Giờ Ca</th>
+                    <th>Nghỉ Giữa Ca</th>
+                    <th style="text-align: center;">Du Di Đi Muộn</th>
+                    <th style="text-align: center;">Định Mức Công</th>
+                    <th style="width: 100px; text-align: center;">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody id="att-shifts-tbody">
+                  <!-- Shifts populated by attendance.js -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -4263,6 +4341,150 @@
   </div>
 </div>
 
+<!-- ==========================================================================
+     MODAL: PHÂN CA HÀNG LOẠT THEO PHÒNG BAN
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-att-assign-dept-shift">
+  <div class="modal-container" style="max-width: 620px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+    <div class="modal-header" style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); color: #fff; padding: 16px 20px;">
+      <div class="modal-title" style="font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-bolt" style="color: #FEF08A;"></i>
+        <span>⚡ Phân Ca Làm Việc Hàng Loạt Theo Phòng Ban</span>
+      </div>
+      <button class="modal-close" style="color: #fff;" onclick="appAttendance.closeAssignDeptShiftModal()">&times;</button>
+    </div>
+
+    <div class="modal-body" style="padding: 20px 22px; background: #FAF5FF; background: #F8FAFC; max-height: 75vh; overflow-y: auto;">
+      <!-- Instruction Banner -->
+      <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-circle-info" style="color: #2563EB; font-size: 16px; flex-shrink: 0;"></i>
+        <div style="font-size: 12px; color: #1E40AF; line-height: 1.4;">
+          Tất cả nhân viên thuộc phòng ban được chọn sẽ được gán ca làm việc này. Bảng công và đối soát giờ vào/ra sẽ tự động tính toán theo quy chuẩn của ca.
+        </div>
+      </div>
+
+      <!-- 1. Chọn Phòng Ban -->
+      <div style="margin-bottom: 16px;">
+        <label for="assign-dept-select" style="font-size: 12.5px; font-weight: 700; color: #1E293B; margin-bottom: 6px; display: block;">
+          1. Chọn Phòng Ban Áp Dụng <span style="color: #DC2626;">*</span>
+        </label>
+        <select id="assign-dept-select" class="form-control" onchange="appAttendance.onAssignDeptChange()" style="font-weight: 600; height: 38px; border: 1px solid #CBD5E1; border-radius: 6px;">
+          <!-- Options populated dynamically -->
+        </select>
+      </div>
+
+      <!-- 2. Chọn Ca Làm Việc -->
+      <div style="margin-bottom: 16px;">
+        <label for="assign-shift-select" style="font-size: 12.5px; font-weight: 700; color: #1E293B; margin-bottom: 6px; display: block;">
+          2. Chọn Ca Làm Việc Mặc Định Cho Phòng Ban <span style="color: #DC2626;">*</span>
+        </label>
+        <select id="assign-shift-select" class="form-control" onchange="appAttendance.onAssignShiftChange()" style="font-weight: 600; height: 38px; border: 1px solid #CBD5E1; border-radius: 6px;">
+          <!-- Shifts populated dynamically -->
+        </select>
+        <div id="assign-shift-preview-card" style="margin-top: 8px; background: #fff; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 12px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span id="assign-shift-preview-time" style="color: #2563EB; font-weight: 600;"><i class="fa-regular fa-clock"></i> Khung giờ: 08:00 - 17:30 (Nghỉ trưa: 12:00 - 13:30)</span>
+          <span id="assign-shift-preview-units" class="badge" style="background: #DCFCE7; color: #15803D; font-weight: 700;">1.0 công (8h)</span>
+        </div>
+      </div>
+
+      <!-- 3. Ngày Áp Dụng Trong Tuần -->
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 12.5px; font-weight: 700; color: #1E293B; margin-bottom: 6px; display: block;">
+          3. Lịch Áp Dụng Các Ngày Trong Tuần:
+        </label>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #fff; padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px;">
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="assign-day-t2" checked style="accent-color: #2563EB;"> Thứ 2
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="assign-day-t3" checked style="accent-color: #2563EB;"> Thứ 3
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="assign-day-t4" checked style="accent-color: #2563EB;"> Thứ 4
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="assign-day-t5" checked style="accent-color: #2563EB;"> Thứ 5
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="assign-day-t6" checked style="accent-color: #2563EB;"> Thứ 6
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="assign-day-t7" checked style="accent-color: #2563EB;"> Thứ 7
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #DC2626; cursor: pointer;">
+            <input type="checkbox" id="assign-day-cn" style="accent-color: #DC2626;"> Chủ Nhật (Nghỉ)
+          </label>
+        </div>
+      </div>
+
+      <!-- 4. Tùy Chọn Nâng Cao & Preview Nhân Sự -->
+      <div style="background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #1E293B; cursor: pointer; margin-bottom: 8px;">
+          <input type="checkbox" id="assign-recalculate-timesheets" checked style="width: 16px; height: 16px; accent-color: #2563EB;">
+          <span>Tự động tính toán lại bảng công tháng hiện tại theo ca làm việc mới này</span>
+        </label>
+        <div style="font-size: 12px; color: #475569; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E2E8F0; padding-top: 8px;">
+          <span>Số lượng nhân sự được áp dụng:</span>
+          <strong id="assign-dept-emp-count-badge" style="color: #1D4ED8; font-size: 13px;">0 nhân sự</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 10px;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="appAttendance.closeAssignDeptShiftModal()">Hủy Bỏ</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="appAttendance.saveDeptShiftAssignment()" style="background: #2563EB; font-weight: 600; padding: 7px 18px;">
+        <i class="fa-solid fa-check"></i> Lưu & Áp Dụng Phân Ca
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: ĐỔI CA LÀM VIỆC TỪNG NHÂN VIÊN
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-att-assign-emp-shift">
+  <div class="modal-container" style="max-width: 480px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+    <div class="modal-header" style="background: var(--primary-navy); color: #fff; padding: 14px 18px;">
+      <div class="modal-title" style="font-size: 14.5px; font-weight: 700; color: #fff;">
+        <i class="fa-solid fa-user-clock"></i> Đổi Ca Làm Việc Nhân Sự
+      </div>
+      <button class="modal-close" style="color: #fff;" onclick="appAttendance.closeAssignEmpShiftModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 18px;">
+      <div style="background: #F8FAFC; padding: 10px 12px; border-radius: 8px; border: 1px solid #E2E8F0; margin-bottom: 14px;">
+        <div style="font-size: 11px; color: #64748B;">Nhân viên:</div>
+        <strong id="assign-single-emp-name" style="font-size: 14px; color: #1E293B;">-</strong>
+        <div style="font-size: 11.5px; color: #475569; margin-top: 2px;">
+          Mã NV: <span id="assign-single-emp-id" style="font-family: monospace; font-weight: 700; color: #2563EB;">-</span> | 
+          Phòng ban: <span id="assign-single-emp-dept" style="font-weight: 600;">-</span>
+        </div>
+      </div>
+
+      <input type="hidden" id="assign-single-emp-hidden-id">
+
+      <div style="margin-bottom: 14px;">
+        <label for="assign-single-shift-select" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Ca làm việc áp dụng:</label>
+        <select id="assign-single-shift-select" class="form-control" style="font-weight: 600; height: 36px;">
+          <!-- Options populated dynamically -->
+        </select>
+      </div>
+
+      <div style="margin-bottom: 6px;">
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #1E293B; cursor: pointer;">
+          <input type="checkbox" id="assign-single-recalculate" checked style="accent-color: #2563EB;">
+          <span>Tự động tính lại công tháng hiện tại của nhân viên này theo ca mới</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 10px 18px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 8px;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="appAttendance.closeAssignEmpShiftModal()">Hủy Bỏ</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="appAttendance.saveSingleEmpShiftAssignment()">
+        <i class="fa-solid fa-floppy-disk"></i> Cập Nhật Ca
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Đồng Bộ Máy Chấm Công & Ronald Jack Pro -->
 <div class="modal-backdrop" id="modal-att-sync-options">
   <div class="modal-dialog" style="max-width: 600px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
@@ -4376,26 +4598,26 @@
 </div>
 
 <!-- JavaScript Application Modules -->
-<script src="js/data.js?v=3.9.16"></script>
-<script src="js/auth.js?v=3.9.16"></script>
-<script src="js/company.js?v=3.9.16"></script>
-<script src="js/dashboard.js?v=3.9.16"></script>
-<script src="js/profile-fields.js?v=3.9.16"></script>
-<script src="js/employees.js?v=3.9.16"></script>
-<script src="js/import.js?v=3.9.16"></script>
-<script src="js/resigned.js?v=3.9.16"></script>
-<script src="js/template-trunghai.js?v=3.9.16"></script>
-<script src="js/contract-merge.js?v=3.9.16"></script>
-<script src="js/contracts.js?v=3.9.16"></script>
-<script src="js/organization.js?v=3.9.16"></script>
-<script src="js/org-import.js?v=3.9.16"></script>
-<script src="js/reports.js?v=3.9.16"></script>
-<script src="js/attendance.js?v=3.9.16"></script>
-<script src="js/accounts.js?v=3.9.16"></script>
-<script src="js/logs.js?v=3.9.16"></script>
-<script src="js/trash.js?v=3.9.16"></script>
-<script src="js/app.js?v=3.9.16"></script>
-<script src="js/pwa.js?v=3.9.16"></script>
+<script src="js/data.js?v=3.9.17"></script>
+<script src="js/auth.js?v=3.9.17"></script>
+<script src="js/company.js?v=3.9.17"></script>
+<script src="js/dashboard.js?v=3.9.17"></script>
+<script src="js/profile-fields.js?v=3.9.17"></script>
+<script src="js/employees.js?v=3.9.17"></script>
+<script src="js/import.js?v=3.9.17"></script>
+<script src="js/resigned.js?v=3.9.17"></script>
+<script src="js/template-trunghai.js?v=3.9.17"></script>
+<script src="js/contract-merge.js?v=3.9.17"></script>
+<script src="js/contracts.js?v=3.9.17"></script>
+<script src="js/organization.js?v=3.9.17"></script>
+<script src="js/org-import.js?v=3.9.17"></script>
+<script src="js/reports.js?v=3.9.17"></script>
+<script src="js/attendance.js?v=3.9.17"></script>
+<script src="js/accounts.js?v=3.9.17"></script>
+<script src="js/logs.js?v=3.9.17"></script>
+<script src="js/trash.js?v=3.9.17"></script>
+<script src="js/app.js?v=3.9.17"></script>
+<script src="js/pwa.js?v=3.9.17"></script>
 
 </body>
 </html>
