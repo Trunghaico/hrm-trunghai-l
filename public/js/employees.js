@@ -10,6 +10,7 @@ const appEmployees = {
   selectedEmployee: null,
   selectionMode: false,
   selectedEmpIds: new Set(),
+  exportSelectedKeys: null,
 
   init() {
     this.populateFilterDropdowns();
@@ -233,7 +234,7 @@ const appEmployees = {
     // Export Filtered
     const exportFilteredBtn = document.getElementById('btn-export-filtered-emp');
     if (exportFilteredBtn) {
-      exportFilteredBtn.addEventListener('click', () => this.exportFilteredExcel());
+      exportFilteredBtn.addEventListener('click', () => this.openExportModal());
     }
 
     // Quick Action Dropdown Menu Button
@@ -859,6 +860,11 @@ const appEmployees = {
     const primaryContract = contractList[0] || {};
     const account = sData.account || (appData.accounts || []).find(a => a.employee_id === empId) || {};
 
+    const empAllowances = (typeof appData !== 'undefined' && appData.allowanceMap?.[empId]) || (typeof appData !== 'undefined' && (appData.allowances || []).filter(a => a.employee_id === empId)) || [];
+    const calcTotalAllow = empAllowances.filter(a => a.type === 'ALLOWANCE' || (!a.type && (a.item_name || a.name))).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+    const calcAllowCount = empAllowances.filter(a => a.type === 'ALLOWANCE' || (!a.type && (a.item_name || a.name))).length;
+    const calcTotalDeduct = empAllowances.filter(a => a.type === 'DEDUCTION').reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+
     const pick = (...vals) => {
       for (const v of vals) {
         if (v !== undefined && v !== null && v !== '') return v;
@@ -1004,9 +1010,9 @@ const appEmployees = {
       'Trạng thái sổ BHXH': pick(base['Trạng thái sổ BHXH'], insurance.status, 'Đang tham gia'),
 
       // TAB 9: Phụ Cấp & Giảm Trừ
-      'Tổng phụ cấp': pick(base['Tổng phụ cấp'], base.total_allowance, emp.total_allowance, 0),
-      'Số khoản phụ cấp': pick(base['Số khoản phụ cấp'], base.allowance_count, emp.allowance_count, 0),
-      'Tổng giảm trừ': pick(base['Tổng giảm trừ'], base.total_deduction, emp.total_deduction, 0),
+      'Tổng phụ cấp': pick(base['Tổng phụ cấp'], base.total_allowance, emp.total_allowance, calcTotalAllow > 0 ? calcTotalAllow : 0),
+      'Số khoản phụ cấp': pick(base['Số khoản phụ cấp'], base.allowance_count, emp.allowance_count, calcAllowCount > 0 ? calcAllowCount : 0),
+      'Tổng giảm trừ': pick(base['Tổng giảm trừ'], base.total_deduction, emp.total_deduction, calcTotalDeduct > 0 ? calcTotalDeduct : 0),
       'Ghi chú phụ cấp': pick(base['Ghi chú phụ cấp'], base.salary_note, emp.salary_note, ''),
 
       'Tài khoản đăng nhập': pick(base['Tài khoản đăng nhập'], account.username, emp.work_email, emp.employee_id),
@@ -1441,48 +1447,398 @@ const appEmployees = {
     this.showDeletePopover(window.event, empId);
   },
 
-  exportFilteredExcel() {
-    if (this.filteredList.length === 0) {
-      utils.showToast('Không có dữ liệu để xuất', 'error');
+  // ==========================================================================
+  // CUSTOM EXPORT EXCEL MODAL METHODS (TÙY CHỌN XUẤT EXCEL 10 TAB TOÀN DIỆN)
+  // ==========================================================================
+  openExportModal() {
+    const targetList = (this.filteredList && this.filteredList.length > 0) ? this.filteredList : (this.list || appData.employees || []);
+    if (!targetList || targetList.length === 0) {
+      utils.showToast('Không có dữ liệu nhân sự để xuất', 'warning');
       return;
     }
 
-    const contactMap = {};
-    appData.contacts.forEach(c => contactMap[c.employee_id] = c);
-    const salMap = {};
-    appData.salaries.forEach(s => salMap[s.employee_id] = s);
-    const idMap = {};
-    appData.identity.forEach(i => idMap[i.employee_id] = i);
-
-    const exportData = this.filteredList.map((e, idx) => ({
-      "STT": idx + 1,
-      "Mã nhân viên": e.employee_id,
-      "Họ và tên": e.full_name,
-      "Giới tính": e.gender,
-      "Ngày sinh": utils.formatDate(e.date_of_birth || e['Ngày sinh']),
-      "Vị trí công việc": appData.posMap[e.position_id] || e.position_id,
-      "Đơn vị công tác": appData.deptMap[e.department_id] || e.department_id,
-      "Quản lý trực tiếp": e.direct_manager_name || '',
-      "Tính chất lao động": e.labor_nature,
-      "Trạng thái lao động": e.employment_status,
-      "Số ĐT di động": contactMap[e.employee_id]?.mobile_phone || '',
-      "Email công việc": contactMap[e.employee_id]?.work_email || '',
-      "Số CMND/CCCD": idMap[e.employee_id]?.id_number || '',
-      "Ngày bắt đầu làm việc": utils.formatDate(e.start_date || e.trial_start_date),
-      "Ngày chính thức": utils.formatDate(e.official_date),
-      "Lương cơ bản": salMap[e.employee_id]?.base_salary || 0,
-      "Số TK ngân hàng": salMap[e.employee_id]?.bank_account_number || '',
-      "Ngân hàng": salMap[e.employee_id]?.bank_name || ''
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "DanhSachNhanSu");
-    XLSX.writeFile(wb, `Danh_Sach_Nhan_Su_Trung_Hai_${new Date().toISOString().slice(0,10)}.xlsx`);
-    utils.showToast('Xuất danh sách nhân sự Excel thành công!', 'success');
-    if (window.recordActivityLog) {
-      window.recordActivityLog('EXPORT', 'Nhân sự', `Xuất danh sách ${exportData.length} nhân sự ra file Excel`);
+    const countEl = document.getElementById('export-target-count');
+    if (countEl) {
+      const isFiltered = (this.filteredList && this.filteredList.length > 0 && this.filteredList.length !== (this.list || appData.employees || []).length);
+      countEl.textContent = `${utils.formatNumber(targetList.length)} nhân sự` + (isFiltered ? ' (đang lọc)' : ' (toàn bộ)');
     }
+
+    // Khởi tạo danh sách trường đã chọn nếu chưa có
+    if (!this.exportSelectedKeys) {
+      const saved = localStorage.getItem('hrm_export_selected_fields');
+      if (saved) {
+        try {
+          const arr = JSON.parse(saved);
+          if (Array.isArray(arr) && arr.length > 0) {
+            this.exportSelectedKeys = new Set(arr);
+          }
+        } catch (e) {
+          console.warn('Lỗi đọc cấu hình xuất excel từ localStorage:', e);
+        }
+      }
+      if (!this.exportSelectedKeys) {
+        // Mặc định chọn mẫu Cơ bản (24 trường)
+        this.exportSelectedKeys = new Set(this.getPresetFields('basic'));
+      }
+    }
+
+    this.renderExportModalFields();
+    this.updateExportCountBadge();
+
+    const modal = document.getElementById('modal-export-excel');
+    if (modal) modal.classList.add('active');
+  },
+
+  closeExportModal() {
+    const modal = document.getElementById('modal-export-excel');
+    if (modal) modal.classList.remove('active');
+  },
+
+  getPresetFields(preset) {
+    if (preset === 'basic') {
+      return [
+        'Mã nhân viên', 'Họ và tên', 'Giới tính', 'Ngày sinh', 'Nơi sinh', 'MST cá nhân',
+        'Đơn vị công tác', 'Vị trí công việc', 'Chức danh', 'Tính chất lao động', 'Trạng thái lao động',
+        'Loại hợp đồng', 'Ngày chính thức',
+        'Số CMND', 'Ngày cấp giấy tờ', 'Nơi cấp giấy tờ',
+        'ĐT di động', 'Email cơ quan', 'Hộ khẩu thường trú',
+        'Lương cơ bản', 'TK ngân hàng', 'Ngân hàng', 'Mã số BHXH', 'Số người phụ thuộc'
+      ];
+    } else if (preset === 'salary') {
+      return [
+        'Mã nhân viên', 'Họ và tên', 'Đơn vị công tác', 'Vị trí công việc',
+        'Bậc lương', 'Hệ số lương', 'Lương cơ bản', 'Tỷ lệ hưởng lương', 'Lương đóng BH', 'Tổng lương',
+        'TK ngân hàng', 'Ngân hàng', 'Chi nhánh', 'Thuế suất', 'Số người phụ thuộc', 'Giảm trừ bản thân',
+        'Tham gia công đoàn', 'Tham gia bảo hiểm', 'Tỷ lệ đóng BH', 'Tỷ lệ đóng BHXH', 'Tỷ lệ đóng BHYT', 'Tỷ lệ đóng BHTN',
+        'Ngày tham gia BH', 'Số sổ BHXH', 'Mã số BHXH', 'Số thẻ BHYT', 'Nơi đăng ký KCB',
+        'Tổng phụ cấp', 'Số khoản phụ cấp', 'Tổng giảm trừ', 'Ghi chú phụ cấp'
+      ];
+    } else if (preset === 'contract') {
+      return [
+        'Mã nhân viên', 'Họ và tên', 'Đơn vị công tác', 'Mã đơn vị công tác', 'Vị trí công việc', 'Mã vị trí công việc',
+        'Chức danh', 'Cấp', 'Bậc', 'Mã chấm công', 'Quản lý trực tiếp', 'Địa điểm làm việc', 'Khu vực làm việc',
+        'Tính chất lao động', 'Trạng thái lao động',
+        'Loại hợp đồng', 'Ngày học việc', 'Ngày thử việc', 'Ngày chính thức', 'Thâm niên', 'Ngày có hiệu lực', 'Ngày hết hiệu lực',
+        'Số CMND', 'ĐT di động', 'Email cơ quan'
+      ];
+    } else if (preset === 'all') {
+      return (typeof MASTER_FIELDS_CONFIG !== 'undefined') ? MASTER_FIELDS_CONFIG.map(f => f.key) : [];
+    }
+    return [];
+  },
+
+  setExportPreset(preset) {
+    const fields = this.getPresetFields(preset);
+    this.exportSelectedKeys = new Set(fields);
+    this.syncExportCheckboxesFromState();
+    this.updateExportCountBadge();
+    this.saveExportPreferences();
+    utils.showToast(`Đã áp dụng mẫu: ${preset === 'basic' ? 'Cơ bản' : preset === 'salary' ? 'Lương & Phụ cấp' : 'Hợp đồng'} (${fields.length} trường)`, 'info');
+  },
+
+  selectAllExportFields() {
+    const allKeys = (typeof MASTER_FIELDS_CONFIG !== 'undefined') ? MASTER_FIELDS_CONFIG.map(f => f.key) : [];
+    this.exportSelectedKeys = new Set(allKeys);
+    this.syncExportCheckboxesFromState();
+    this.updateExportCountBadge();
+    this.saveExportPreferences();
+    utils.showToast(`Đã chọn toàn bộ ${allKeys.length} trường thông tin`, 'info');
+  },
+
+  deselectAllExportFields() {
+    this.exportSelectedKeys = new Set();
+    this.syncExportCheckboxesFromState();
+    this.updateExportCountBadge();
+    this.saveExportPreferences();
+    utils.showToast('Đã bỏ chọn toàn bộ trường', 'info');
+  },
+
+  renderExportModalFields() {
+    const container = document.getElementById('export-tabs-container');
+    if (!container) return;
+
+    if (typeof PROFILE_TABS === 'undefined' || typeof MASTER_FIELDS_CONFIG === 'undefined') {
+      container.innerHTML = '<div class="alert alert-danger">Không tìm thấy cấu hình danh mục trường MASTER_FIELDS_CONFIG</div>';
+      return;
+    }
+
+    let html = '';
+    PROFILE_TABS.forEach(tab => {
+      const tabFields = MASTER_FIELDS_CONFIG.filter(f => f.tab === tab.id);
+      if (tabFields.length === 0) return;
+
+      const selectedInTabCount = tabFields.filter(f => this.exportSelectedKeys && this.exportSelectedKeys.has(f.key)).length;
+      const isAllChecked = tabFields.length > 0 && selectedInTabCount === tabFields.length;
+
+      html += `
+        <div class="card" style="border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; margin-bottom: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+          <div style="background: #F1F5F9; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid ${tab.icon}" style="color: #2563EB; width: 18px; text-align: center;"></i>
+              <strong style="font-size: 13px; color: var(--text-primary);">${tab.name}</strong>
+              <span class="badge" id="export-tab-badge-${tab.id}" style="background: #E2E8F0; color: #334155; font-size: 11px; font-weight: 600; padding: 2px 7px;">
+                ${selectedInTabCount}/${tabFields.length} trường
+              </span>
+            </div>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; user-select: none; font-weight: 600; color: #2563EB; margin: 0;">
+              <input type="checkbox" id="export-tab-all-${tab.id}" ${isAllChecked ? 'checked' : ''} onchange="appEmployees.toggleExportTab('${tab.id}', this.checked)" style="accent-color: #2563EB; cursor: pointer;">
+              <span>Chọn toàn bộ tab này</span>
+            </label>
+          </div>
+          <div style="padding: 10px 14px; background: #FFFFFF; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px;">
+            ${tabFields.map(f => {
+              const isChecked = this.exportSelectedKeys && this.exportSelectedKeys.has(f.key);
+              const fieldDomId = getFieldInputId(f.key);
+              return `
+                <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; cursor: pointer; padding: 6px 9px; border-radius: 4px; background: ${isChecked ? '#F0FDF4' : '#F8FAFC'}; border: 1px solid ${isChecked ? '#86EFAC' : '#E2E8F0'}; transition: all 0.15s ease;" id="export-lbl-${fieldDomId}">
+                  <input type="checkbox" class="export-field-chk export-tab-field-${tab.id}" data-tab="${tab.id}" data-key="${f.key}" ${isChecked ? 'checked' : ''} onchange="appEmployees.onExportFieldChange(this)" style="accent-color: #10B981; margin-top: 2px; cursor: pointer;">
+                  <span style="line-height: 1.35; color: ${isChecked ? '#166534' : 'var(--text-primary)'}; font-weight: ${isChecked ? '600' : 'normal'};">
+                    ${f.label || f.key}
+                  </span>
+                </label>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  },
+
+  toggleExportTab(tabId, checked) {
+    if (!this.exportSelectedKeys) this.exportSelectedKeys = new Set();
+    const tabFields = (typeof MASTER_FIELDS_CONFIG !== 'undefined') ? MASTER_FIELDS_CONFIG.filter(f => f.tab === tabId) : [];
+    tabFields.forEach(f => {
+      if (checked) {
+        this.exportSelectedKeys.add(f.key);
+      } else {
+        this.exportSelectedKeys.delete(f.key);
+      }
+    });
+
+    // Update DOM checkboxes for this tab
+    const chks = document.querySelectorAll(`.export-tab-field-${tabId}`);
+    chks.forEach(chk => {
+      chk.checked = checked;
+      const key = chk.getAttribute('data-key');
+      const lbl = document.getElementById(`export-lbl-${getFieldInputId(key)}`);
+      if (lbl) {
+        lbl.style.background = checked ? '#F0FDF4' : '#F8FAFC';
+        lbl.style.borderColor = checked ? '#86EFAC' : '#E2E8F0';
+        const span = lbl.querySelector('span');
+        if (span) {
+          span.style.color = checked ? '#166534' : 'var(--text-primary)';
+          span.style.fontWeight = checked ? '600' : 'normal';
+        }
+      }
+    });
+
+    const badge = document.getElementById(`export-tab-badge-${tabId}`);
+    if (badge) {
+      badge.textContent = `${checked ? tabFields.length : 0}/${tabFields.length} trường`;
+    }
+
+    this.updateExportCountBadge();
+    this.saveExportPreferences();
+  },
+
+  onExportFieldChange(el) {
+    const key = el.getAttribute('data-key');
+    const tabId = el.getAttribute('data-tab');
+    if (!this.exportSelectedKeys) this.exportSelectedKeys = new Set();
+
+    if (el.checked) {
+      this.exportSelectedKeys.add(key);
+    } else {
+      this.exportSelectedKeys.delete(key);
+    }
+
+    // Update label visual style
+    const lbl = document.getElementById(`export-lbl-${getFieldInputId(key)}`);
+    if (lbl) {
+      lbl.style.background = el.checked ? '#F0FDF4' : '#F8FAFC';
+      lbl.style.borderColor = el.checked ? '#86EFAC' : '#E2E8F0';
+      const span = lbl.querySelector('span');
+      if (span) {
+        span.style.color = el.checked ? '#166534' : 'var(--text-primary)';
+        span.style.fontWeight = el.checked ? '600' : 'normal';
+      }
+    }
+
+    // Update tab header
+    if (tabId && typeof MASTER_FIELDS_CONFIG !== 'undefined') {
+      const tabFields = MASTER_FIELDS_CONFIG.filter(f => f.tab === tabId);
+      const selInTab = tabFields.filter(f => this.exportSelectedKeys.has(f.key)).length;
+      const tabBadge = document.getElementById(`export-tab-badge-${tabId}`);
+      if (tabBadge) {
+        tabBadge.textContent = `${selInTab}/${tabFields.length} trường`;
+      }
+      const tabAllChk = document.getElementById(`export-tab-all-${tabId}`);
+      if (tabAllChk) {
+        tabAllChk.checked = (selInTab === tabFields.length);
+      }
+    }
+
+    this.updateExportCountBadge();
+    this.saveExportPreferences();
+  },
+
+  syncExportCheckboxesFromState() {
+    const allChks = document.querySelectorAll('.export-field-chk');
+    allChks.forEach(chk => {
+      const key = chk.getAttribute('data-key');
+      const isChecked = this.exportSelectedKeys && this.exportSelectedKeys.has(key);
+      chk.checked = isChecked;
+      const lbl = document.getElementById(`export-lbl-${getFieldInputId(key)}`);
+      if (lbl) {
+        lbl.style.background = isChecked ? '#F0FDF4' : '#F8FAFC';
+        lbl.style.borderColor = isChecked ? '#86EFAC' : '#E2E8F0';
+        const span = lbl.querySelector('span');
+        if (span) {
+          span.style.color = isChecked ? '#166534' : 'var(--text-primary)';
+          span.style.fontWeight = isChecked ? '600' : 'normal';
+        }
+      }
+    });
+
+    if (typeof PROFILE_TABS !== 'undefined' && typeof MASTER_FIELDS_CONFIG !== 'undefined') {
+      PROFILE_TABS.forEach(tab => {
+        const tabFields = MASTER_FIELDS_CONFIG.filter(f => f.tab === tab.id);
+        const selInTab = tabFields.filter(f => this.exportSelectedKeys && this.exportSelectedKeys.has(f.key)).length;
+        const tabBadge = document.getElementById(`export-tab-badge-${tab.id}`);
+        if (tabBadge) tabBadge.textContent = `${selInTab}/${tabFields.length} trường`;
+        const tabAllChk = document.getElementById(`export-tab-all-${tab.id}`);
+        if (tabAllChk) tabAllChk.checked = (tabFields.length > 0 && selInTab === tabFields.length);
+      });
+    }
+  },
+
+  updateExportCountBadge() {
+    const totalFields = (typeof MASTER_FIELDS_CONFIG !== 'undefined') ? MASTER_FIELDS_CONFIG.length : 115;
+    const selCount = this.exportSelectedKeys ? this.exportSelectedKeys.size : 0;
+    const badge = document.getElementById('export-selected-count-badge');
+    if (badge) {
+      badge.textContent = `Đang chọn: ${selCount} / ${totalFields} trường`;
+    }
+  },
+
+  saveExportPreferences() {
+    if (this.exportSelectedKeys) {
+      localStorage.setItem('hrm_export_selected_fields', JSON.stringify([...this.exportSelectedKeys]));
+    }
+  },
+
+  async executeExportExcel() {
+    const targetList = (this.filteredList && this.filteredList.length > 0) ? this.filteredList : (this.list || appData.employees || []);
+    if (!targetList || targetList.length === 0) {
+      utils.showToast('Không có dữ liệu nhân sự để xuất', 'warning');
+      return;
+    }
+
+    if (!this.exportSelectedKeys || this.exportSelectedKeys.size === 0) {
+      utils.showToast('Vui lòng chọn ít nhất 1 trường dữ liệu cần xuất!', 'warning');
+      return;
+    }
+
+    const exportBtn = document.getElementById('btn-execute-export-excel');
+    const origBtnHtml = exportBtn ? exportBtn.innerHTML : '';
+    if (exportBtn) {
+      exportBtn.disabled = true;
+      exportBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang chuẩn bị file Excel...';
+    }
+
+    try {
+      // Sort keys in order defined by MASTER_FIELDS_CONFIG
+      const allConfigKeys = (typeof MASTER_FIELDS_CONFIG !== 'undefined') ? MASTER_FIELDS_CONFIG.map(f => f.key) : [];
+      const orderedKeys = allConfigKeys.filter(k => this.exportSelectedKeys.has(k));
+      // In case any key wasn't in MASTER_FIELDS_CONFIG
+      this.exportSelectedKeys.forEach(k => {
+        if (!orderedKeys.includes(k)) orderedKeys.push(k);
+      });
+
+      // Find date & number fields for proper formatting
+      const dateKeys = new Set();
+      const numKeys = new Set();
+      if (typeof MASTER_FIELDS_CONFIG !== 'undefined') {
+        MASTER_FIELDS_CONFIG.forEach(f => {
+          if (f.type === 'date') dateKeys.add(f.key);
+          if (f.type === 'number') numKeys.add(f.key);
+        });
+      }
+
+      const rows = [];
+      for (let i = 0; i < targetList.length; i++) {
+        const emp = targetList[i];
+        const empId = emp.employee_id;
+        const master = this.buildFullMasterProfile(empId);
+
+        const row = { "STT": i + 1 };
+        orderedKeys.forEach(k => {
+          let val = master[k];
+          if (val === undefined || val === null) val = '';
+
+          if (dateKeys.has(k) && val) {
+            val = (typeof utils !== 'undefined' && utils.formatDate) ? utils.formatDate(val) : val;
+          } else if (numKeys.has(k)) {
+            val = (val === '' || isNaN(val)) ? 0 : Number(val);
+          }
+          row[k] = val;
+        });
+        rows.push(row);
+      }
+
+      if (typeof XLSX === 'undefined') {
+        throw new Error('Thư viện SheetJS (XLSX) chưa được tải!');
+      }
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+
+      // Auto-fit column widths
+      const colWidths = [{ wch: 6 }]; // STT
+      orderedKeys.forEach(k => {
+        let maxLen = k.length;
+        const sampleLimit = Math.min(rows.length, 100);
+        for (let s = 0; s < sampleLimit; s++) {
+          const cellVal = String(rows[s][k] || '');
+          if (cellVal.length > maxLen) maxLen = cellVal.length;
+        }
+        colWidths.push({ wch: Math.min(Math.max(maxLen + 3, 12), 40) });
+      });
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "DanhSachNhanSu");
+
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const fileName = `Danh_Sach_Nhan_Su_Trung_Hai_${dateStr}_${hours}${mins}.xlsx`;
+
+      XLSX.writeFile(wb, fileName);
+
+      utils.showToast(`Xuất thành công ${rows.length} nhân sự với ${orderedKeys.length} trường thông tin!`, 'success');
+
+      if (window.recordActivityLog) {
+        window.recordActivityLog('EXPORT', 'Nhân sự', `Xuất tùy chọn ${rows.length} nhân sự (${orderedKeys.length} trường) ra file Excel`);
+      }
+
+      this.closeExportModal();
+    } catch (err) {
+      console.error('Lỗi khi xuất dữ liệu Excel:', err);
+      utils.showToast('Lỗi khi xuất file Excel: ' + (err.message || err), 'error');
+    } finally {
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = origBtnHtml;
+      }
+    }
+  },
+
+  // Legacy fallback
+  exportFilteredExcel() {
+    this.openExportModal();
   },
 
   openDeleteAllModal() {
@@ -1614,3 +1970,5 @@ const appEmployees = {
     }
   }
 };
+
+window.appEmployees = appEmployees;

@@ -7,6 +7,12 @@ const appImport = {
   isImporting: false,
   currentStep: 1,
   currentFilter: 'all',
+  scopeMode: 'all', // 'all' | 'selected'
+  selectedTabs: new Set([
+    'tab-p-personal', 'tab-p-org', 'tab-p-contract', 'tab-p-identity',
+    'tab-p-contact', 'tab-p-emergency', 'tab-p-education', 'tab-p-salary',
+    'tab-p-allowance', 'tab-p-account'
+  ]),
   parsedEmployees: [],
   validEmployees: [],
   overwriteEmployees: [],
@@ -75,8 +81,60 @@ const appImport = {
     }
   },
 
+  onScopeModeChange(mode) {
+    this.scopeMode = mode;
+    const grid = document.getElementById('import-tab-selection-grid');
+    const titleEl = document.getElementById('import-template-title');
+    const descEl = document.getElementById('import-template-desc');
+    if (mode === 'selected') {
+      if (grid) grid.style.display = 'grid';
+      this.renderTabSelectionGrid();
+      if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-circle-down"></i> Tải File Mẫu Theo Các Tab Đã Chọn';
+      if (descEl) descEl.textContent = 'File mẫu sẽ chỉ bao gồm cột Mã nhân viên, Họ và tên (để nhận diện đối soát) và các cột thuộc các Tab bạn đã chọn bên trên.';
+    } else {
+      if (grid) grid.style.display = 'none';
+      if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-circle-down"></i> Tải File Mẫu Chuẩn Định Dạng Excel (Đầy Đủ 115 Cột Nghiệp Vụ Chuẩn Hóa)';
+      if (descEl) descEl.textContent = 'File mẫu đã chuẩn hóa chuẩn xác 115 trường thông tin (từ Mã nhân viên đến Mã đơn vị công tác) kèm 2 dòng dữ liệu mẫu và danh mục mã Đơn vị, Vị trí chuẩn để tra cứu.';
+    }
+  },
+
+  renderTabSelectionGrid() {
+    const grid = document.getElementById('import-tab-selection-grid');
+    if (!grid || typeof PROFILE_TABS === 'undefined') return;
+
+    grid.innerHTML = PROFILE_TABS.map(tab => {
+      const isChecked = this.selectedTabs.has(tab.id);
+      const fieldCount = (typeof MASTER_FIELDS_CONFIG !== 'undefined') ? MASTER_FIELDS_CONFIG.filter(f => f.tab === tab.id).length : 0;
+      return `
+        <label style="display: flex; align-items: center; justify-content: space-between; background: #FFFFFF; border: 1px solid ${isChecked ? '#2563EB' : 'var(--border-color)'}; padding: 7px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-primary); transition: all 0.15s ease;">
+          <div style="display: flex; align-items: center; gap: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <input type="checkbox" class="import-tab-chk" value="${tab.id}" ${isChecked ? 'checked' : ''} onchange="appImport.onTabCheckChange(this)" style="cursor: pointer; accent-color: #2563EB;">
+            <i class="fa-solid ${tab.icon}" style="color: #2563EB; font-size: 12.5px; width: 15px; text-align: center;"></i>
+            <span>${tab.name}</span>
+          </div>
+          <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">${fieldCount} trường</span>
+        </label>
+      `;
+    }).join('');
+  },
+
+  onTabCheckChange(el) {
+    if (el.checked) {
+      this.selectedTabs.add(el.value);
+    } else {
+      this.selectedTabs.delete(el.value);
+    }
+    if (this.selectedTabs.size === 0) {
+      utils.showToast('Vui lòng chọn ít nhất 1 Tab cần nhập dữ liệu!', 'warning');
+      el.checked = true;
+      this.selectedTabs.add(el.value);
+    }
+    this.renderTabSelectionGrid();
+  },
+
   openModal() {
     this.resetState();
+    this.renderTabSelectionGrid();
     const modal = document.getElementById('modal-import-employees');
     if (modal) modal.classList.add('active');
   },
@@ -158,6 +216,75 @@ const appImport = {
       const positions = (window.appData && appData.positions) || [];
 
       const wb = XLSX.utils.book_new();
+
+      if (this.scopeMode === 'selected') {
+        const selectiveHeaders = ['Mã nhân viên', 'Họ và tên'];
+        if (typeof MASTER_FIELDS_CONFIG !== 'undefined') {
+          MASTER_FIELDS_CONFIG.forEach(f => {
+            if (this.selectedTabs.has(f.tab) && !selectiveHeaders.includes(f.key)) {
+              selectiveHeaders.push(f.key);
+            }
+          });
+        }
+
+        const sampleRowMap1 = {
+          'Mã nhân viên': 'TH-2001', 'Họ và tên': 'Nguyễn Văn An', 'Giới tính': 'Nam', 'Ngày sinh': '15/08/1992',
+          'Nơi sinh': 'Hà Nội', 'Nguyên quán': 'Nam Định', 'Tình trạng hôn nhân': 'Đã kết hôn', 'Dân tộc': 'Kinh',
+          'Tôn giáo': 'Không', 'Quốc tịch': 'Việt Nam', 'MST cá nhân': '8456123890',
+          'Đơn vị công tác': depts[0]?.department_name || 'Phòng Hành Chính Nhân Sự', 'Mã đơn vị công tác': depts[0]?.department_id || 'HR',
+          'Vị trí công việc': positions[0]?.position_name || 'Chuyên viên Nhân sự', 'Mã vị trí công việc': positions[0]?.position_id || 'POS-01',
+          'Chức danh': 'Chuyên viên Nhân sự cấp cao', 'Cấp': 'Cấp 3', 'Bậc': 'Bậc 3', 'Mã chấm công': '2001',
+          'Quản lý trực tiếp': 'Huỳnh Thanh Long', 'Quản lý gián tiếp': 'Trần Minh Đức', 'Người duyệt': 'Huỳnh Thanh Long',
+          'Địa điểm làm việc': 'Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội', 'Khu vực làm việc': 'Khối Văn phòng Tổng công ty',
+          'Tính chất lao động': 'Chính thức', 'Trạng thái lao động': 'Đang làm việc', 'Nhân sự khai thác': 'Lê Thị Thu',
+          'Nguồn ứng viên': 'VietnamWorks', 'Số sổ QL lao động': 'LD-00123', 'Loại hợp đồng': 'Hợp đồng lao động không xác định thời hạn',
+          'Ngày học việc': '01/01/2026', 'Ngày thử việc': '01/03/2026', 'Ngày chính thức': '01/05/2026', 'Thâm niên': '3 năm',
+          'Ngày có hiệu lực': '01/05/2026', 'Ngày hết hiệu lực': 'Không xác định', 'Nhóm lý do nghỉ': '', 'Lý do nghỉ': '',
+          'Ngày nghỉ việc': '', 'Ngày nghỉ hưu dự kiến': '15/08/2054', 'Thuộc danh sách đen': 'Không', 'Tham gia công đoàn': 'Có',
+          'Loại giấy tờ': 'CCCD', 'Số CMND': '001092012345', 'Ngày cấp giấy tờ': '10/05/2021',
+          'Nơi cấp giấy tờ': 'Cục Cảnh sát Quản lý hành chính về trật tự xã hội', 'Ngày hết hạn giấy tờ': '15/08/2032',
+          'Số Hộ chiếu': 'P01234567', 'Ngày cấp Hộ chiếu': '12/04/2022', 'Nơi cấp Hộ chiếu': 'Cục Quản lý Xuất nhập cảnh', 'Ngày hết hạn Hộ chiếu': '12/04/2032',
+          'ĐT di động': '0987654321', 'ĐT cơ quan': '02438888999', 'ĐT nhà riêng': '02437654321', 'ĐT khác': '',
+          'Email cơ quan': 'an.nv@trunghaico.vn', 'Email cá nhân': 'annguyen92@gmail.com', 'Email khác': '',
+          'Skype': 'an.nguyen.hr', 'Facebook': 'facebook.com/annv92', 'Hộ khẩu thường trú': 'Số 12 Phố Huế, P. Hàng Bài, Q. Hoàn Kiếm, Hà Nội',
+          'Quốc gia (Thường trú)': 'Việt Nam', 'Tỉnh/Thành phố (Thường trú)': 'Hà Nội', 'Quận/Huyện (Thường trú)': 'Hoàn Kiếm',
+          'Phường/Xã (Thường trú)': 'Hàng Bài', 'Số nhà, đường phố (Thường trú)': 'Số 12 Phố Huế', 'Số sổ hộ khẩu': 'HK-001928',
+          'Mã số hộ gia đình': 'HGD-019283', 'Là chủ hộ': 'Có', 'Chỗ ở hiện nay': 'Tòa nhà Trung Hải, Cầu Giấy, Hà Nội',
+          'Quốc gia (Hiện nay)': 'Việt Nam', 'Tỉnh/Thành phố (Hiện nay)': 'Hà Nội', 'Quận/Huyện (Hiện nay)': 'Cầu Giấy',
+          'Phường/Xã (Hiện nay)': 'Dịch Vọng Hậu', 'Số nhà, đường phố (Hiện nay)': 'Phố Duy Tân', 'TP gia đình': 'Cán bộ công chức',
+          'TP bản thân': 'Công nhân viên chức', 'Họ và tên (LHKC)': 'Nguyễn Thị Bình', 'Quan hệ (LHKC)': 'Vợ',
+          'ĐT di động (LHKC)': '0912345678', 'ĐT nhà riêng (LHKC)': '02437654321', 'Email (LHKC)': 'binhnt@gmail.com',
+          'Địa chỉ (LHKC)': 'Số 12 Phố Huế, P. Hàng Bài, Q. Hoàn Kiếm, Hà Nội', 'Trình độ văn hóa': '12/12',
+          'Trình độ đào tạo': 'Đại học', 'Nơi đào tạo': 'Đại học Kinh Tế Quốc Dân', 'Khoa': 'Quản trị Kinh doanh',
+          'Chuyên ngành': 'Quản trị Nhân lực', 'Năm tốt nghiệp': 2014, 'Xếp loại': 'Giỏi',
+          'Bậc lương': 'Bậc 3', 'Hệ số lương': 2.34, 'Lương cơ bản': 16000000, 'Tỷ lệ hưởng lương': '100%',
+          'Lương đóng BH': 16000000, 'Tổng lương': 20000000, 'TK ngân hàng': '1903456789012', 'Ngân hàng': 'Vietcombank',
+          'Chi nhánh': 'Chi nhánh Hà Nội', 'Thuế suất': 'Theo biểu lũy tiến', 'Số người phụ thuộc': 0, 'Giảm trừ bản thân': 'Có',
+          'Tham gia bảo hiểm': 'Đang tham gia', 'Tỷ lệ đóng BH': '32%', 'Tỷ lệ đóng BHXH': '25.5%', 'Tỷ lệ đóng BHYT': '4.5%', 'Tỷ lệ đóng BHTN': '2%',
+          'Tỷ lệ đóng BHXH của NV': '8%', 'Tỷ lệ đóng BHYT của NV': '1.5%', 'Tỷ lệ đóng BHTN của NV': '1%',
+          'Tỷ lệ đóng BHXH của DN': '17.5%', 'Tỷ lệ đóng BHYT của DN': '3%', 'Tỷ lệ đóng BHTN của DN': '1%',
+          'Ngày tham gia BH': '01/03/2026', 'Số sổ BHXH': '0123456789', 'Mã số BHXH': '0123456789', 'Mã tỉnh cấp': '001',
+          'Số thẻ BHYT': 'DN4010123456789', 'Nơi đăng ký KCB': 'Bệnh viện Bạch Mai - Hà Nội', 'Mật khẩu phiếu lương': 'TH@2026',
+          'Tổng phụ cấp': 1500000, 'Số khoản phụ cấp': 2, 'Tổng giảm trừ': 0, 'Ghi chú phụ cấp': 'Phụ cấp chuyên cần',
+          'ĐT tài khoản': '0987654321', 'Email tài khoản': 'an.nv@trunghaico.vn', 'Trạng thái tài khoản': 'Kích hoạt',
+          'Trạng thái chữ ký số': 'Đã cấp', 'Trạng thái hồ sơ cấp CKS': 'Đã duyệt'
+        };
+
+        const sampleRows = [
+          selectiveHeaders,
+          selectiveHeaders.map(h => sampleRowMap1[h] !== undefined ? sampleRowMap1[h] : '')
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet(sampleRows);
+        ws['!cols'] = selectiveHeaders.map(() => ({ wch: 22 }));
+        ws['!cols'][0] = { wch: 16 };
+        ws['!cols'][1] = { wch: 24 };
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Nhap_Lieu_Theo_Tab');
+        XLSX.writeFile(wb, 'Mau_Nhap_Lieu_Theo_Tab_TRUNGHAI.xlsx');
+        utils.showToast(`Đã tải xuống file mẫu cho ${this.selectedTabs.size} Tab được chọn!`, 'success');
+        return;
+      }
 
       const sampleHeaders = [
         'Mã nhân viên', 'Họ và tên', 'Giới tính', 'Ngày sinh', 'ĐT di động', 'Email cơ quan',
@@ -572,9 +699,13 @@ const appImport = {
         }
       }
 
-      if (!fullName) return; // Skip completely empty rows
-
       const empId = this.getField(normMap, 'Mã nhân viên', 'Mã nhân viên (*)', 'Mã NV', 'employee_id', 'Mã số NV', 'Staff ID', 'ID').toUpperCase();
+      if (!fullName && empId) {
+        const existing = dbEmpById.get(empId);
+        if (existing) fullName = existing.full_name;
+      }
+      if (!fullName && !empId) return; // Skip completely empty rows
+      if (!fullName && empId) fullName = `Nhân sự ${empId}`;
       const timeAttendanceCode = this.getField(normMap, 'Mã chấm công', 'time_attendance_code');
       const idNumber = this.getField(normMap, 'Số CMND', 'Số CCCD / CMND', 'Số CCCD / Hộ chiếu', 'Số CCCD', 'CCCD', 'CMND', 'id_number', 'Số định danh');
       const email = this.getField(normMap, 'Email cơ quan', 'Email công việc', 'Email', 'work_email').toLowerCase();
@@ -682,9 +813,12 @@ const appImport = {
       let rowStatus = 'VALID'; // 'VALID' | 'OVERWRITE' | 'CONFLICT'
 
       // Check 1: Required Fields
+      const isSelectedScope = this.scopeMode === 'selected';
       if (!fullName) errors.push('Thiếu Họ và tên (*)');
-      if (!dept) warnings.push('Chưa có Mã phòng ban (sẽ dùng mặc định)');
-      if (!pos) warnings.push('Chưa có Mã vị trí (sẽ dùng mặc định)');
+      if (!isSelectedScope) {
+        if (!dept) warnings.push('Chưa có Mã phòng ban (sẽ dùng mặc định)');
+        if (!pos) warnings.push('Chưa có Mã vị trí (sẽ dùng mặc định)');
+      }
 
       // Check 2: Internal Duplicate in File
       if (empId && fileEmpIdCounts.get(empId) > 1) {
@@ -700,7 +834,7 @@ const appImport = {
       // Check 3: Cross-check against Database Records
       const dbEmpWithId = empId ? dbEmpById.get(empId) : null;
       if (dbEmpWithId) {
-        if (overwrite) {
+        if (overwrite || isSelectedScope) {
           rowStatus = 'OVERWRITE';
         } else {
           errors.push(`Mã NV ${empId} đã tồn tại trong hệ thống (Đang tắt chế độ ghi đè)`);
@@ -1008,6 +1142,8 @@ const appImport = {
           employees: toImport,
           overwrite: overwrite,
           skip_errors: chkSkipErrors,
+          scope_mode: this.scopeMode,
+          selected_tabs: this.scopeMode === 'selected' ? Array.from(this.selectedTabs) : ['all'],
           operator_id: appAuth.currentUser?.employee_id || 'TH-0001',
           operator_name: appAuth.currentUser?.full_name || 'Admin',
           operator_role: appAuth.currentUser?.role || 'ADMIN'

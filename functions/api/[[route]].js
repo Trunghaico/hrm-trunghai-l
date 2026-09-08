@@ -618,6 +618,9 @@ export async function onRequest(context) {
     if (path === "employees/import-excel" && method === "POST") {
       const body = await request.json().catch(() => ({}));
       const employees = body.employees || [];
+      const selectedTabs = body.selected_tabs || ['all'];
+      const isTabSelected = (tabId) => (!selectedTabs || selectedTabs.includes('all') || selectedTabs.includes(tabId));
+
       if (!Array.isArray(employees) || employees.length === 0) {
         return jsonResponse({ success: false, message: "Không tìm thấy dữ liệu nhân viên để import!" }, 400);
       }
@@ -641,57 +644,63 @@ export async function onRequest(context) {
       await saveTableToD1(db, "03_Employees", updatedEmployees);
       await saveTableToD1(db, "00_Master_Profiles", updatedEmployees);
 
-      // Đồng bộ vào 10_Contracts
-      const existingContracts = data.tables["10_Contracts"] || [];
-      const contractMap = new Map(existingContracts.map(c => [c.employee_id, c]));
-      employees.forEach(emp => {
-        if (emp.employee_id) {
-          contractMap.set(emp.employee_id, {
-            contract_id: emp.contract_id || emp.employee_id,
-            employee_id: emp.employee_id,
-            full_name: emp.full_name,
-            contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
-            trial_start_date: emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
-            official_date: emp.official_date || emp.start_date || '',
-            start_date: emp.start_date || '',
-            end_date: emp.end_date || '',
-            effective_date: emp.effective_date || emp.start_date || '',
-            expiry_date: emp.expiry_date || emp.end_date || '',
-            contract_status: emp.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
-          });
-        }
-      });
-      await saveTableToD1(db, "10_Contracts", Array.from(contractMap.values()));
+      // Đồng bộ vào 10_Contracts (Nếu tab hợp đồng được chọn)
+      if (isTabSelected('tab-p-contract')) {
+        const existingContracts = data.tables["10_Contracts"] || [];
+        const contractMap = new Map(existingContracts.map(c => [c.employee_id, c]));
+        employees.forEach(emp => {
+          if (emp.employee_id) {
+            contractMap.set(emp.employee_id, {
+              contract_id: emp.contract_id || emp.employee_id,
+              employee_id: emp.employee_id,
+              full_name: emp.full_name,
+              contract_type: emp.contract_type || 'Hợp đồng lao động không xác định thời hạn',
+              trial_start_date: emp.trial_start_date || emp.probation_start_date || emp.start_date || '',
+              official_date: emp.official_date || emp.start_date || '',
+              start_date: emp.start_date || '',
+              end_date: emp.end_date || '',
+              effective_date: emp.effective_date || emp.start_date || '',
+              expiry_date: emp.expiry_date || emp.end_date || '',
+              contract_status: emp.employment_status === 'Đã nghỉ việc' ? 'HẾT HẠN' : 'HIỆU LỰC'
+            });
+          }
+        });
+        await saveTableToD1(db, "10_Contracts", Array.from(contractMap.values()));
+      }
 
-      // Đồng bộ vào 04_Contacts_Addresses
-      const existingContacts = data.tables["04_Contacts_Addresses"] || [];
-      const contactMap = new Map(existingContacts.map(c => [c.employee_id, c]));
-      employees.forEach(emp => {
-        if (emp.employee_id) {
-          contactMap.set(emp.employee_id, {
-            employee_id: emp.employee_id,
-            mobile_phone: emp.mobile_phone || emp['ĐT di động'] || '',
-            work_email: emp.work_email || emp['Email cơ quan'] || '',
-            permanent_address_full: emp.permanent_address_full || emp.permanent_address || emp['Hộ khẩu thường trú'] || '',
-            current_address_full: emp.current_address_full || emp.current_address || emp['Chỗ ở hiện nay'] || ''
-          });
-        }
-      });
-      await saveTableToD1(db, "04_Contacts_Addresses", Array.from(contactMap.values()));
+      // Đồng bộ vào 04_Contacts_Addresses (Nếu tab liên hệ được chọn)
+      if (isTabSelected('tab-p-contact')) {
+        const existingContacts = data.tables["04_Contacts_Addresses"] || [];
+        const contactMap = new Map(existingContacts.map(c => [c.employee_id, c]));
+        employees.forEach(emp => {
+          if (emp.employee_id) {
+            contactMap.set(emp.employee_id, {
+              employee_id: emp.employee_id,
+              mobile_phone: emp.mobile_phone || emp['ĐT di động'] || '',
+              work_email: emp.work_email || emp['Email cơ quan'] || '',
+              permanent_address_full: emp.permanent_address_full || emp.permanent_address || emp['Hộ khẩu thường trú'] || '',
+              current_address_full: emp.current_address_full || emp.current_address || emp['Chỗ ở hiện nay'] || ''
+            });
+          }
+        });
+        await saveTableToD1(db, "04_Contacts_Addresses", Array.from(contactMap.values()));
+      }
 
-      // Đồng bộ vào 05_Identity_Docs
-      const existingIdentity = data.tables["05_Identity_Docs"] || [];
-      const idMap = new Map(existingIdentity.map(i => [i.employee_id, i]));
-      employees.forEach(emp => {
-        if (emp.employee_id) {
-          idMap.set(emp.employee_id, {
-            employee_id: emp.employee_id,
-            id_number: emp.id_number || emp.tax_code || emp['Số CMND'] || '',
-            doc_type: emp.doc_type || emp['Loại giấy tờ'] || 'CCCD'
-          });
-        }
-      });
-      await saveTableToD1(db, "05_Identity_Docs", Array.from(idMap.values()));
+      // Đồng bộ vào 05_Identity_Docs (Nếu tab định danh được chọn)
+      if (isTabSelected('tab-p-identity')) {
+        const existingIdentity = data.tables["05_Identity_Docs"] || [];
+        const idMap = new Map(existingIdentity.map(i => [i.employee_id, i]));
+        employees.forEach(emp => {
+          if (emp.employee_id) {
+            idMap.set(emp.employee_id, {
+              employee_id: emp.employee_id,
+              id_number: emp.id_number || emp.tax_code || emp['Số CMND'] || '',
+              doc_type: emp.doc_type || emp['Loại giấy tờ'] || 'CCCD'
+            });
+          }
+        });
+        await saveTableToD1(db, "05_Identity_Docs", Array.from(idMap.values()));
+      }
 
       return jsonResponse({
         success: true,

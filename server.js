@@ -998,7 +998,7 @@ app.post('/api/employees/import-excel', async (req, res) => {
         if (clientCreds) activeClientCredentials = clientCreds;
 
         const db = loadDatabase();
-        const { employees: importedList, overwrite, skip_errors, operator_id, operator_name, operator_role } = req.body;
+        const { employees: importedList, overwrite, skip_errors, scope_mode, selected_tabs, operator_id, operator_name, operator_role } = req.body;
 
         if (!Array.isArray(importedList) || importedList.length === 0) {
             return res.status(400).json({ success: false, message: 'Danh sách nhân sự cần nhập rỗng' });
@@ -1011,10 +1011,25 @@ app.post('/api/employees/import-excel', async (req, res) => {
         const education = db.tables['07_Education'] || [];
         const salaries = db.tables['08_Salaries_Banks'] || [];
         const insurance = db.tables['09_Insurance_Welfare'] || [];
+        const allowances = db.tables['14_Allowances_Deductions'] || [];
         const contracts = db.tables['10_Contracts'] || [];
         const masterProfiles = db.tables['00_Master_Profiles'] || [];
         const depts = db.tables['01_Departments'] || [];
         const pos = db.tables['02_Positions'] || [];
+
+        const TAB_FIELDS_MAP = {
+            'tab-p-personal': ['Mã nhân viên', 'Họ và tên', 'Tên gọi khác', 'Giới tính', 'Ngày sinh', 'Nơi sinh', 'Nguyên quán', 'Tình trạng hôn nhân', 'Dân tộc', 'Tôn giáo', 'Quốc tịch', 'MST cá nhân'],
+            'tab-p-org': ['Đơn vị công tác', 'Mã đơn vị công tác', 'Vị trí công việc', 'Mã vị trí công việc', 'Chức danh', 'Cấp', 'Bậc', 'Mã chấm công', 'Quản lý trực tiếp', 'Quản lý gián tiếp', 'Người duyệt', 'Địa điểm làm việc', 'Khu vực làm việc', 'Tính chất lao động', 'Trạng thái lao động', 'Nhân sự khai thác', 'Nguồn ứng viên', 'Số sổ QL lao động'],
+            'tab-p-contract': ['Loại hợp đồng', 'Ngày học việc', 'Ngày thử việc', 'Ngày chính thức', 'Thâm niên', 'Ngày có hiệu lực', 'Ngày hết hiệu lực', 'Nhóm lý do nghỉ', 'Lý do nghỉ', 'Ngày nghỉ việc', 'Ngày nghỉ hưu dự kiến', 'Thuộc danh sách đen', 'Tham gia công đoàn'],
+            'tab-p-identity': ['Loại giấy tờ', 'Số CMND', 'Ngày cấp giấy tờ', 'Nơi cấp giấy tờ', 'Ngày hết hạn giấy tờ', 'Số Hộ chiếu', 'Ngày cấp Hộ chiếu', 'Nơi cấp Hộ chiếu', 'Ngày hết hạn Hộ chiếu'],
+            'tab-p-contact': ['ĐT di động', 'ĐT cơ quan', 'ĐT nhà riêng', 'ĐT khác', 'Email cơ quan', 'Email cá nhân', 'Email khác', 'Skype', 'Facebook', 'Hộ khẩu thường trú', 'Quốc gia (Thường trú)', 'Tỉnh/Thành phố (Thường trú)', 'Quận/Huyện (Thường trú)', 'Phường/Xã (Thường trú)', 'Số nhà, đường phố (Thường trú)', 'Số sổ hộ khẩu', 'Mã số hộ gia đình', 'Là chủ hộ', 'Chỗ ở hiện nay', 'Quốc gia (Hiện nay)', 'Tỉnh/Thành phố (Hiện nay)', 'Quận/Huyện (Hiện nay)', 'Phường/Xã (Hiện nay)', 'Số nhà, đường phố (Hiện nay)', 'TP gia đình', 'TP bản thân'],
+            'tab-p-emergency': ['Họ và tên (LHKC)', 'Quan hệ (LHKC)', 'ĐT di động (LHKC)', 'ĐT nhà riêng (LHKC)', 'Email (LHKC)', 'Địa chỉ (LHKC)'],
+            'tab-p-education': ['Trình độ văn hóa', 'Trình độ đào tạo', 'Nơi đào tạo', 'Khoa', 'Chuyên ngành', 'Năm tốt nghiệp', 'Xếp loại'],
+            'tab-p-salary': ['Bậc lương', 'Hệ số lương', 'Lương cơ bản', 'Tỷ lệ hưởng lương', 'Lương đóng BH', 'Tổng lương', 'TK ngân hàng', 'Ngân hàng', 'Chi nhánh', 'Thuế suất', 'Số người phụ thuộc', 'Giảm trừ bản thân', 'Tham gia bảo hiểm', 'Tỷ lệ đóng BHXH của NV', 'Tỷ lệ đóng BHYT của NV', 'Tỷ lệ đóng BHTN của NV', 'Tỷ lệ đóng BHXH của DN', 'Tỷ lệ đóng BHYT của DN', 'Tỷ lệ đóng BHTN của DN', 'Tỷ lệ đóng BH', 'Tỷ lệ đóng BHXH', 'Tỷ lệ đóng BHYT', 'Tỷ lệ đóng BHTN', 'Ngày tham gia BH', 'Số sổ BHXH', 'Mã số BHXH', 'Mã tỉnh cấp', 'Số thẻ BHYT', 'Nơi đăng ký KCB', 'Mật khẩu phiếu lương'],
+            'tab-p-allowance': ['Tổng phụ cấp', 'Số khoản phụ cấp', 'Tổng giảm trừ', 'Ghi chú phụ cấp'],
+            'tab-p-account': ['ĐT tài khoản', 'Email tài khoản', 'Trạng thái tài khoản', 'Trạng thái chữ ký số', 'Trạng thái hồ sơ cấp CKS']
+        };
+        const isTabSelected = (tabId) => (!selected_tabs || selected_tabs.includes('all') || selected_tabs.includes(tabId));
 
         // Build lookup maps for fast resolution
         const deptMapById = {};
@@ -1434,186 +1449,239 @@ app.post('/api/employees/import-excel', async (req, res) => {
             const existingIdx = employees.findIndex(e => e.employee_id === empId);
 
             if (existingIdx >= 0 && overwrite) {
-                // UPDATE RECORD
-                employees[existingIdx] = {
-                    ...employees[existingIdx],
-                    time_attendance_code: timeAttendanceCode,
-                    full_name: fullName,
-                    alias_name: aliasName,
-                    gender,
-                    date_of_birth: dob,
-                    birth_place: birthPlace,
-                    native_place: nativePlace,
-                    ethnicity,
-                    religion,
-                    nationality,
-                    marital_status: maritalStatus,
-                    children_count: childrenCount,
-                    tax_code: taxCode,
-                    department_id: deptId,
-                    department_name: deptName,
-                    position_id: posId,
-                    job_level: jobLevel,
-                    job_rank: jobRank,
-                    job_title: professionalTitle,
-                    work_location: workLocation,
-                    work_area: workArea,
-                    direct_manager_id: directMgrId,
-                    direct_manager_name: directMgrName,
-                    indirect_manager_id: indirectMgrId,
-                    indirect_manager_name: indirectMgrName,
-                    employment_status: empStatus,
-                    labor_nature: laborNature,
-                    start_date: startDate,
-                    end_date: endDate,
-                    contract_type: contractType,
-                    apprentice_start_date: apprenticeStartDate,
-                    probation_start_date: trialStartDate,
-                    trial_start_date: trialStartDate,
-                    official_date: officialDate,
-                    resignation_date: resignationDate,
-                    resignation_reason: resignationReason,
-                    resignation_reason_group: resignationReasonGroup,
-                    expected_retirement_date: expectedRetirementDate,
-                    is_blacklisted: isBlacklisted,
-                    approved_by: approverName,
-                    labor_book_number: laborBookNumber,
-                    recruiter_name: recruiterName,
-                    candidate_source: candidateSource,
-                    other_certificates: otherCerts,
-                    seniority_text: seniority || employees[existingIdx].seniority_text
-                };
+                // UPDATE RECORD (NON-DESTRUCTIVE: ONLY UPDATE SELECTED TABS)
+                const currentEmp = employees[existingIdx];
+                const updatedEmp = { ...currentEmp };
 
-                // Update contact
-                const cIdx = contacts.findIndex(c => c.employee_id === empId);
-                if (cIdx >= 0) {
-                    contacts[cIdx] = {
-                        ...contacts[cIdx],
-                        full_name: fullName,
-                        mobile_phone: phone,
-                        office_phone: officePhone,
-                        home_phone: homePhone,
-                        other_phone: otherPhone,
-                        work_email: email,
-                        personal_email: personalEmail,
-                        other_email: otherEmail,
-                        skype: skype,
-                        facebook: facebook,
-                        permanent_address_full: permAddress,
-                        permanent_country: permCountry,
-                        permanent_province: permProvince,
-                        permanent_district: permDistrict,
-                        permanent_ward: permWard,
-                        permanent_street: permStreet,
-                        household_book_number: householdBookNo,
-                        household_code: householdCode,
-                        is_household_head: isHouseholdHead,
-                        current_address_full: currAddress,
-                        current_country: currCountry,
-                        current_province: currProvince,
-                        current_district: currDistrict,
-                        current_ward: currWard,
-                        current_street: currStreet
-                    };
+                if (isTabSelected('tab-p-personal')) {
+                    if (fullName) updatedEmp.full_name = fullName;
+                    if (aliasName) updatedEmp.alias_name = aliasName;
+                    if (gender) updatedEmp.gender = gender;
+                    if (dob) updatedEmp.date_of_birth = dob;
+                    if (birthPlace) updatedEmp.birth_place = birthPlace;
+                    if (nativePlace) updatedEmp.native_place = nativePlace;
+                    if (ethnicity) updatedEmp.ethnicity = ethnicity;
+                    if (religion) updatedEmp.religion = religion;
+                    if (nationality) updatedEmp.nationality = nationality;
+                    if (maritalStatus) updatedEmp.marital_status = maritalStatus;
+                    if (childrenCount !== undefined) updatedEmp.children_count = childrenCount;
+                    if (taxCode) updatedEmp.tax_code = taxCode;
                 }
 
-                // Update identity
-                const iIdx = identity.findIndex(i => i.employee_id === empId);
-                if (iIdx >= 0) {
-                    identity[iIdx] = {
-                        ...identity[iIdx],
-                        full_name: fullName,
-                        doc_type: idType,
-                        id_number: idNumber,
-                        id_issue_date: idIssueDate,
-                        id_issue_place: idIssuePlace,
-                        id_expiry_date: idExpiryDate,
-                        passport_number: passportNumber || null,
-                        passport_issue_date: passportIssueDate || null,
-                        passport_issue_place: passportIssuePlace || null,
-                        passport_expiry_date: passportExpiryDate || null
-                    };
+                if (isTabSelected('tab-p-org')) {
+                    if (deptId) updatedEmp.department_id = deptId;
+                    if (deptName) updatedEmp.department_name = deptName;
+                    if (posId) updatedEmp.position_id = posId;
+                    if (jobLevel) updatedEmp.job_level = jobLevel;
+                    if (jobRank) updatedEmp.job_rank = jobRank;
+                    if (professionalTitle) updatedEmp.job_title = professionalTitle;
+                    if (workLocation) updatedEmp.work_location = workLocation;
+                    if (workArea) updatedEmp.work_area = workArea;
+                    if (timeAttendanceCode) updatedEmp.time_attendance_code = timeAttendanceCode;
+                    if (directMgrId) updatedEmp.direct_manager_id = directMgrId;
+                    if (directMgrName) updatedEmp.direct_manager_name = directMgrName;
+                    if (indirectMgrId) updatedEmp.indirect_manager_id = indirectMgrId;
+                    if (indirectMgrName) updatedEmp.indirect_manager_name = indirectMgrName;
+                    if (empStatus) updatedEmp.employment_status = empStatus;
+                    if (laborNature) updatedEmp.labor_nature = laborNature;
+                    if (recruiterName) updatedEmp.recruiter_name = recruiterName;
+                    if (candidateSource) updatedEmp.candidate_source = candidateSource;
+                    if (laborBookNumber) updatedEmp.labor_book_number = laborBookNumber;
                 }
 
-                // Update salary
-                const sIdx = salaries.findIndex(s => s.employee_id === empId);
-                if (sIdx >= 0) {
-                    salaries[sIdx] = {
-                        ...salaries[sIdx],
-                        full_name: fullName,
-                        salary_grade: salaryGrade,
-                        salary_coefficient: salaryCoeff,
-                        base_salary: baseSalary,
-                        total_salary: totalSalary,
-                        insurance_salary: insuranceSalary,
-                        bank_account_number: bankAccount,
-                        bank_name: bankName,
-                        bank_branch: bankBranch
-                    };
+                if (isTabSelected('tab-p-contract')) {
+                    if (contractType) updatedEmp.contract_type = contractType;
+                    if (startDate) updatedEmp.start_date = startDate;
+                    if (endDate) updatedEmp.end_date = endDate;
+                    if (apprenticeStartDate) updatedEmp.apprentice_start_date = apprenticeStartDate;
+                    if (trialStartDate) {
+                        updatedEmp.probation_start_date = trialStartDate;
+                        updatedEmp.trial_start_date = trialStartDate;
+                    }
+                    if (officialDate) updatedEmp.official_date = officialDate;
+                    if (resignationDate) updatedEmp.resignation_date = resignationDate;
+                    if (resignationReason) updatedEmp.resignation_reason = resignationReason;
+                    if (resignationReasonGroup) updatedEmp.resignation_reason_group = resignationReasonGroup;
+                    if (expectedRetirementDate) updatedEmp.expected_retirement_date = expectedRetirementDate;
+                    if (isBlacklisted !== undefined) updatedEmp.is_blacklisted = isBlacklisted;
+                    if (approverName) updatedEmp.approved_by = approverName;
+                    if (seniority) updatedEmp.seniority_text = seniority;
                 }
 
-                // Update insurance
-                const insIdx = insurance.findIndex(ins => ins.employee_id === empId);
-                if (insIdx >= 0) {
-                    insurance[insIdx] = {
-                        ...insurance[insIdx],
-                        full_name: fullName,
-                        has_insurance: hasInsurance,
-                        social_insurance_book_no: socialInsuranceBook,
-                        social_insurance_code: socialInsuranceCode,
-                        insurance_join_date: insuranceJoinDate,
-                        total_insurance_rate: insuranceRateTotal,
-                        social_insurance_rate: insuranceRateSocial,
-                        health_insurance_rate: insuranceRateHealth,
-                        unemployment_insurance_rate: insuranceRateUnemployment,
-                        insurance_province_code: insuranceProvinceCode,
-                        health_insurance_card_no: healthInsuranceCardNo,
-                        hospital_registered: hospitalRegistered,
-                        union_member: unionMember
-                    };
+                if (isTabSelected('tab-p-education')) {
+                    if (otherCerts) updatedEmp.other_certificates = otherCerts;
                 }
 
-                // Update education
-                const eduIdx = education.findIndex(ed => ed.employee_id === empId);
-                if (eduIdx >= 0) {
-                    education[eduIdx] = {
-                        ...education[eduIdx],
-                        full_name: fullName,
-                        cultural_level: culturalLevel,
-                        education_level: eduLevel,
-                        degree_type: degreeType,
-                        institution: institution,
-                        faculty: faculty,
-                        major: eduMajor,
-                        graduation_year: gradYear,
-                        classification: gradClassification,
-                        other_certificates: otherCerts
-                    };
+                if (isTabSelected('tab-p-salary')) {
+                    if (baseSalary) updatedEmp.base_salary = baseSalary;
+                    if (totalSalary) updatedEmp.total_salary = totalSalary;
+                    if (bankAccount) updatedEmp.bank_account_number = bankAccount;
+                    if (bankName) updatedEmp.bank_name = bankName;
+                    if (bankBranch) updatedEmp.bank_branch = bankBranch;
                 }
 
-                // Update contracts
-                const ctIdx = contracts.findIndex(c => c.employee_id === empId);
-                if (ctIdx >= 0) {
-                    contracts[ctIdx] = {
-                        ...contracts[ctIdx],
-                        full_name: fullName,
-                        contract_type: contractType,
-                        start_date: startDate,
-                        end_date: endDate,
-                        trial_start_date: trialStartDate,
-                        official_date: officialDate,
-                        effective_date: effectiveDate,
-                        expiry_date: expiryDate
-                    };
+                if (isTabSelected('tab-p-allowance')) {
+                    const totalAllow = parseFloat(getVal(item, 'Tổng phụ cấp', 'total_allowance') || 0);
+                    const allowCount = parseInt(getVal(item, 'Số khoản phụ cấp', 'allowance_count') || 0, 10);
+                    if (totalAllow) updatedEmp.total_allowance = totalAllow;
+                    if (allowCount) updatedEmp.allowance_count = allowCount;
                 }
 
-                // Update master profiles
+                employees[existingIdx] = updatedEmp;
+
+                // Update contact (ONLY if tab-p-contact selected)
+                if (isTabSelected('tab-p-contact')) {
+                    const cIdx = contacts.findIndex(c => c.employee_id === empId);
+                    if (cIdx >= 0) {
+                        contacts[cIdx] = {
+                            ...contacts[cIdx],
+                            full_name: fullName || contacts[cIdx].full_name,
+                            mobile_phone: phone || contacts[cIdx].mobile_phone,
+                            office_phone: officePhone || contacts[cIdx].office_phone,
+                            home_phone: homePhone || contacts[cIdx].home_phone,
+                            other_phone: otherPhone || contacts[cIdx].other_phone,
+                            work_email: email || contacts[cIdx].work_email,
+                            personal_email: personalEmail || contacts[cIdx].personal_email,
+                            other_email: otherEmail || contacts[cIdx].other_email,
+                            skype: skype || contacts[cIdx].skype,
+                            facebook: facebook || contacts[cIdx].facebook,
+                            permanent_address_full: permAddress || contacts[cIdx].permanent_address_full,
+                            permanent_country: permCountry || contacts[cIdx].permanent_country,
+                            permanent_province: permProvince || contacts[cIdx].permanent_province,
+                            permanent_district: permDistrict || contacts[cIdx].permanent_district,
+                            permanent_ward: permWard || contacts[cIdx].permanent_ward,
+                            permanent_street: permStreet || contacts[cIdx].permanent_street,
+                            household_book_number: householdBookNo || contacts[cIdx].household_book_number,
+                            household_code: householdCode || contacts[cIdx].household_code,
+                            is_household_head: isHouseholdHead || contacts[cIdx].is_household_head,
+                            current_address_full: currAddress || contacts[cIdx].current_address_full,
+                            current_country: currCountry || contacts[cIdx].current_country,
+                            current_province: currProvince || contacts[cIdx].current_province,
+                            current_district: currDistrict || contacts[cIdx].current_district,
+                            current_ward: currWard || contacts[cIdx].current_ward,
+                            current_street: currStreet || contacts[cIdx].current_street
+                        };
+                    }
+                }
+
+                // Update identity (ONLY if tab-p-identity selected)
+                if (isTabSelected('tab-p-identity')) {
+                    const iIdx = identity.findIndex(i => i.employee_id === empId);
+                    if (iIdx >= 0) {
+                        identity[iIdx] = {
+                            ...identity[iIdx],
+                            full_name: fullName || identity[iIdx].full_name,
+                            doc_type: idType || identity[iIdx].doc_type,
+                            id_number: idNumber || identity[iIdx].id_number,
+                            id_issue_date: idIssueDate || identity[iIdx].id_issue_date,
+                            id_issue_place: idIssuePlace || identity[iIdx].id_issue_place,
+                            id_expiry_date: idExpiryDate || identity[iIdx].id_expiry_date,
+                            passport_number: passportNumber || identity[iIdx].passport_number,
+                            passport_issue_date: passportIssueDate || identity[iIdx].passport_issue_date,
+                            passport_issue_place: passportIssuePlace || identity[iIdx].passport_issue_place,
+                            passport_expiry_date: passportExpiryDate || identity[iIdx].passport_expiry_date
+                        };
+                    }
+                }
+
+                // Update salary & insurance (ONLY if tab-p-salary selected)
+                if (isTabSelected('tab-p-salary')) {
+                    const sIdx = salaries.findIndex(s => s.employee_id === empId);
+                    if (sIdx >= 0) {
+                        salaries[sIdx] = {
+                            ...salaries[sIdx],
+                            full_name: fullName || salaries[sIdx].full_name,
+                            salary_grade: salaryGrade || salaries[sIdx].salary_grade,
+                            salary_coefficient: salaryCoeff || salaries[sIdx].salary_coefficient,
+                            base_salary: baseSalary || salaries[sIdx].base_salary,
+                            total_salary: totalSalary || salaries[sIdx].total_salary,
+                            insurance_salary: insuranceSalary || salaries[sIdx].insurance_salary,
+                            bank_account_number: bankAccount || salaries[sIdx].bank_account_number,
+                            bank_name: bankName || salaries[sIdx].bank_name,
+                            bank_branch: bankBranch || salaries[sIdx].bank_branch
+                        };
+                    }
+
+                    const insIdx = insurance.findIndex(ins => ins.employee_id === empId);
+                    if (insIdx >= 0) {
+                        insurance[insIdx] = {
+                            ...insurance[insIdx],
+                            full_name: fullName || insurance[insIdx].full_name,
+                            has_insurance: hasInsurance || insurance[insIdx].has_insurance,
+                            social_insurance_book_no: socialInsuranceBook || insurance[insIdx].social_insurance_book_no,
+                            social_insurance_code: socialInsuranceCode || insurance[insIdx].social_insurance_code,
+                            insurance_join_date: insuranceJoinDate || insurance[insIdx].insurance_join_date,
+                            total_insurance_rate: insuranceRateTotal || insurance[insIdx].total_insurance_rate,
+                            social_insurance_rate: insuranceRateSocial || insurance[insIdx].social_insurance_rate,
+                            health_insurance_rate: insuranceRateHealth || insurance[insIdx].health_insurance_rate,
+                            unemployment_insurance_rate: insuranceRateUnemployment || insurance[insIdx].unemployment_insurance_rate,
+                            insurance_province_code: insuranceProvinceCode || insurance[insIdx].insurance_province_code,
+                            health_insurance_card_no: healthInsuranceCardNo || insurance[insIdx].health_insurance_card_no,
+                            hospital_registered: hospitalRegistered || insurance[insIdx].hospital_registered,
+                            union_member: unionMember || insurance[insIdx].union_member
+                        };
+                    }
+                }
+
+                // Update education (ONLY if tab-p-education selected)
+                if (isTabSelected('tab-p-education')) {
+                    const eduIdx = education.findIndex(ed => ed.employee_id === empId);
+                    if (eduIdx >= 0) {
+                        education[eduIdx] = {
+                            ...education[eduIdx],
+                            full_name: fullName || education[eduIdx].full_name,
+                            cultural_level: culturalLevel || education[eduIdx].cultural_level,
+                            education_level: eduLevel || education[eduIdx].education_level,
+                            degree_type: degreeType || education[eduIdx].degree_type,
+                            institution: institution || education[eduIdx].institution,
+                            faculty: faculty || education[eduIdx].faculty,
+                            major: eduMajor || education[eduIdx].major,
+                            graduation_year: gradYear || education[eduIdx].graduation_year,
+                            classification: gradClassification || education[eduIdx].classification,
+                            other_certificates: otherCerts || education[eduIdx].other_certificates
+                        };
+                    }
+                }
+
+                // Update contracts (ONLY if tab-p-contract selected)
+                if (isTabSelected('tab-p-contract')) {
+                    const ctIdx = contracts.findIndex(c => c.employee_id === empId);
+                    if (ctIdx >= 0) {
+                        contracts[ctIdx] = {
+                            ...contracts[ctIdx],
+                            full_name: fullName || contracts[ctIdx].full_name,
+                            contract_type: contractType || contracts[ctIdx].contract_type,
+                            start_date: startDate || contracts[ctIdx].start_date,
+                            end_date: endDate || contracts[ctIdx].end_date,
+                            trial_start_date: trialStartDate || contracts[ctIdx].trial_start_date,
+                            official_date: officialDate || contracts[ctIdx].official_date,
+                            effective_date: effectiveDate || contracts[ctIdx].effective_date,
+                            expiry_date: expiryDate || contracts[ctIdx].expiry_date
+                        };
+                    }
+                }
+
+                // Update master profiles (selective update: only update columns of selected tabs)
                 const mpIdx = masterProfiles.findIndex(m => m['Mã nhân viên'] === empId);
                 if (mpIdx >= 0) {
-                    masterProfiles[mpIdx] = {
-                        ...masterProfiles[mpIdx],
-                        ...masterRow
-                    };
+                    if (!selected_tabs || selected_tabs.includes('all')) {
+                        masterProfiles[mpIdx] = {
+                            ...masterProfiles[mpIdx],
+                            ...masterRow
+                        };
+                    } else {
+                        const updatedMaster = { ...masterProfiles[mpIdx] };
+                        Object.keys(TAB_FIELDS_MAP).forEach(tabId => {
+                            if (isTabSelected(tabId)) {
+                                TAB_FIELDS_MAP[tabId].forEach(fKey => {
+                                    if (masterRow[fKey] !== undefined && masterRow[fKey] !== null && masterRow[fKey] !== '') {
+                                        updatedMaster[fKey] = masterRow[fKey];
+                                    }
+                                });
+                            }
+                        });
+                        masterProfiles[mpIdx] = updatedMaster;
+                    }
                 }
 
                 updatedCount++;
