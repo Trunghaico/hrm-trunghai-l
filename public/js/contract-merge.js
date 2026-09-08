@@ -368,7 +368,7 @@ const contractTemplateStore = {
       <w:r><w:rPr><w:b/></w:rPr><w:t>BÊN B: NGƯỜI LAO ĐỘNG</w:t></w:r>
     </w:p>
     <w:p><w:r><w:t>- Họ và tên: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>&lt;HoVaTen&gt;</w:t></w:r><w:r><w:t>     - Giới tính: &lt;GioiTinh&gt;</w:t></w:r></w:p>
-    <w:p><w:r><w:t>- Sinh ngày: &lt;NgaySinh&gt;     - Quốc tịch: Việt Nam</w:t></w:r></w:p>
+    <w:p><w:r><w:t>- Sinh ngày: &lt;NgaySinh&gt;     - Nơi sinh: &lt;NoiSinh&gt;     - Quốc tịch: Việt Nam</w:t></w:r></w:p>
     <w:p><w:r><w:t>- Số CCCD/Hộ chiếu: &lt;SoCCCD&gt;     - Ngày cấp: &lt;NgayCapCCCD&gt;</w:t></w:r></w:p>
     <w:p><w:r><w:t>- Nơi cấp: &lt;NoiCapCCCD&gt;</w:t></w:r></w:p>
     <w:p><w:r><w:t>- Hộ khẩu thường trú: &lt;DiaChiThuongTru&gt;</w:t></w:r></w:p>
@@ -438,6 +438,7 @@ const contractMergeEngine = {
     { key: 'MaNV', label: 'Mã nhân viên', group: 'Nhân sự', sample: 'TH-582' },
     { key: 'HoVaTen', label: 'Họ và tên nhân viên', group: 'Nhân sự', sample: 'Phạm Quốc Lâm' },
     { key: 'NgaySinh', label: 'Ngày tháng năm sinh', group: 'Nhân sự', sample: '15/08/1990' },
+    { key: 'NoiSinh', label: 'Nơi sinh', group: 'Nhân sự', sample: 'TP. Hồ Chí Minh' },
     { key: 'GioiTinh', label: 'Giới tính', group: 'Nhân sự', sample: 'Nam' },
     { key: 'SoCCCD', label: 'Số CCCD / CMND', group: 'Nhân sự', sample: '079090012345' },
     { key: 'NgayCapCCCD', label: 'Ngày cấp CCCD', group: 'Nhân sự', sample: '10/05/2021' },
@@ -551,6 +552,7 @@ const contractMergeEngine = {
       MaNV: employee.employee_id || contract.employee_id || '-',
       HoVaTen: employee.full_name || contract.full_name || '-',
       NgaySinh: cleanDate(employee.date_of_birth),
+      NoiSinh: employee.birth_place || employee['Nơi sinh'] || employee.place_of_birth || contract.birth_place || contract['Nơi sinh'] || '-',
       GioiTinh: employee.gender || 'Nam',
       SoCCCD: employee.id_number || employee.tax_code || '-',
       NgayCapCCCD: cleanDate(employee.id_issued_date),
@@ -593,6 +595,15 @@ const contractMergeEngine = {
       finalData[`{${k}}`] = v !== undefined && v !== null ? v : '';
       finalData[`<<${k}>>`] = v !== undefined && v !== null ? v : '';
     }
+
+    // Aliases cho Nơi sinh
+    finalData['Noi_Sinh'] = baseFields.NoiSinh;
+    finalData['<Noi_Sinh>'] = baseFields.NoiSinh;
+    finalData['{Noi_Sinh}'] = baseFields.NoiSinh;
+    finalData['birth_place'] = baseFields.NoiSinh;
+    finalData['<birth_place>'] = baseFields.NoiSinh;
+    finalData['{birth_place}'] = baseFields.NoiSinh;
+
     return finalData;
   },
 
@@ -705,6 +716,12 @@ const contractMergeEngine = {
           label: 'Ngày tháng năm sinh',
           sample: '15/08/1992',
           aliases: ['ngaysinh', 'sinhngay', 'namsinh', 'dob', 'birthday', 'ngay_sinh']
+        },
+        {
+          key: 'NoiSinh',
+          label: 'Nơi sinh',
+          sample: 'TP. Hồ Chí Minh',
+          aliases: ['noisinh', 'noi_sinh', 'birthplace', 'birth_place', 'placeofbirth', 'place_of_birth', 'quequan', 'nguyenquan']
         },
         {
           key: 'GioiTinh',
@@ -1280,7 +1297,7 @@ const contractMergeEngine = {
           <div style="font-weight: bold; text-transform: uppercase;">BÊN B: NGƯỜI LAO ĐỘNG</div>
           <table style="width: 100%; border-collapse: collapse; margin-top: 4px;">
             <tr><td style="width: 170px;">Họ và tên:</td><td><strong style="text-transform: uppercase;">${data.HoVaTen}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Giới tính: ${data.GioiTinh}</td></tr>
-            <tr><td>Sinh ngày:</td><td>${data.NgaySinh} &nbsp;&nbsp;&nbsp;&nbsp; Quốc tịch: Việt Nam</td></tr>
+            <tr><td>Sinh ngày:</td><td>${data.NgaySinh} &nbsp;&nbsp;&nbsp;&nbsp; Nơi sinh: ${data.NoiSinh || '-'} &nbsp;&nbsp;&nbsp;&nbsp; Quốc tịch: Việt Nam</td></tr>
             <tr><td>Số CCCD/Hộ chiếu:</td><td><strong>${data.SoCCCD}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Ngày cấp: ${data.NgayCapCCCD}</td></tr>
             <tr><td>Nơi cấp:</td><td>${data.NoiCapCCCD}</td></tr>
             <tr><td>Hộ khẩu thường trú:</td><td>${data.DiaChiThuongTru}</td></tr>
