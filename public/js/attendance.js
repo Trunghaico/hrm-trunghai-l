@@ -1238,37 +1238,110 @@ const appAttendance = {
   },
 
   exportRawLogsToExcel() {
-    const logs = appData.attendanceLogs || [];
+    let logs = appData.attendanceLogs || [];
     if (logs.length === 0) {
-      utils.showToast('Không có dữ liệu quẹt thẻ thô để xuất', 'warning');
+      utils.showToast('Không có dữ liệu quẹt thẻ thô để xuất!', 'warning');
       return;
     }
 
-    const exportData = logs.map((l, idx) => {
+    // Lọc theo thiết bị hoặc ngày đang chọn nếu có
+    const devSelect = document.getElementById('zk-log-device-select');
+    const datePicker = document.getElementById('zk-log-date-picker');
+    const searchInput = document.getElementById('zk-log-search-input');
+
+    let filtered = [...logs];
+    if (devSelect && devSelect.value && devSelect.value !== 'all') {
+      filtered = filtered.filter(l => (l.device_name || l.device_id || '') === devSelect.value);
+    }
+    if (datePicker && datePicker.value) {
+      filtered = filtered.filter(l => (l.timestamp || '').startsWith(datePicker.value));
+    }
+    if (searchInput && searchInput.value) {
+      const kw = searchInput.value.toLowerCase().trim();
+      filtered = filtered.filter(l => {
+        const emp = (appData.employees || []).find(e =>
+          (e.attendance_code && String(e.attendance_code).trim() === String(l.attendance_code || '').trim()) ||
+          (e.time_attendance_code && String(e.time_attendance_code).trim() === String(l.attendance_code || '').trim()) ||
+          String(e.employee_id || '').trim() === String(l.attendance_code || '').trim()
+        );
+        return String(l.attendance_code || '').toLowerCase().includes(kw) ||
+               (emp && emp.full_name && emp.full_name.toLowerCase().includes(kw));
+      });
+    }
+
+    if (filtered.length > 0) {
+      logs = filtered;
+    }
+
+    const headers = [
+      'STT',
+      'Mã Chấm Công',
+      'Mã Nhân Viên',
+      'Họ Và Tên',
+      'Phòng Ban',
+      'Thời Gian Quẹt Thẻ',
+      'Thiết Bị Chấm',
+      'Địa Chỉ IP:Port',
+      'Phương Thức'
+    ];
+
+    const rows = logs.map((l, idx) => {
       const emp = (appData.employees || []).find(e =>
-        String(e.attendance_code || '').trim() === String(l.attendance_code || '').trim() ||
-        e.employee_id === l.attendance_code
+        (e.attendance_code && String(e.attendance_code).trim() === String(l.attendance_code || '').trim()) ||
+        (e.time_attendance_code && String(e.time_attendance_code).trim() === String(l.attendance_code || '').trim()) ||
+        String(e.employee_id || '').trim() === String(l.attendance_code || '').trim()
       );
-      return {
-        'STT': idx + 1,
-        'Mã Chấm Công': l.attendance_code,
-        'Mã Nhân Viên': emp ? emp.employee_id : '',
-        'Họ Và Tên': emp ? emp.full_name : '',
-        'Phòng Ban': emp ? (emp.department || '') : '',
-        'Thời Gian Quẹt Thẻ': l.timestamp,
-        'Thiết Bị Chấm': l.device_name || '',
-        'Địa Chỉ IP:Port': l.device_ip ? `${l.device_ip}:${l.device_port || 5005}` : '',
-        'Phương Thức': l.verify_type || 'Vân tay'
-      };
+      return [
+        idx + 1,
+        l.attendance_code || '',
+        emp ? emp.employee_id : '',
+        emp ? emp.full_name : '',
+        emp ? (emp.department_name || emp.department_id || '') : '',
+        l.timestamp || '',
+        l.device_name || '',
+        l.device_ip ? `${l.device_ip}:${l.device_port || 5005}` : '',
+        l.verify_type || 'Vân tay'
+      ];
     });
 
-    if (window.XLSX) {
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Nhat_Ky_Quet_The_Goc');
-      XLSX.writeFile(wb, `Nhat_Ky_Quet_The_Ronald_Jack_${new Date().toISOString().split('T')[0]}.xlsx`);
-      utils.showToast('Đã xuất file Excel nhật ký quẹt thẻ gốc thành công!', 'success');
+    const dateSuffix = new Date().toISOString().split('T')[0];
+    const baseFileName = `Nhat_Ky_Quet_The_Ronald_Jack_${dateSuffix}`;
+
+    if (typeof XLSX !== 'undefined' && XLSX.utils && XLSX.writeFile) {
+      try {
+        const titleRow = [`NHẬT KÝ QUẸT THẺ GỐC MÁY CHẤM CÔNG RONALD JACK - TỔNG CÔNG TY TRUNG HẢI`];
+        const subTitle = [`Ngày xuất: ${new Date().toLocaleDateString('vi-VN')} - Tổng số lượt quẹt: ${logs.length}`];
+        const wsData = [
+          titleRow,
+          subTitle,
+          [],
+          headers,
+          ...rows
+        ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [
+          { wch: 6 },
+          { wch: 16 },
+          { wch: 14 },
+          { wch: 24 },
+          { wch: 28 },
+          { wch: 20 },
+          { wch: 28 },
+          { wch: 22 },
+          { wch: 16 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'Nhat_Ky_Quet_The_Goc');
+        XLSX.writeFile(wb, `${baseFileName}.xlsx`);
+        utils.showToast('Đã xuất file Excel nhật ký quẹt thẻ gốc thành công!', 'success');
+        return;
+      } catch (e) {
+        console.warn('XLSX export encountered error, falling back to CSV:', e);
+      }
     }
+
+    this.downloadCsv(headers, rows, `${baseFileName}.csv`);
+    utils.showToast('Đã xuất file CSV nhật ký quẹt thẻ gốc (chuẩn UTF-8 tương thích Excel)!', 'success');
   },
 
   // ========================================================================
@@ -1681,19 +1754,156 @@ const appAttendance = {
     }
   },
 
+  downloadCsv(headers, rows, fileName) {
+    let csvContent = '\uFEFF'; // UTF-8 BOM for Microsoft Excel Vietnamese font support
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+    csvContent += headers.map(escapeCsv).join(',') + '\r\n';
+    rows.forEach(row => {
+      csvContent += row.map(escapeCsv).join(',') + '\r\n';
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const safeName = fileName.toLowerCase().endsWith('.csv') ? fileName : `${fileName}.csv`;
+    link.setAttribute('download', safeName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  },
+
+  ensureTimesheetsForMonth(targetMonth) {
+    if (!appData.timesheets) appData.timesheets = [];
+    const existing = appData.timesheets.filter(t => (t.date || '').startsWith(targetMonth));
+    if (existing.length > 0) return existing;
+
+    const logs = (appData.attendanceLogs || []).filter(l => (l.timestamp || '').startsWith(targetMonth));
+    if (logs.length === 0) return [];
+
+    const groups = {};
+    logs.forEach(l => {
+      const code = String(l.attendance_code || '').trim();
+      const date = (l.timestamp || '').substring(0, 10);
+      if (!code || !date) return;
+      const key = `${code}_${date}`;
+      if (!groups[key]) {
+        groups[key] = { code, date, times: [] };
+      }
+      const timePart = (l.timestamp || '').split(' ')[1] || (l.timestamp || '').substring(11, 16);
+      if (timePart) groups[key].times.push(timePart);
+    });
+
+    const newTimesheets = [];
+    const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+
+    Object.values(groups).forEach(g => {
+      g.times.sort();
+      const checkIn = g.times[0] ? g.times[0].substring(0, 5) : '';
+      const checkOut = g.times.length > 1 ? g.times[g.times.length - 1].substring(0, 5) : (g.times[0] > '12:00' ? g.times[0].substring(0, 5) : '');
+      const actualIn = checkIn || '';
+      const actualOut = checkOut || '';
+
+      const emp = (appData.employees || []).find(e =>
+        (e.attendance_code && String(e.attendance_code).trim() === g.code) ||
+        (e.time_attendance_code && String(e.time_attendance_code).trim() === g.code) ||
+        String(e.employee_id || '').trim() === g.code
+      );
+
+      const dObj = new Date(g.date);
+      const dayName = isNaN(dObj.getDay()) ? 'Thứ 2' : dayNames[dObj.getDay()];
+
+      let lateMinutes = 0;
+      if (actualIn && actualIn > '08:00') {
+        const [h, m] = actualIn.split(':').map(Number);
+        lateMinutes = Math.max(0, (h * 60 + m) - (8 * 60));
+      }
+
+      let earlyMinutes = 0;
+      if (actualOut && actualOut < '17:00') {
+        const [h, m] = actualOut.split(':').map(Number);
+        earlyMinutes = Math.max(0, (17 * 60) - (h * 60 + m));
+      }
+
+      const status = lateMinutes > 0 ? 'LATE' : (earlyMinutes > 0 ? 'EARLY' : 'PRESENT');
+
+      const tsItem = {
+        timesheet_id: `TS_${emp ? emp.employee_id : g.code}_${g.date}`,
+        employee_id: emp ? emp.employee_id : g.code,
+        full_name: emp ? emp.full_name : `Nhân Viên (${g.code})`,
+        department_name: emp ? (emp.department_name || emp.department_id || 'Chưa phân bổ') : 'Chưa phân bổ',
+        date: g.date,
+        day_name: dayName,
+        check_in: actualIn,
+        check_out: actualOut,
+        late_minutes: lateMinutes,
+        early_minutes: earlyMinutes,
+        work_units: 1.0,
+        total_work_hours: 8,
+        ot_hours: 0,
+        total_all_hours: 8,
+        shift_name: 'Ca Hành Chính',
+        shift_id: 'CA-HC',
+        status: status,
+        note: lateMinutes > 0 ? `Đi muộn ${lateMinutes} phút` : (earlyMinutes > 0 ? `Về sớm ${earlyMinutes} phút` : 'Đúng giờ')
+      };
+      newTimesheets.push(tsItem);
+      appData.timesheets.push(tsItem);
+    });
+
+    return newTimesheets;
+  },
+
   // ========================================================================
-  // EXPORT TIMESHEETS TO EXCEL (XUẤT FILE EXCEL CHUẨN TÍNH LƯƠNG)
+  // EXPORT TIMESHEETS TO EXCEL / CSV (XUẤT FILE CHUẨN TÍNH LƯƠNG)
   // ========================================================================
   exportTimesheetToExcel() {
-    if (typeof XLSX === 'undefined') {
-      utils.showToast('Thư viện Excel đang tải, vui lòng thử lại sau giây lát...', 'warning');
-      return;
+    // 1. Đồng bộ tháng hiện tại từ bộ lọc giao diện nếu có
+    const monthPicker = document.getElementById('att-month-picker');
+    if (monthPicker && monthPicker.value) {
+      this.currentMonth = monthPicker.value;
+    }
+    if (!this.currentMonth) {
+      this.currentMonth = new Date().toISOString().substring(0, 7);
     }
 
-    const list = (appData.timesheets || []).filter(t => (t.date || '').startsWith(this.currentMonth));
+    // 2. Tìm danh sách công theo tháng
+    let list = (appData.timesheets || []).filter(t => (t.date || '').startsWith(this.currentMonth));
+
+    // Nếu rỗng, thử tự động tính toán từ lịch sử quẹt thẻ gốc
     if (list.length === 0) {
-      utils.showToast(`Không có dữ liệu bảng công cho tháng ${this.currentMonth} để xuất!`, 'warning');
-      return;
+      list = this.ensureTimesheetsForMonth(this.currentMonth);
+    }
+
+    // Nếu vẫn rỗng nhưng có timesheets ở các tháng khác, lấy toàn bộ
+    if (list.length === 0) {
+      if ((appData.timesheets || []).length > 0) {
+        list = appData.timesheets;
+        utils.showToast(`Tháng ${this.currentMonth} chưa có dữ liệu, chuyển sang xuất toàn bộ ${list.length} bản ghi chấm công!`, 'info');
+      } else {
+        utils.showToast(`Không có dữ liệu chấm công để xuất. Vui lòng bấm "Đồng Bộ Máy" hoặc "Mô Phỏng" trước!`, 'warning');
+        return;
+      }
+    }
+
+    // 3. Áp dụng bộ lọc đang chọn trên giao diện (nếu có)
+    let filteredList = [...list];
+    if (this.filterDept && this.filterDept !== 'all') {
+      filteredList = filteredList.filter(t => (t.department_name || '').toLowerCase() === this.filterDept.toLowerCase());
+    }
+    if (this.filterStatus && this.filterStatus !== 'ALL') {
+      filteredList = filteredList.filter(t => t.status === this.filterStatus);
+    }
+    if (this.filterSearch) {
+      const kw = this.filterSearch.toLowerCase();
+      filteredList = filteredList.filter(t => (t.full_name || '').toLowerCase().includes(kw) || (t.employee_id || '').toLowerCase().includes(kw));
+    }
+    if (filteredList.length > 0) {
+      list = filteredList;
     }
 
     const headers = [
@@ -1718,11 +1928,11 @@ const appAttendance = {
 
     const rows = list.map((item, idx) => [
       idx + 1,
-      item.employee_id,
-      item.full_name,
-      item.department_name,
-      item.date,
-      item.day_name,
+      item.employee_id || '',
+      item.full_name || '',
+      item.department_name || '',
+      item.date || '',
+      item.day_name || '',
       item.check_in || '',
       item.check_out || '',
       item.late_minutes || 0,
@@ -1732,48 +1942,62 @@ const appAttendance = {
       item.ot_hours || 0,
       item.total_all_hours || 0,
       item.shift_name || 'Ca Hành Chính',
-      item.status,
+      item.status || '',
       item.note || ''
     ]);
 
-    const titleRow = [`BẢNG CÔNG CHI TIẾT THÁNG ${this.currentMonth} - TỔNG CÔNG TY TRUNG HẢI`];
-    const subTitle = [`Ngày xuất: ${new Date().toLocaleDateString('vi-VN')} - Tổng số dòng: ${list.length}`];
+    const cleanMonth = (this.currentMonth || '').replace('-', '_');
+    const baseFileName = `Bang_Cham_Cong_Thang_${cleanMonth}_TRUNGHAI`;
 
-    const wsData = [
-      titleRow,
-      subTitle,
-      [],
-      headers,
-      ...rows
-    ];
+    // Thử xuất Excel .xlsx bằng SheetJS nếu có sẵn
+    if (typeof XLSX !== 'undefined' && XLSX.utils && XLSX.writeFile) {
+      try {
+        const titleRow = [`BẢNG CÔNG CHI TIẾT THÁNG ${this.currentMonth} - TỔNG CÔNG TY TRUNG HẢI`];
+        const subTitle = [`Ngày xuất: ${new Date().toLocaleDateString('vi-VN')} - Tổng số dòng: ${list.length}`];
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
+        const wsData = [
+          titleRow,
+          subTitle,
+          [],
+          headers,
+          ...rows
+        ];
 
-    ws['!cols'] = [
-      { wch: 6 },
-      { wch: 14 },
-      { wch: 24 },
-      { wch: 28 },
-      { wch: 14 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 8 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 20 },
-      { wch: 16 },
-      { wch: 30 }
-    ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    XLSX.utils.book_append_sheet(wb, ws, `Bang_Cong_${this.currentMonth.replace('-', '_')}`);
-    const fileName = `Bang_Cham_Cong_Thang_${this.currentMonth.replace('-', '_')}_TRUNGHAI.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    utils.showToast(`Đã xuất bảng công ra file Excel: ${fileName}!`, 'success');
+        ws['!cols'] = [
+          { wch: 6 },
+          { wch: 14 },
+          { wch: 24 },
+          { wch: 28 },
+          { wch: 14 },
+          { wch: 12 },
+          { wch: 10 },
+          { wch: 10 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 8 },
+          { wch: 14 },
+          { wch: 14 },
+          { wch: 14 },
+          { wch: 20 },
+          { wch: 16 },
+          { wch: 30 }
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, `Bang_Cong_${cleanMonth}`);
+        XLSX.writeFile(wb, `${baseFileName}.xlsx`);
+        utils.showToast(`Đã xuất bảng công thành công: ${baseFileName}.xlsx!`, 'success');
+        return;
+      } catch (xlsxErr) {
+        console.warn('XLSX export error, falling back to CSV:', xlsxErr);
+      }
+    }
+
+    // Dự phòng tức thì: Xuất CSV UTF-8 BOM
+    this.downloadCsv(headers, rows, `${baseFileName}.csv`);
+    utils.showToast(`Đã xuất bảng công thành công (định dạng CSV tương thích Excel)!`, 'success');
   },
 
   copyAgentCommand() {

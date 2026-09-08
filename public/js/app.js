@@ -343,7 +343,11 @@ const app = {
     const quickExportBtn = document.getElementById('btn-quick-export');
     if (quickExportBtn) {
       quickExportBtn.addEventListener('click', () => {
-        appReports.exportCompleteWorkbook();
+        if (app.currentView === 'attendance' && window.appAttendance) {
+          appAttendance.exportTimesheetToExcel();
+        } else {
+          appReports.exportCompleteWorkbook();
+        }
       });
     }
   }

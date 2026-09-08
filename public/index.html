@@ -27,8 +27,13 @@
   
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- SheetJS for client-side Excel export/import -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- SheetJS for client-side Excel export/import (Local with CDN fallback) -->
+  <script src="js/xlsx.full.min.js"></script>
+  <script>
+    if (typeof XLSX === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"><\/script>');
+    }
+  </script>
   <!-- PizZip, Docxtemplater, JSZip for Word (.docx) Mail Merge -->
   <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.49.1/build/docxtemplater.js"></script>
@@ -1566,8 +1571,11 @@
               <button class="btn btn-secondary btn-sm" id="att-btn-lock" onclick="appAttendance.toggleLockTimesheet()" title="Khóa sổ công để tính lương">
                 <i class="fa-solid fa-lock"></i> Khóa Sổ
               </button>
-              <button class="btn btn-primary btn-sm" onclick="appAttendance.exportTimesheetToExcel()" title="Xuất file Excel chuẩn tính lương">
-                <i class="fa-solid fa-file-excel"></i> Xuất Excel
+              <button class="btn btn-primary btn-sm" onclick="appAttendance.exportTimesheetToExcel()" title="Xuất file Excel bảng công chi tiết chuẩn tính lương">
+                <i class="fa-solid fa-file-excel"></i> Xuất Bảng Công
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.exportRawLogsToExcel()" title="Xuất toàn bộ nhật ký quẹt thẻ gốc từ máy chấm công">
+                <i class="fa-solid fa-clock-rotate-left"></i> Xuất Log Quẹt Thẻ
               </button>
               <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()" title="Mô phỏng dữ liệu quẹt thẻ kiểm thử">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng
