@@ -43,18 +43,17 @@ const appData = {
   async init() {
     try {
       let json = null;
-      const isLocalDevHost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname) || (window.location.port === '3000' || window.location.port === '8080');
-
-      if (isLocalDevHost) {
-        try {
-          const res = await fetch('/api/data', { headers: this.getApiHeaders() });
-          if (res.ok) {
-            json = await res.json();
+      try {
+        const res = await fetch('/api/data?t=' + Date.now(), { headers: this.getApiHeaders() });
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData && (resData.tables || resData.employees)) {
+            json = resData;
             this.hasServerBackend = true;
           }
-        } catch (e) {
-          this.hasServerBackend = false;
         }
+      } catch (e) {
+        console.warn('Backend API /api/data not available, trying static fallback:', e);
       }
 
       if (!json || !json.tables) {

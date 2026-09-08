@@ -1129,12 +1129,10 @@ const appEmployees = {
   async openDetailModal(empId) {
     try {
       let serverJson = null;
-      if (typeof appData !== 'undefined' && appData.hasServerBackend) {
-        try {
-          const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
-          if (res.ok) serverJson = await res.json();
-        } catch (fe) {}
-      }
+      try {
+        const res = await fetch(`/api/employees/${encodeURIComponent(empId)}?t=` + Date.now());
+        if (res.ok) serverJson = await res.json();
+      } catch (fe) {}
 
       if (serverJson && serverJson.success && serverJson.data) {
         this.selectedEmployee = serverJson.data.employee || serverJson.data;
@@ -1232,12 +1230,10 @@ const appEmployees = {
       }
 
       let serverJson = null;
-      if (typeof appData !== 'undefined' && appData.hasServerBackend) {
-        try {
-          const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
-          if (res.ok) serverJson = await res.json();
-        } catch (fe) {}
-      }
+      try {
+        const res = await fetch(`/api/employees/${encodeURIComponent(empId)}?t=` + Date.now());
+        if (res.ok) serverJson = await res.json();
+      } catch (fe) {}
 
       const masterData = this.buildFullMasterProfile(empId, serverJson);
 
