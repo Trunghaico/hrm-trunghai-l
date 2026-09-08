@@ -1,5 +1,5 @@
 // Service Worker for TRUNG HẢI HRM PWA
-const CACHE_NAME = 'trunghai-hrm-cache-v3';
+const CACHE_NAME = 'trunghai-hrm-cache-v4';
 
 const STATIC_ASSETS = [
   './',

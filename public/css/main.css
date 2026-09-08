@@ -134,6 +134,10 @@ body {
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: var(--shadow-md);
   user-select: none;
+  overflow-x: hidden;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
 }
 
 .sidebar.collapsed {
@@ -202,9 +206,14 @@ body {
   flex: 1;
   padding: 8px 0;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 1px;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-section-title {
@@ -2475,6 +2484,8 @@ tr.row-selected {
 
   /* ========================================================================
      MOBILE SIDEBAR DRAWER & CATEGORY TYPOGRAPHY (CHUẨN APP DI ĐỘNG)
+     - Khóa tuyệt đối không cho kéo ngang qua lại (touch-action: pan-y, overflow-x: hidden)
+     - Chỉ cho phép vuốt chạy lên xuống mượt mà (overscroll-behavior-y: contain)
      ======================================================================== */
   .sidebar,
   .sidebar.collapsed {
@@ -2483,6 +2494,7 @@ tr.row-selected {
     bottom: 0 !important;
     left: 0 !important;
     width: min(84vw, 300px) !important;
+    max-width: 300px !important;
     transform: translateX(-100%) !important;
     transition: transform 0.28s cubic-bezier(0.33, 1, 0.68, 1) !important;
     z-index: 1100 !important;
@@ -2490,6 +2502,14 @@ tr.row-selected {
     display: flex !important;
     flex-direction: column !important;
     background: linear-gradient(180deg, #0E1A42 0%, #07102C 100%) !important;
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+    overscroll-behavior-x: none !important;
+    overscroll-behavior-y: contain !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
   }
 
   .sidebar.mobile-open,
@@ -2497,7 +2517,7 @@ tr.row-selected {
     transform: translateX(0) !important;
   }
 
-  /* Drawer Header */
+  /* Drawer Header - Cố định trên cùng, chống tràn/lệch ngang */
   .sidebar-header {
     height: calc(56px + var(--safe-top)) !important;
     padding-top: var(--safe-top) !important;
@@ -2507,12 +2527,21 @@ tr.row-selected {
     align-items: center !important;
     justify-content: space-between !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+    touch-action: none !important;
   }
 
   .sidebar .brand-wrapper {
     display: flex !important;
     align-items: center !important;
     gap: 10px !important;
+    overflow: hidden !important;
+    flex: 1 !important;
+    min-width: 0 !important;
   }
 
   .sidebar .brand-logo-img {
@@ -2521,6 +2550,7 @@ tr.row-selected {
     border-radius: 6px !important;
     background: #FFFFFF !important;
     padding: 2px !important;
+    flex-shrink: 0 !important;
   }
 
   .sidebar .brand-info,
@@ -2528,6 +2558,8 @@ tr.row-selected {
     display: flex !important;
     flex-direction: column !important;
     opacity: 1 !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
   }
 
   .sidebar .brand-title {
@@ -2536,6 +2568,9 @@ tr.row-selected {
     letter-spacing: 0.5px !important;
     color: #FFFFFF !important;
     line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .sidebar .brand-subtitle {
@@ -2543,11 +2578,24 @@ tr.row-selected {
     font-weight: 600 !important;
     color: rgba(255, 255, 255, 0.7) !important;
     letter-spacing: 0.8px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
-  /* Category Section Headers (Tiêu đề nhóm danh mục) */
+  /* Drawer Navigation List - Chỉ vuốt chạy lên xuống, cấm kéo ngang qua lại */
   .sidebar-nav {
+    flex: 1 1 auto !important;
     padding: 10px 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain !important;
+    overscroll-behavior-x: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .sidebar .nav-section-title,
@@ -2559,6 +2607,11 @@ tr.row-selected {
     letter-spacing: 1px !important;
     color: rgba(255, 255, 255, 0.45) !important;
     padding: 14px 18px 4px 18px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* Navigation Items (Các danh mục chức năng trên app) */
@@ -2568,7 +2621,7 @@ tr.row-selected {
     align-items: center !important;
     justify-content: flex-start !important;
     min-height: 46px !important;
-    padding: 11px 18px !important;
+    padding: 11px 16px !important;
     margin: 2px 8px !important;
     border-radius: 6px !important;
     font-size: 14px !important;
@@ -2577,6 +2630,11 @@ tr.row-selected {
     gap: 12px !important;
     transition: all 0.15s ease !important;
     -webkit-tap-highlight-color: transparent !important;
+    width: calc(100% - 16px) !important;
+    max-width: calc(100% - 16px) !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    touch-action: pan-y !important;
   }
 
   .sidebar .nav-item:hover,
@@ -2606,6 +2664,9 @@ tr.row-selected {
     font-weight: 500 !important;
     flex: 1 !important;
     white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
   }
 
   .sidebar .nav-item.active span {
@@ -2621,18 +2682,28 @@ tr.row-selected {
     border-radius: 999px !important;
     background: rgba(255, 255, 255, 0.15) !important;
     color: #FFFFFF !important;
+    flex-shrink: 0 !important;
   }
 
-  /* User Info Footer in Drawer */
+  /* User Info Footer in Drawer - Cố định dưới đáy, không tràn ngang */
   .sidebar-footer {
     padding: 12px 16px !important;
     border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
     background: rgba(0, 0, 0, 0.25) !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+    touch-action: none !important;
   }
 
   .sidebar .user-info,
   .sidebar.collapsed .user-info {
     display: block !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
   .sidebar .user-avatar {
@@ -2640,17 +2711,24 @@ tr.row-selected {
     height: 34px !important;
     font-size: 13px !important;
     border-radius: 6px !important;
+    flex-shrink: 0 !important;
   }
 
   .sidebar .user-name {
     font-size: 13.5px !important;
     font-weight: 600 !important;
     color: #FFFFFF !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .sidebar .user-role {
     font-size: 11px !important;
     color: rgba(255, 255, 255, 0.6) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   /* ========================================================================
@@ -3219,6 +3297,10 @@ tr.row-selected {
     justify-content: space-around !important;
     align-items: center !important;
     box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08) !important;
+    touch-action: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    overflow: hidden !important;
   }
 
   .bottom-nav-btn {
@@ -3238,6 +3320,9 @@ tr.row-selected {
     transition: all 0.15s ease !important;
     padding: 4px 0 !important;
     -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
   }
 
   .bottom-nav-btn i {

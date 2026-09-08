@@ -225,6 +225,56 @@ const appPWA = {
         }
       });
     });
+
+    // ----------------------------------------------------------------------
+    // Khóa cử chỉ kéo ngang: Chỉ cho phép vuốt chạy lên xuống, cấm kéo qua lại
+    // ----------------------------------------------------------------------
+    if (sidebar) {
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      sidebar.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length > 0) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      sidebar.addEventListener('touchmove', (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        const deltaX = Math.abs(currentX - touchStartX);
+        const deltaY = Math.abs(currentY - touchStartY);
+
+        // Nếu ngón tay di chuyển lệch sang hai bên (kéo qua lại), chặn ngay để giữ menu cố định
+        // Chiều dọc (chạy lên xuống) vẫn cuộn tự nhiên 100% mượt mà
+        if (deltaX > deltaY && deltaX > 6) {
+          if (e.cancelable) {
+            e.preventDefault();
+          }
+        }
+      }, { passive: false });
+
+      // Khóa scrollLeft luôn bằng 0 ở cả sidebar và sidebar-nav
+      sidebar.addEventListener('scroll', () => {
+        if (sidebar.scrollLeft !== 0) sidebar.scrollLeft = 0;
+      }, { passive: true });
+
+      const sidebarNav = sidebar.querySelector('.sidebar-nav');
+      if (sidebarNav) {
+        sidebarNav.addEventListener('scroll', () => {
+          if (sidebarNav.scrollLeft !== 0) sidebarNav.scrollLeft = 0;
+        }, { passive: true });
+      }
+    }
+
+    // Chặn cuộn nền khi chạm vào backdrop
+    if (backdrop) {
+      backdrop.addEventListener('touchmove', (e) => {
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+    }
   },
 
   setupBottomNavigation() {
