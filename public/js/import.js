@@ -260,7 +260,7 @@ const appImport = {
           'Bậc lương': 'Bậc 3', 'Hệ số lương': 2.34, 'Lương cơ bản': 16000000, 'Tỷ lệ hưởng lương': '100%',
           'Lương đóng BH': 16000000, 'Tổng lương': 20000000, 'TK ngân hàng': '1903456789012', 'Ngân hàng': 'Vietcombank',
           'Chi nhánh': 'Chi nhánh Hà Nội', 'Thuế suất': 'Theo biểu lũy tiến', 'Số người phụ thuộc': 0, 'Giảm trừ bản thân': 'Có',
-          'Tham gia bảo hiểm': 'Đang tham gia', 'Tỷ lệ đóng BH': '32%', 'Tỷ lệ đóng BHXH': '25.5%', 'Tỷ lệ đóng BHYT': '4.5%', 'Tỷ lệ đóng BHTN': '2%',
+          'Tham gia bảo hiểm': 'Đang tham gia',
           'Tỷ lệ đóng BHXH của NV': '8%', 'Tỷ lệ đóng BHYT của NV': '1.5%', 'Tỷ lệ đóng BHTN của NV': '1%',
           'Tỷ lệ đóng BHXH của DN': '17.5%', 'Tỷ lệ đóng BHYT của DN': '3%', 'Tỷ lệ đóng BHTN của DN': '1%',
           'Ngày tham gia BH': '01/03/2026', 'Số sổ BHXH': '0123456789', 'Mã số BHXH': '0123456789', 'Mã tỉnh cấp': '001',
@@ -307,7 +307,7 @@ const appImport = {
         'Lý do nghỉ', 'Ngày nghỉ việc', 'Thuộc danh sách đen', 'Người duyệt', 'Địa điểm làm việc',
         'Số sổ QL lao động', 'Hệ số lương', 'Ngày học việc', 'Quản lý trực tiếp', 'Quản lý gián tiếp',
         'Lương cơ bản', 'Lương đóng BH', 'TK ngân hàng', 'Ngân hàng', 'Chi nhánh', 'Ngày tham gia BH',
-        'Tỷ lệ đóng BH', 'Tỷ lệ đóng BHXH', 'Tỷ lệ đóng BHYT', 'Tỷ lệ đóng BHTN', 'Nhân sự khai thác',
+        'Nhân sự khai thác',
         'Số sổ BHXH', 'Nguồn ứng viên', 'Mã số BHXH', 'Mã tỉnh cấp', 'Số thẻ BHYT', 'Nơi đăng ký KCB',
         'Khu vực làm việc', 'Mã vị trí công việc', 'Mã đơn vị công tác'
       ];
@@ -332,7 +332,7 @@ const appImport = {
           'Đã kích hoạt', 'Hợp lệ', '01/05/2026', '', 'Chuyên viên Nhân sự cấp cao', '2001', 'Cấp 3',
           'Bậc 3', '', '', 'Không', 'Huỳnh Thanh Long', 'Trụ sở Tổng công ty - Tòa nhà Trung Hải, Hà Nội',
           'LD-00123', 2.34, '01/01/2026', 'Huỳnh Thanh Long', 'Trần Minh Đức', 16000000, 16000000,
-          '1903456789012', 'Vietcombank', 'Chi nhánh Hà Nội', '01/03/2026', '32%', '25.5%', '4.5%', '2%',
+          '1903456789012', 'Vietcombank', 'Chi nhánh Hà Nội', '01/03/2026',
           'Lê Thị Thu', '0123456789', 'VietnamWorks', '0123456789', '001', 'DN4010123456789',
           'Bệnh viện Bạch Mai - Hà Nội', 'Khối Văn phòng Tổng công ty', positions[0]?.position_id || 'POS-01',
           depts[0]?.department_id || 'HR'
@@ -355,7 +355,7 @@ const appImport = {
           'mai.tt@trunghaico.vn', 'Kích hoạt', 'Chưa kích hoạt', 'Chờ duyệt', '15/02/2026', '15/04/2026',
           'Chuyên viên Kế toán Tổng hợp', '2002', 'Cấp 3', 'Bậc 2', '', '', 'Không', 'Huỳnh Thanh Long',
           'Chi nhánh Miền Trung - Đà Nẵng', 'LD-00124', 2.10, '', 'Huỳnh Thanh Long', '', 12000000, 12000000,
-          '1029384756', 'Techcombank', 'Chi nhánh Đà Nẵng', '15/02/2026', '32%', '25.5%', '4.5%', '2%',
+          '1029384756', 'Techcombank', 'Chi nhánh Đà Nẵng', '15/02/2026',
           'Lê Thị Thu', '0481234567', 'TopCV', '0481234567', '048', 'DN4480481234567',
           'Bệnh viện Đa khoa Đà Nẵng', 'Khối Kế toán Tài chính', positions[1]?.position_id || 'POS-02',
           depts[1]?.department_id || 'KT'

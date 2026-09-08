@@ -228,10 +228,6 @@ const STANDARDIZED_HEADERS = [
     'Ngân hàng',
     'Chi nhánh',
     'Ngày tham gia BH',
-    'Tỷ lệ đóng BH',
-    'Tỷ lệ đóng BHXH',
-    'Tỷ lệ đóng BHYT',
-    'Tỷ lệ đóng BHTN',
     'Nhân sự khai thác',
     'Số sổ BHXH',
     'Nguồn ứng viên',
@@ -473,11 +469,7 @@ for (let i = 1; i <= 1000; i++) {
         bankName,                                               // 99. Ngân hàng
         bankBranch,                                             // 100. Chi nhánh
         insuranceJoinDate,                                      // 101. Ngày tham gia BH
-        '32%',                                                  // 102. Tỷ lệ đóng BH
-        '25.5%',                                                // 103. Tỷ lệ đóng BHXH
-        '4.5%',                                                 // 104. Tỷ lệ đóng BHYT
-        '2%',                                                   // 105. Tỷ lệ đóng BHTN
-        'Lê Thị Thu',                                           // 106. Nhân sự khai thác
+        'Lê Thị Thu',                                           // 102. Nhân sự khai thác
         socialInsuranceBook,                                    // 107. Số sổ BHXH
         (i % 3 === 0 ? 'VietnamWorks' : 'TopCV'),               // 108. Nguồn ứng viên
         socialInsuranceBook,                                    // 109. Mã số BHXH

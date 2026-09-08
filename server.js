@@ -642,10 +642,6 @@ app.get('/api/employees/template', (req, res) => {
         'Ngân hàng',
         'Chi nhánh',
         'Ngày tham gia BH',
-        'Tỷ lệ đóng BH',
-        'Tỷ lệ đóng BHXH',
-        'Tỷ lệ đóng BHYT',
-        'Tỷ lệ đóng BHTN',
         'Nhân sự khai thác',
         'Số sổ BHXH',
         'Nguồn ứng viên',
@@ -762,11 +758,7 @@ app.get('/api/employees/template', (req, res) => {
             'Vietcombank',                                             // 99. Ngân hàng
             'Chi nhánh Hà Nội',                                        // 100. Chi nhánh
             '01/03/2026',                                              // 101. Ngày tham gia BH
-            '32%',                                                     // 102. Tỷ lệ đóng BH
-            '25.5%',                                                   // 103. Tỷ lệ đóng BHXH
-            '4.5%',                                                    // 104. Tỷ lệ đóng BHYT
-            '2%',                                                      // 105. Tỷ lệ đóng BHTN
-            'Lê Thị Thu',                                              // 106. Nhân sự khai thác
+            'Lê Thị Thu',                                              // 102. Nhân sự khai thác
             '0123456789',                                              // 107. Số sổ BHXH
             'VietnamWorks',                                            // 108. Nguồn ứng viên
             '0123456789',                                              // 109. Mã số BHXH
@@ -1025,7 +1017,7 @@ app.post('/api/employees/import-excel', async (req, res) => {
             'tab-p-contact': ['ĐT di động', 'ĐT cơ quan', 'ĐT nhà riêng', 'ĐT khác', 'Email cơ quan', 'Email cá nhân', 'Email khác', 'Skype', 'Facebook', 'Hộ khẩu thường trú', 'Quốc gia (Thường trú)', 'Tỉnh/Thành phố (Thường trú)', 'Quận/Huyện (Thường trú)', 'Phường/Xã (Thường trú)', 'Số nhà, đường phố (Thường trú)', 'Số sổ hộ khẩu', 'Mã số hộ gia đình', 'Là chủ hộ', 'Chỗ ở hiện nay', 'Quốc gia (Hiện nay)', 'Tỉnh/Thành phố (Hiện nay)', 'Quận/Huyện (Hiện nay)', 'Phường/Xã (Hiện nay)', 'Số nhà, đường phố (Hiện nay)', 'TP gia đình', 'TP bản thân'],
             'tab-p-emergency': ['Họ và tên (LHKC)', 'Quan hệ (LHKC)', 'ĐT di động (LHKC)', 'ĐT nhà riêng (LHKC)', 'Email (LHKC)', 'Địa chỉ (LHKC)'],
             'tab-p-education': ['Trình độ văn hóa', 'Trình độ đào tạo', 'Nơi đào tạo', 'Khoa', 'Chuyên ngành', 'Năm tốt nghiệp', 'Xếp loại'],
-            'tab-p-salary': ['Bậc lương', 'Hệ số lương', 'Lương cơ bản', 'Tỷ lệ hưởng lương', 'Lương đóng BH', 'Tổng lương', 'TK ngân hàng', 'Ngân hàng', 'Chi nhánh', 'Thuế suất', 'Số người phụ thuộc', 'Giảm trừ bản thân', 'Tham gia bảo hiểm', 'Tỷ lệ đóng BHXH của NV', 'Tỷ lệ đóng BHYT của NV', 'Tỷ lệ đóng BHTN của NV', 'Tỷ lệ đóng BHXH của DN', 'Tỷ lệ đóng BHYT của DN', 'Tỷ lệ đóng BHTN của DN', 'Tỷ lệ đóng BH', 'Tỷ lệ đóng BHXH', 'Tỷ lệ đóng BHYT', 'Tỷ lệ đóng BHTN', 'Ngày tham gia BH', 'Số sổ BHXH', 'Mã số BHXH', 'Mã tỉnh cấp', 'Số thẻ BHYT', 'Nơi đăng ký KCB', 'Mật khẩu phiếu lương'],
+            'tab-p-salary': ['Bậc lương', 'Hệ số lương', 'Lương cơ bản', 'Tỷ lệ hưởng lương', 'Lương đóng BH', 'Tổng lương', 'TK ngân hàng', 'Ngân hàng', 'Chi nhánh', 'Thuế suất', 'Số người phụ thuộc', 'Giảm trừ bản thân', 'Tham gia bảo hiểm', 'Tỷ lệ đóng BHXH của NV', 'Tỷ lệ đóng BHYT của NV', 'Tỷ lệ đóng BHTN của NV', 'Tỷ lệ đóng BHXH của DN', 'Tỷ lệ đóng BHYT của DN', 'Tỷ lệ đóng BHTN của DN', 'Ngày tham gia BH', 'Số sổ BHXH', 'Mã số BHXH', 'Mã tỉnh cấp', 'Số thẻ BHYT', 'Nơi đăng ký KCB', 'Mật khẩu phiếu lương'],
             'tab-p-allowance': ['Tổng phụ cấp', 'Số khoản phụ cấp', 'Tổng giảm trừ', 'Ghi chú phụ cấp'],
             'tab-p-account': ['ĐT tài khoản', 'Email tài khoản', 'Trạng thái tài khoản', 'Trạng thái chữ ký số', 'Trạng thái hồ sơ cấp CKS']
         };
@@ -1293,10 +1285,6 @@ app.post('/api/employees/import-excel', async (req, res) => {
             const socialInsuranceBook = getVal(item, 'Số sổ BHXH', 'Số sổ / Mã số BHXH', 'social_insurance_book_no');
             const socialInsuranceCode = getVal(item, 'Mã số BHXH', 'social_insurance_code') || socialInsuranceBook;
             const insuranceJoinDate = getVal(item, 'Ngày tham gia BH', 'Ngày tham gia BHXH', 'insurance_join_date') || startDate;
-            const insuranceRateTotal = getVal(item, 'Tỷ lệ đóng BH', 'insurance_rate_total') || '32%';
-            const insuranceRateSocial = getVal(item, 'Tỷ lệ đóng BHXH', 'insurance_rate_social') || '25.5%';
-            const insuranceRateHealth = getVal(item, 'Tỷ lệ đóng BHYT', 'insurance_rate_health') || '4.5%';
-            const insuranceRateUnemployment = getVal(item, 'Tỷ lệ đóng BHTN', 'insurance_rate_unemployment') || '2%';
             const insuranceProvinceCode = getVal(item, 'Mã tỉnh cấp', 'insurance_province_code');
             const healthInsuranceCardNo = getVal(item, 'Số thẻ BHYT', 'health_insurance_card_no');
             const hospitalRegistered = getVal(item, 'Nơi đăng ký KCB', 'Nơi ĐK khám chữa bệnh ban đầu', 'Nơi ĐK KCB ban đầu', 'hospital_registered') || 'Bệnh viện Bạch Mai - Hà Nội';
@@ -1430,10 +1418,6 @@ app.post('/api/employees/import-excel', async (req, res) => {
                 'Ngân hàng': bankName,
                 'Chi nhánh': bankBranch,
                 'Ngày tham gia BH': insuranceJoinDate || '',
-                'Tỷ lệ đóng BH': insuranceRateTotal,
-                'Tỷ lệ đóng BHXH': insuranceRateSocial,
-                'Tỷ lệ đóng BHYT': insuranceRateHealth,
-                'Tỷ lệ đóng BHTN': insuranceRateUnemployment,
                 'Nhân sự khai thác': recruiterName,
                 'Số sổ BHXH': socialInsuranceBook,
                 'Nguồn ứng viên': candidateSource,
@@ -2170,10 +2154,10 @@ app.post('/api/employees', (req, res) => {
         social_insurance_book_no: masterData['Số sổ BHXH'] || body.social_insurance_book_no || '',
         social_insurance_code: masterData['Mã số BHXH'] || body.social_insurance_code || '',
         insurance_join_date: masterData['Ngày tham gia BH'] || startDate,
-        total_insurance_rate: masterData['Tỷ lệ đóng BH'] || '32%',
-        social_insurance_rate: masterData['Tỷ lệ đóng BHXH'] || '25.5%',
-        health_insurance_rate: masterData['Tỷ lệ đóng BHYT'] || '4.5%',
-        unemployment_insurance_rate: masterData['Tỷ lệ đóng BHTN'] || '2%',
+        total_insurance_rate: '32%',
+        social_insurance_rate: '25.5%',
+        health_insurance_rate: '4.5%',
+        unemployment_insurance_rate: '2%',
         insurance_province_code: masterData['Mã tỉnh cấp'] || '001',
         health_insurance_card_no: masterData['Số thẻ BHYT'] || '',
         hospital_registered: masterData['Nơi đăng ký KCB'] || body.hospital_registered || 'Bệnh viện Bạch Mai - Hà Nội',

@@ -988,10 +988,6 @@ const appEmployees = {
       'Tỷ lệ đóng BHXH của DN': pick(base['Tỷ lệ đóng BHXH của DN'], base.comp_bhxh_rate, insurance.comp_bhxh_rate, emp.comp_bhxh_rate, '17.5%'),
       'Tỷ lệ đóng BHYT của DN': pick(base['Tỷ lệ đóng BHYT của DN'], base.comp_bhyt_rate, insurance.comp_bhyt_rate, emp.comp_bhyt_rate, '3%'),
       'Tỷ lệ đóng BHTN của DN': pick(base['Tỷ lệ đóng BHTN của DN'], base.comp_bhtn_rate, insurance.comp_bhtn_rate, emp.comp_bhtn_rate, '1%'),
-      'Tỷ lệ đóng BH': pick(base['Tỷ lệ đóng BH'], '32%'),
-      'Tỷ lệ đóng BHXH': pick(base['Tỷ lệ đóng BHXH'], '25.5%'),
-      'Tỷ lệ đóng BHYT': pick(base['Tỷ lệ đóng BHYT'], '4.5%'),
-      'Tỷ lệ đóng BHTN': pick(base['Tỷ lệ đóng BHTN'], '2%'),
       'Ngày tham gia BH': pick(base['Ngày tham gia BH'], base.insurance_join_date, insurance.insurance_join_date, emp.insurance_join_date, emp.start_date),
       'Số sổ BHXH': pick(base['Số sổ BHXH'], base.social_insurance_book_no, base.social_insurance_no, insurance.social_insurance_no, emp.social_insurance_book_no),
       'Mã số BHXH': pick(base['Mã số BHXH'], base.social_insurance_code, base.social_insurance_book_no, base.social_insurance_no, insurance.social_insurance_no, emp.social_insurance_book_no),
@@ -1509,7 +1505,9 @@ const appEmployees = {
         'Mã nhân viên', 'Họ và tên', 'Đơn vị công tác', 'Vị trí công việc',
         'Bậc lương', 'Hệ số lương', 'Lương cơ bản', 'Tỷ lệ hưởng lương', 'Lương đóng BH', 'Tổng lương',
         'TK ngân hàng', 'Ngân hàng', 'Chi nhánh', 'Thuế suất', 'Số người phụ thuộc', 'Giảm trừ bản thân',
-        'Tham gia công đoàn', 'Tham gia bảo hiểm', 'Tỷ lệ đóng BH', 'Tỷ lệ đóng BHXH', 'Tỷ lệ đóng BHYT', 'Tỷ lệ đóng BHTN',
+        'Tham gia công đoàn', 'Tham gia bảo hiểm',
+        'Tỷ lệ đóng BHXH của NV', 'Tỷ lệ đóng BHYT của NV', 'Tỷ lệ đóng BHTN của NV',
+        'Tỷ lệ đóng BHXH của DN', 'Tỷ lệ đóng BHYT của DN', 'Tỷ lệ đóng BHTN của DN',
         'Ngày tham gia BH', 'Số sổ BHXH', 'Mã số BHXH', 'Số thẻ BHYT', 'Nơi đăng ký KCB',
         'Tổng phụ cấp', 'Số khoản phụ cấp', 'Tổng giảm trừ', 'Ghi chú phụ cấp'
       ];
@@ -1715,7 +1713,7 @@ const appEmployees = {
   },
 
   updateExportCountBadge() {
-    const totalFields = (typeof MASTER_FIELDS_CONFIG !== 'undefined') ? MASTER_FIELDS_CONFIG.length : 115;
+    const totalFields = (typeof MASTER_FIELDS_CONFIG !== 'undefined') ? MASTER_FIELDS_CONFIG.length : 111;
     const selCount = this.exportSelectedKeys ? this.exportSelectedKeys.size : 0;
     const badge = document.getElementById('export-selected-count-badge');
     if (badge) {
