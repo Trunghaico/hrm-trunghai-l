@@ -2365,7 +2365,7 @@
       <!-- Populated dynamically via profile-fields.js -->
     </div>
 
-    <form id="employee-crud-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+    <form id="employee-crud-form" novalidate onsubmit="appEmployees.handleFormSubmit(event)" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
       <input type="hidden" id="form-is-edit" value="0">
       <input type="hidden" id="form-old-emp-id" value="">
       <div class="modal-body" id="form-modal-panes-container" style="overflow-y: auto; padding: 18px 24px; flex: 1;">
@@ -2378,7 +2378,7 @@
         </div>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn btn-secondary" onclick="appEmployees.closeFormModal()">Hủy Bỏ</button>
-          <button type="submit" class="btn btn-primary" style="background: var(--primary-navy);"><i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi</button>
+          <button type="submit" class="btn btn-primary" onclick="appEmployees.handleFormSubmit(event)" style="background: var(--primary-navy);"><i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi</button>
         </div>
       </div>
     </form>
@@ -4801,26 +4801,26 @@
 </div>
 
 <!-- JavaScript Application Modules -->
-<script src="js/data.js?v=3.9.19"></script>
-<script src="js/auth.js?v=3.9.19"></script>
-<script src="js/company.js?v=3.9.19"></script>
-<script src="js/dashboard.js?v=3.9.19"></script>
-<script src="js/profile-fields.js?v=3.9.19"></script>
-<script src="js/employees.js?v=3.9.19"></script>
-<script src="js/import.js?v=3.9.19"></script>
-<script src="js/resigned.js?v=3.9.19"></script>
-<script src="js/template-trunghai.js?v=3.9.19"></script>
-<script src="js/contract-merge.js?v=3.9.19"></script>
-<script src="js/contracts.js?v=3.9.19"></script>
-<script src="js/organization.js?v=3.9.19"></script>
-<script src="js/org-import.js?v=3.9.19"></script>
-<script src="js/reports.js?v=3.9.19"></script>
-<script src="js/attendance.js?v=3.9.19"></script>
-<script src="js/accounts.js?v=3.9.19"></script>
-<script src="js/logs.js?v=3.9.19"></script>
-<script src="js/trash.js?v=3.9.19"></script>
-<script src="js/app.js?v=3.9.19"></script>
-<script src="js/pwa.js?v=3.9.19"></script>
+<script src="js/data.js?v=3.9.20"></script>
+<script src="js/auth.js?v=3.9.20"></script>
+<script src="js/company.js?v=3.9.20"></script>
+<script src="js/dashboard.js?v=3.9.20"></script>
+<script src="js/profile-fields.js?v=3.9.20"></script>
+<script src="js/employees.js?v=3.9.20"></script>
+<script src="js/import.js?v=3.9.20"></script>
+<script src="js/resigned.js?v=3.9.20"></script>
+<script src="js/template-trunghai.js?v=3.9.20"></script>
+<script src="js/contract-merge.js?v=3.9.20"></script>
+<script src="js/contracts.js?v=3.9.20"></script>
+<script src="js/organization.js?v=3.9.20"></script>
+<script src="js/org-import.js?v=3.9.20"></script>
+<script src="js/reports.js?v=3.9.20"></script>
+<script src="js/attendance.js?v=3.9.20"></script>
+<script src="js/accounts.js?v=3.9.20"></script>
+<script src="js/logs.js?v=3.9.20"></script>
+<script src="js/trash.js?v=3.9.20"></script>
+<script src="js/app.js?v=3.9.20"></script>
+<script src="js/pwa.js?v=3.9.20"></script>
 
 </body>
 </html>

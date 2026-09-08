@@ -1187,6 +1187,82 @@ export async function onRequest(context) {
         else identity.push(idObj);
         await saveTableToD1(db, "05_Identity_Docs", identity);
 
+        // Đồng bộ 06_Emergency_Contacts
+        let emergency = data.tables["06_Emergency_Contacts"] || [];
+        const emIdx = emergency.findIndex(em => em.employee_id === targetId || (body.employee_id && em.employee_id === body.employee_id));
+        const emergName = body.emergency_name || (masterProfileData && masterProfileData['Họ và tên (LHKC)']) || (emIdx >= 0 ? emergency[emIdx].contact_name : '');
+        if (emergName || emIdx >= 0) {
+          const emObj = {
+            employee_id: body.employee_id || targetId,
+            full_name: body.full_name || (masterProfileData && masterProfileData['Họ và tên']) || targetId,
+            contact_name: emergName || '',
+            relationship: body.emergency_relation || (masterProfileData && masterProfileData['Quan hệ (LHKC)']) || (emIdx >= 0 ? emergency[emIdx].relationship : 'Người thân'),
+            mobile_phone: body.emergency_phone || (masterProfileData && masterProfileData['ĐT di động (LHKC)']) || (emIdx >= 0 ? emergency[emIdx].mobile_phone : ''),
+            home_phone: (masterProfileData && masterProfileData['ĐT nhà riêng (LHKC)']) || (emIdx >= 0 ? emergency[emIdx].home_phone : ''),
+            email: (masterProfileData && masterProfileData['Email (LHKC)']) || (emIdx >= 0 ? emergency[emIdx].email : ''),
+            address: (masterProfileData && masterProfileData['Địa chỉ (LHKC)']) || (emIdx >= 0 ? emergency[emIdx].address : '')
+          };
+          if (emIdx >= 0) emergency[emIdx] = { ...emergency[emIdx], ...emObj };
+          else emergency.push(emObj);
+          await saveTableToD1(db, "06_Emergency_Contacts", emergency);
+        }
+
+        // Đồng bộ 07_Education
+        let education = data.tables["07_Education"] || [];
+        const eduIdx = education.findIndex(ed => ed.employee_id === targetId || (body.employee_id && ed.employee_id === body.employee_id));
+        const eduObj = {
+          employee_id: body.employee_id || targetId,
+          full_name: body.full_name || (masterProfileData && masterProfileData['Họ và tên']) || targetId,
+          cultural_level: (masterProfileData && masterProfileData['Trình độ văn hóa']) || (eduIdx >= 0 ? education[eduIdx].cultural_level : '12/12'),
+          education_level: body.education_level || (masterProfileData && masterProfileData['Trình độ đào tạo']) || (eduIdx >= 0 ? education[eduIdx].education_level : 'Đại học'),
+          institution: (masterProfileData && masterProfileData['Nơi đào tạo']) || (eduIdx >= 0 ? education[eduIdx].institution : ''),
+          faculty: (masterProfileData && masterProfileData['Khoa']) || (eduIdx >= 0 ? education[eduIdx].faculty : ''),
+          major: body.major || (masterProfileData && masterProfileData['Chuyên ngành']) || (eduIdx >= 0 ? education[eduIdx].major : ''),
+          graduation_year: (masterProfileData && masterProfileData['Năm tốt nghiệp']) || (eduIdx >= 0 ? education[eduIdx].graduation_year : null),
+          classification: (masterProfileData && masterProfileData['Xếp loại']) || (eduIdx >= 0 ? education[eduIdx].classification : 'Khá'),
+          other_certificates: body.other_certificates || (masterProfileData && masterProfileData['Bằng cấp chuyên môn khác']) || (eduIdx >= 0 ? education[eduIdx].other_certificates : '')
+        };
+        if (eduIdx >= 0) education[eduIdx] = { ...education[eduIdx], ...eduObj };
+        else education.push(eduObj);
+        await saveTableToD1(db, "07_Education", education);
+
+        // Đồng bộ 08_Salaries_Banks
+        let salaries = data.tables["08_Salaries_Banks"] || [];
+        const sIdx = salaries.findIndex(s => s.employee_id === targetId || (body.employee_id && s.employee_id === body.employee_id));
+        const baseSal = body.base_salary !== undefined ? parseFloat(body.base_salary) : (masterProfileData && masterProfileData['Lương cơ bản'] !== undefined ? parseFloat(masterProfileData['Lương cơ bản']) : (sIdx >= 0 ? salaries[sIdx].base_salary : 0));
+        const totalSal = body.total_salary !== undefined ? parseFloat(body.total_salary) : (masterProfileData && masterProfileData['Tổng lương'] !== undefined ? parseFloat(masterProfileData['Tổng lương']) : (sIdx >= 0 ? salaries[sIdx].total_salary : 0));
+        const salObj = {
+          employee_id: body.employee_id || targetId,
+          full_name: body.full_name || (masterProfileData && masterProfileData['Họ và tên']) || targetId,
+          base_salary: isNaN(baseSal) ? 0 : baseSal,
+          total_salary: isNaN(totalSal) ? 0 : totalSal,
+          insurance_salary: masterProfileData && masterProfileData['Lương đóng BH'] !== undefined ? parseFloat(masterProfileData['Lương đóng BH']) : (sIdx >= 0 ? salaries[sIdx].insurance_salary : 0),
+          salary_grade: (masterProfileData && masterProfileData['Bậc lương']) || (sIdx >= 0 ? salaries[sIdx].salary_grade : 'Bậc 1'),
+          salary_coefficient: masterProfileData && masterProfileData['Hệ số lương'] !== undefined ? parseFloat(masterProfileData['Hệ số lương']) : (sIdx >= 0 ? salaries[sIdx].salary_coefficient : 1),
+          bank_account_number: body.bank_account_number || (masterProfileData && masterProfileData['TK ngân hàng']) || (sIdx >= 0 ? salaries[sIdx].bank_account_number : ''),
+          bank_name: body.bank_name || (masterProfileData && masterProfileData['Ngân hàng']) || (sIdx >= 0 ? salaries[sIdx].bank_name : 'Vietcombank'),
+          bank_branch: body.bank_branch || (masterProfileData && masterProfileData['Chi nhánh']) || (sIdx >= 0 ? salaries[sIdx].bank_branch : '')
+        };
+        if (sIdx >= 0) salaries[sIdx] = { ...salaries[sIdx], ...salObj };
+        else salaries.push(salObj);
+        await saveTableToD1(db, "08_Salaries_Banks", salaries);
+
+        // Đồng bộ 09_Insurance_Welfare
+        let insurance = data.tables["09_Insurance_Welfare"] || [];
+        const insIdx = insurance.findIndex(i => i.employee_id === targetId || (body.employee_id && i.employee_id === body.employee_id));
+        const insObj = {
+          employee_id: body.employee_id || targetId,
+          full_name: body.full_name || (masterProfileData && masterProfileData['Họ và tên']) || targetId,
+          has_insurance: (masterProfileData && masterProfileData['Tham gia bảo hiểm']) || (insIdx >= 0 ? insurance[insIdx].has_insurance : 'Đang tham gia'),
+          social_insurance_book_no: body.social_insurance_book_no || (masterProfileData && masterProfileData['Số sổ BHXH']) || (insIdx >= 0 ? insurance[insIdx].social_insurance_book_no : ''),
+          social_insurance_code: (masterProfileData && masterProfileData['Mã số BHXH']) || (insIdx >= 0 ? insurance[insIdx].social_insurance_code : ''),
+          hospital_registered: body.hospital_registered || (masterProfileData && masterProfileData['Nơi đăng ký KCB']) || (insIdx >= 0 ? insurance[insIdx].hospital_registered : ''),
+          union_member: (masterProfileData && masterProfileData['Tham gia công đoàn']) || (insIdx >= 0 ? insurance[insIdx].union_member : 'Có')
+        };
+        if (insIdx >= 0) insurance[insIdx] = { ...insurance[insIdx], ...insObj };
+        else insurance.push(insObj);
+        await saveTableToD1(db, "09_Insurance_Welfare", insurance);
+
         // Đồng bộ 10_Contracts
         let contracts = data.tables["10_Contracts"] || [];
         const conIdx = contracts.findIndex(c => c.employee_id === targetId || (body.employee_id && c.employee_id === body.employee_id));

@@ -1053,20 +1053,20 @@ const appEmployees = {
       'Tỉnh/Thành phố (Thường trú)': pick(base['Tỉnh/Thành phố (Thường trú)'], contact.permanent_province),
       'Quận/Huyện (Thường trú)': pick(base['Quận/Huyện (Thường trú)'], contact.permanent_district),
       'Phường/Xã (Thường trú)': pick(base['Phường/Xã (Thường trú)'], contact.permanent_ward),
-      'Số nhà/Đường phố (Thường trú)': pick(base['Số nhà/Đường phố (Thường trú)'], contact.permanent_street),
+      'Số nhà, đường phố (Thường trú)': pick(base['Số nhà, đường phố (Thường trú)'], base['Số nhà/Đường phố (Thường trú)'], contact.permanent_street),
       'Chỗ ở hiện nay': pick(base['Chỗ ở hiện nay'], contact.current_address_full, emp.current_address),
       'Quốc gia (Hiện nay)': pick(base['Quốc gia (Hiện nay)'], contact.current_country, 'Việt Nam'),
       'Tỉnh/Thành phố (Hiện nay)': pick(base['Tỉnh/Thành phố (Hiện nay)'], contact.current_province),
       'Quận/Huyện (Hiện nay)': pick(base['Quận/Huyện (Hiện nay)'], contact.current_district),
       'Phường/Xã (Hiện nay)': pick(base['Phường/Xã (Hiện nay)'], contact.current_ward),
-      'Số nhà/Đường phố (Hiện nay)': pick(base['Số nhà/Đường phố (Hiện nay)'], contact.current_street),
+      'Số nhà, đường phố (Hiện nay)': pick(base['Số nhà, đường phố (Hiện nay)'], base['Số nhà/Đường phố (Hiện nay)'], contact.current_street),
 
-      'Người liên hệ khẩn cấp': pick(base['Người liên hệ khẩn cấp'], emergency.contact_name),
-      'Mối quan hệ K/C': pick(base['Mối quan hệ K/C'], emergency.relationship),
-      'ĐT di động K/C': pick(base['ĐT di động K/C'], emergency.mobile_phone),
-      'ĐT nhà riêng K/C': pick(base['ĐT nhà riêng K/C'], emergency.home_phone),
-      'Email K/C': pick(base['Email K/C'], emergency.email),
-      'Địa chỉ K/C': pick(base['Địa chỉ K/C'], emergency.address),
+      'Họ và tên (LHKC)': pick(base['Họ và tên (LHKC)'], base['Người liên hệ khẩn cấp'], emergency.contact_name, emergency.name),
+      'Quan hệ (LHKC)': pick(base['Quan hệ (LHKC)'], base['Mối quan hệ K/C'], emergency.relationship, emergency.relation),
+      'ĐT di động (LHKC)': pick(base['ĐT di động (LHKC)'], base['ĐT di động K/C'], emergency.mobile_phone, emergency.phone),
+      'ĐT nhà riêng (LHKC)': pick(base['ĐT nhà riêng (LHKC)'], base['ĐT nhà riêng K/C'], emergency.home_phone),
+      'Email (LHKC)': pick(base['Email (LHKC)'], base['Email K/C'], emergency.email),
+      'Địa chỉ (LHKC)': pick(base['Địa chỉ (LHKC)'], base['Địa chỉ K/C'], emergency.address),
 
       'Trình độ văn hóa': pick(base['Trình độ văn hóa'], education.general_education),
       'Trình độ đào tạo': pick(base['Trình độ đào tạo'], education.education_level),
@@ -1183,6 +1183,17 @@ const appEmployees = {
   },
 
   openAddModal() {
+    // Ensure form tabs are built
+    if (typeof buildFormModalTabsHtml === 'function') {
+      const container = document.getElementById('form-modal-panes-container');
+      if (!container || !container.children.length) {
+        buildFormModalTabsHtml();
+      }
+    }
+    if (typeof initModalTabSwitching === 'function') {
+      initModalTabSwitching();
+    }
+
     document.getElementById('form-is-edit').value = '0';
     const oldInput = document.getElementById('form-old-emp-id');
     if (oldInput) oldInput.value = '';
@@ -1209,6 +1220,17 @@ const appEmployees = {
 
   async openEditModal(empId) {
     try {
+      // Ensure form tabs are built
+      if (typeof buildFormModalTabsHtml === 'function') {
+        const container = document.getElementById('form-modal-panes-container');
+        if (!container || !container.children.length) {
+          buildFormModalTabsHtml();
+        }
+      }
+      if (typeof initModalTabSwitching === 'function') {
+        initModalTabSwitching();
+      }
+
       let serverJson = null;
       if (typeof appData !== 'undefined' && appData.hasServerBackend) {
         try {
@@ -1286,20 +1308,39 @@ const appEmployees = {
     if (modalEl) modalEl.classList.remove('active');
   },
 
+  switchFormTab(tabId) {
+    const targetBtn = document.querySelector(`#modal-employee-form .form-tab-btn[data-tab="${tabId}"]`);
+    if (targetBtn) {
+      targetBtn.click();
+    }
+  },
+
   async handleFormSubmit(e) {
-    if (e) e.preventDefault();
-    const isEdit = document.getElementById('form-is-edit').value === '1';
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (this.isSubmitting) return;
+
+    const isEdit = document.getElementById('form-is-edit')?.value === '1';
     const oldEmpId = (document.getElementById('form-old-emp-id')?.value || '').trim();
 
     const masterData = typeof collectFormModalData === 'function' ? collectFormModalData() : {};
     const empId = (masterData['Mã nhân viên'] || '').trim();
     const fullName = (masterData['Họ và tên'] || '').trim();
 
+    // Validation with auto tab switching
     if (!empId) {
+      this.switchFormTab('form-tab-p-personal');
+      const inputEl = document.getElementById(typeof getFieldInputId === 'function' ? getFieldInputId('Mã nhân viên') : '');
+      if (inputEl) inputEl.focus();
       utils.showToast('Vui lòng nhập Mã nhân viên (*)', 'error');
       return;
     }
     if (!fullName) {
+      this.switchFormTab('form-tab-p-personal');
+      const inputEl = document.getElementById(typeof getFieldInputId === 'function' ? getFieldInputId('Họ và tên') : '');
+      if (inputEl) inputEl.focus();
       utils.showToast('Vui lòng nhập Họ và tên (*)', 'error');
       return;
     }

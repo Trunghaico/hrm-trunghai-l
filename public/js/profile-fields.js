@@ -340,26 +340,25 @@ function buildFormModalTabsHtml() {
       const inputId = getFieldInputId(f.key);
       const colStyle = f.colSpan && f.colSpan > 1 ? `style="grid-column: span ${f.colSpan};"` : '';
       const reqMarker = f.required ? `<span class="req" style="color: var(--accent-red); margin-left: 2px;">*</span>` : '';
-      const reqAttr = f.required ? 'required' : '';
 
       let controlHtml = '';
       if (f.type === 'select') {
         const opts = (f.options || []).map(opt => `<option value="${opt}">${opt === '' ? '-- Chưa chọn --' : opt}</option>`).join('');
-        controlHtml = `<select id="${inputId}" class="form-control" ${reqAttr}>${opts}</select>`;
+        controlHtml = `<select id="${inputId}" class="form-control">${opts}</select>`;
       } else if (f.type === 'date') {
-        controlHtml = `<input type="date" id="${inputId}" class="form-control" ${reqAttr}>`;
+        controlHtml = `<input type="date" id="${inputId}" class="form-control">`;
       } else if (f.type === 'number') {
-        controlHtml = `<input type="number" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" ${reqAttr}>`;
+        controlHtml = `<input type="number" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}">`;
       } else if (f.key === 'Đơn vị công tác') {
-        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-departments" ${reqAttr}>`;
+        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-departments">`;
       } else if (f.key === 'Mã đơn vị công tác') {
-        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-dept-ids" ${reqAttr}>`;
+        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-dept-ids">`;
       } else if (f.key === 'Vị trí công việc') {
-        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-positions" ${reqAttr}>`;
+        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-positions">`;
       } else if (f.key === 'Mã vị trí công việc') {
-        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-position-ids" ${reqAttr}>`;
+        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-position-ids">`;
       } else {
-        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" ${reqAttr}>`;
+        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}">`;
       }
 
       return `
