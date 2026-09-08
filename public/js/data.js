@@ -183,6 +183,20 @@ const appData = {
           }
         });
 
+        // Chuẩn hóa và đồng bộ 'Mã chấm công' từ tab Vị trí & Tổ chức (00_Master_Profiles)
+        const masterMap = new Map((this.masterProfiles || []).map(m => [m.employee_id, m]));
+        this.employees.forEach(e => {
+          const m = masterMap.get(e.employee_id);
+          const rawCode = m ? (m['Mã chấm công'] || m.time_attendance_code || e.time_attendance_code || '') : (e.time_attendance_code || '');
+          const cleanCode = (rawCode && rawCode !== e.employee_id && !String(rawCode).startsWith('TH-') && !String(rawCode).startsWith('MISA')) ? String(rawCode).trim() : '';
+          e.time_attendance_code = cleanCode;
+          e.attendance_code = cleanCode;
+          if (m) {
+            m['Mã chấm công'] = cleanCode;
+            m.time_attendance_code = cleanCode;
+          }
+        });
+
         // Build lookup maps
         this.buildMaps();
 
