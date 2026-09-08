@@ -204,6 +204,14 @@ const appPWA = {
     if (moreBtn) {
       moreBtn.addEventListener('click', (e) => {
         e.preventDefault();
+        // Tắt tất cả các modal, tab popups trước khi mở menu drawer
+        if (typeof window.closeAllModalsAndOverlays === 'function') {
+          window.closeAllModalsAndOverlays();
+        } else if (window.app && typeof app.closeAllModalsAndOverlays === 'function') {
+          app.closeAllModalsAndOverlays();
+        } else {
+          document.querySelectorAll('.modal-backdrop.active').forEach(m => m.classList.remove('active'));
+        }
         openDrawer();
       });
     }
@@ -288,6 +296,16 @@ const appPWA = {
         e.preventDefault();
         const viewId = btn.getAttribute('data-view');
         if (!viewId) return;
+
+        // Tự động tắt tất cả các modal, tab popup cũ khi bấm qua menu khác ở dưới
+        if (typeof window.closeAllModalsAndOverlays === 'function') {
+          window.closeAllModalsAndOverlays();
+        } else if (window.app && typeof app.closeAllModalsAndOverlays === 'function') {
+          app.closeAllModalsAndOverlays();
+        } else {
+          document.querySelectorAll('.modal-backdrop.active').forEach(m => m.classList.remove('active'));
+          document.body.style.overflow = '';
+        }
 
         // Trigger corresponding sidebar item click
         const sidebarNav = document.querySelector(`.sidebar-nav .nav-item[data-view="${viewId}"]`);
