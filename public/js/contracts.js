@@ -939,7 +939,7 @@ const appContracts = {
     if (elDept) elDept.value = emp.department_name || (typeof appData !== 'undefined' && appData.deptMap?.[emp.department_id]) || emp.department_id || '';
 
     const elPos = document.getElementById('contract-form-pos');
-    if (elPos) elPos.value = emp.job_title || (typeof appData !== 'undefined' && appData.posMap?.[emp.position_id]) || emp.position_id || '';
+    if (elPos) elPos.value = (typeof appData !== 'undefined' && appData.getPositionName) ? appData.getPositionName(emp.position_name || emp.job_title || emp.position_id) : (emp.position_name || emp.job_title || '');
 
     const elSalary = document.getElementById('contract-form-salary');
     if (elSalary && !elSalary.value) elSalary.value = emp.base_salary || 0;

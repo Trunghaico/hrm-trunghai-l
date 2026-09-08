@@ -178,7 +178,7 @@ const appReports = {
           gender: emp.gender || 'Nam',
           department_id: emp.department_id,
           department_name: appData.deptMap[emp.department_id] || emp.department_name || emp.department_id,
-          position_name: appData.posMap[emp.position_id] || emp.job_title || emp.position_id,
+          position_name: (appData.getPositionName ? appData.getPositionName(emp.position_name || emp.position_id) : (appData.posMap[emp.position_id] || emp.position_name || emp.position_id)),
           effective_date: joinDate.toISOString().slice(0, 10),
           status: emp.employment_status || 'Chính thức',
           color: 'green'
@@ -195,7 +195,7 @@ const appReports = {
           gender: emp.gender || 'Nam',
           department_id: emp.department_id,
           department_name: appData.deptMap[emp.department_id] || emp.department_name || emp.department_id,
-          position_name: appData.posMap[emp.position_id] || emp.job_title || emp.position_id,
+          position_name: (appData.getPositionName ? appData.getPositionName(emp.position_name || emp.position_id) : (appData.posMap[emp.position_id] || emp.position_name || emp.position_id)),
           effective_date: resignDate.toISOString().slice(0, 10),
           status: 'Đã chấm dứt HĐ',
           color: 'red'
@@ -500,7 +500,7 @@ const appReports = {
         "Họ và tên": e.full_name,
         "Giới tính": e.gender || '',
         "Ngày sinh": utils.formatDate(e.date_of_birth || e['Ngày sinh']),
-        "Vị trí công việc": appData.posMap[e.position_id] || e.position_name || e.position_id,
+        "Vị trí công việc": (appData.getPositionName ? appData.getPositionName(e.position_name || e.position_id) : (appData.posMap[e.position_id] || e.position_name || e.position_id)),
         "Đơn vị công tác": appData.deptMap[e.department_id] || e.department_name || e.department_id,
         "Số ĐT di động": contactMap[e.employee_id]?.mobile_phone || e.mobile_phone || '',
         "Email công việc": contactMap[e.employee_id]?.work_email || e.work_email || '',

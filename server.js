@@ -1924,7 +1924,7 @@ app.get('/api/employees/:id', (req, res) => {
     }
 
     const dept = depts.find(d => d.department_id === employee.department_id) || {};
-    const position = pos.find(p => p.position_id === employee.position_id) || {};
+    const position = pos.find(p => p.position_id === employee.position_id || (p.position_id && p.position_id.replace(/^THG_/, '') === employee.position_id) || p.position_name === employee.position_name) || {};
 
     const contact = contacts.find(c => c.employee_id === id) || {};
     const idDoc = identity.find(i => i.employee_id === id) || {};
@@ -1979,7 +1979,14 @@ app.post('/api/employees', (req, res) => {
     
     // Resolve Department & Position
     const deptObj = depts.find(d => d.department_id === deptNameOrId || d.department_name === deptNameOrId) || depts[0] || { department_id: 'HR', department_name: 'Phòng Hành Chính Nhân Sự' };
-    const posObj = pos.find(p => p.position_id === posNameOrId || p.position_name === posNameOrId) || pos[0] || { position_id: 'POS-01', position_name: 'Chuyên viên' };
+    const cleanPosNameOrId = (posNameOrId || '').trim();
+    const posObj = pos.find(p => 
+        p.position_id === cleanPosNameOrId || 
+        p.position_name === cleanPosNameOrId || 
+        (p.position_id && p.position_id.replace(/^THG_/, '') === cleanPosNameOrId) ||
+        (p.position_name && p.position_name.toLowerCase() === cleanPosNameOrId.toLowerCase()) ||
+        (p.position_id && p.position_id.toLowerCase() === cleanPosNameOrId.toLowerCase())
+    ) || pos[0] || { position_id: 'POS-01', position_name: 'Chuyên viên' };
 
     // Auto-generate employee_id if not provided
     let newId = (masterData['Mã nhân viên'] || body.employee_id || '').trim();
@@ -2260,7 +2267,14 @@ const updateEmployeeHandler = (req, res) => {
     const deptNameOrId = masterData['Đơn vị công tác'] || masterData['Mã đơn vị công tác'] || body.department_id || employees[empIdx].department_id;
     const posNameOrId = masterData['Vị trí công việc'] || masterData['Mã vị trí công việc'] || body.position_id || employees[empIdx].position_id;
     const deptObj = depts.find(d => d.department_id === deptNameOrId || d.department_name === deptNameOrId) || {};
-    const posObj = pos.find(p => p.position_id === posNameOrId || p.position_name === posNameOrId) || {};
+    const cleanPosNameOrId2 = (posNameOrId || '').trim();
+    const posObj = pos.find(p => 
+        p.position_id === cleanPosNameOrId2 || 
+        p.position_name === cleanPosNameOrId2 ||
+        (p.position_id && p.position_id.replace(/^THG_/, '') === cleanPosNameOrId2) ||
+        (p.position_name && p.position_name.toLowerCase() === cleanPosNameOrId2.toLowerCase()) ||
+        (p.position_id && p.position_id.toLowerCase() === cleanPosNameOrId2.toLowerCase())
+    ) || {};
 
     const fullName = (masterData['Họ và tên'] || body.full_name || employees[empIdx].full_name || '').trim();
 

@@ -940,9 +940,10 @@ const appImport = {
         marital_status: maritalStatus,
         children_count: childrenCount,
         department_id: dept,
-        position_id: pos,
+        position_id: (typeof appData !== 'undefined' && appData.getPositionId) ? appData.getPositionId(pos) : pos,
+        position_name: (typeof appData !== 'undefined' && appData.getPositionName) ? appData.getPositionName(pos || professionalTitle) : (pos || professionalTitle),
         job_rank: jobRank,
-        job_title: professionalTitle,
+        job_title: (typeof appData !== 'undefined' && appData.getPositionName) ? appData.getPositionName(professionalTitle || pos) : professionalTitle,
         work_location: workLocation,
         work_area: workArea,
         direct_manager_id: directMgrId,
@@ -1273,6 +1274,11 @@ const appImport = {
       return `<span class="badge badge-navy" title="${this.escapeHtml(deptName)}">${this.escapeHtml(deptName)}</span>`;
     }
 
+    if ((lowerHeader.includes('vị trí') || lowerHeader.includes('chức danh')) && !lowerHeader.includes('mã')) {
+      const posName = (typeof appData !== 'undefined' && appData.getPositionName) ? appData.getPositionName(str) : str;
+      return `<span title="${this.escapeHtml(posName)}">${this.escapeHtml(posName)}</span>`;
+    }
+
     return `<span title="${this.escapeHtml(str)}">${this.escapeHtml(str)}</span>`;
   },
 
@@ -1374,7 +1380,7 @@ const appImport = {
         const cccdStyle = hasCccdError ? 'color: #DC2626; font-weight: 700; background: #FEF2F2; padding: 2px 4px; border-radius: 3px;' : '';
         const emailStyle = hasEmailError ? 'color: #DC2626; font-weight: 700; background: #FEF2F2; padding: 2px 4px; border-radius: 3px;' : '';
         const deptDisplay = (typeof appData !== 'undefined' && appData.deptMap?.[e.department_id]) || e.department_id || 'Mặc định';
-        const posDisplay = (typeof appData !== 'undefined' && appData.posMap?.[e.position_id]) || e.position_id || 'Mặc định';
+        const posDisplay = (typeof appData !== 'undefined' && appData.getPositionName) ? appData.getPositionName(e.position_name || e.position_id) : (e.position_name || e.position_id || 'Mặc định');
 
         return `
           <tr style="${e.status === 'CONFLICT' ? 'background: #FFF5F5;' : ''}">

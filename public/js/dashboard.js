@@ -378,7 +378,7 @@ const appDashboard = {
       <tr>
         <td><strong style="color: var(--primary-navy);">${e.employee_id}</strong></td>
         <td><strong>${e.full_name}</strong></td>
-        <td>${appData.posMap[e.position_id] || e.position_id}</td>
+        <td>${(appData.getPositionName ? appData.getPositionName(e.position_name || e.position_id) : (appData.posMap[e.position_id] || e.position_id)) || '-'}</td>
         <td style="max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${appData.deptMap[e.department_id] || e.department_id}">
           ${appData.deptMap[e.department_id] || e.department_id}
         </td>

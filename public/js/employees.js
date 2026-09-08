@@ -111,10 +111,10 @@ const appEmployees = {
 
     let posOpts = `<option value="">-- Chọn Vị Trí Công Việc --</option>`;
     positions.forEach(p => {
-      posOpts += `<option value="${p.position_id}" ${p.position_id === activePosId ? 'selected' : ''}>${p.position_name} (${p.position_id})</option>`;
+      posOpts += `<option value="${p.position_id}" ${p.position_id === activePosId ? 'selected' : ''}>${p.position_name}</option>`;
     });
     if (activePosId && !positions.some(p => p.position_id === activePosId)) {
-      posOpts += `<option value="${activePosId}" selected>${activePosId}</option>`;
+      posOpts += `<option value="${activePosId}" selected>${appData.getPositionName ? appData.getPositionName(activePosId) : activePosId}</option>`;
     }
     formPosSelect.innerHTML = posOpts;
     if (activePosId) formPosSelect.value = activePosId;
@@ -411,7 +411,7 @@ const appEmployees = {
         const c = contactMap[e.employee_id] || {};
         const idDoc = idMap[e.employee_id] || {};
         const dName = (appData.deptMap[e.department_id] || '').toLowerCase();
-        const pName = (appData.posMap[e.position_id] || '').toLowerCase();
+        const pName = (appData.getPositionName ? appData.getPositionName(e.position_name || e.position_id) : (appData.posMap[e.position_id] || '')).toLowerCase();
 
         const match = (
           (e.employee_id || '').toLowerCase().includes(searchVal) ||
@@ -484,7 +484,7 @@ const appEmployees = {
       const mobilePhone = c.mobile_phone || e.mobile_phone || e['ĐT di động'] || '-';
       const workEmail = c.work_email || e.work_email || e['Email cơ quan'] || '';
       const deptDisplay = appData.deptMap[e.department_id] || e.department_name || e['Đơn vị công tác'] || e.department_id || '-';
-      const posDisplay = appData.posMap[e.position_id] || e.position_name || e.job_title || e['Vị trí công việc'] || e.position_id || '-';
+      const posDisplay = (appData.getPositionName ? appData.getPositionName(e.position_name || e['Vị trí công việc'] || e.position_id) : (appData.posMap[e.position_id] || e.position_name || e.position_id)) || '-';
 
       const statusBadge = e.employment_status === 'Đang làm việc'
         ? '<span class="badge badge-active"><i class="fa-solid fa-check"></i> Đang làm việc</span>'
@@ -889,9 +889,9 @@ const appEmployees = {
 
       'Đơn vị công tác': pick(base['Đơn vị công tác'], appData.deptMap?.[emp.department_id], emp.department_name, emp.department_id),
       'Mã đơn vị công tác': pick(base['Mã đơn vị công tác'], emp.department_id),
-      'Vị trí công việc': pick(base['Vị trí công việc'], appData.posMap?.[emp.position_id], emp.position_name, emp.job_title, emp.position_id),
-      'Mã vị trí công việc': pick(base['Mã vị trí công việc'], emp.position_id),
-      'Chức danh': pick(base['Chức danh'], emp.job_title, appData.posMap?.[emp.position_id], emp.position_name),
+      'Vị trí công việc': appData.getPositionName ? appData.getPositionName(base['Vị trí công việc'] || emp.position_name || emp.position_id || emp.job_title) : pick(base['Vị trí công việc'], emp.position_name, emp.position_id),
+      'Mã vị trí công việc': appData.getPositionId ? appData.getPositionId(base['Mã vị trí công việc'] || emp.position_id || emp.position_name) : pick(base['Mã vị trí công việc'], emp.position_id),
+      'Chức danh': appData.getPositionName ? appData.getPositionName(base['Chức danh'] || emp.job_title || emp.position_name || emp.position_id) : pick(base['Chức danh'], emp.job_title, emp.position_name),
       'Cấp': pick(base['Cấp'], emp.job_grade),
       'Bậc': pick(base['Bậc'], emp.job_step),
       'Mã chấm công': pick(base['Mã chấm công'], emp.time_attendance_code),
@@ -1209,10 +1209,10 @@ const appEmployees = {
       tax_code: masterData['MST cá nhân'] || '',
       department_id: masterData['Mã đơn vị công tác'] || masterData['Đơn vị công tác'] || '',
       department_name: masterData['Đơn vị công tác'] || '',
-      position_id: masterData['Mã vị trí công việc'] || masterData['Vị trí công việc'] || '',
-      position_name: masterData['Vị trí công việc'] || '',
+      position_id: (appData.getPositionId ? appData.getPositionId(masterData['Mã vị trí công việc'] || masterData['Vị trí công việc'] || '') : (masterData['Mã vị trí công việc'] || masterData['Vị trí công việc'] || '')),
+      position_name: (appData.getPositionName ? appData.getPositionName(masterData['Vị trí công việc'] || masterData['Mã vị trí công việc'] || '') : (masterData['Vị trí công việc'] || '')),
       job_rank: masterData['Bậc'] || masterData['Bậc lương'] || 'Cấp 3',
-      job_title: masterData['Chức danh'] || masterData['Vị trí công việc'] || '',
+      job_title: (appData.getPositionName ? appData.getPositionName(masterData['Chức danh'] || masterData['Vị trí công việc'] || '') : (masterData['Chức danh'] || masterData['Vị trí công việc'] || '')),
       work_location: masterData['Địa điểm làm việc'] || '',
       direct_manager_name: masterData['Quản lý trực tiếp'] || '',
       labor_nature: masterData['Tính chất lao động'] || 'Chính thức',

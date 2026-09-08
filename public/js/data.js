@@ -34,9 +34,20 @@ const appData = {
   // Fetch all tables from API
   async init() {
     try {
-      const res = await fetch('/api/data', { headers: this.getApiHeaders() });
-      const json = await res.json();
-      if (json.success && json.tables) {
+      let json = null;
+      try {
+        const res = await fetch('/api/data', { headers: this.getApiHeaders() });
+        if (res.ok) json = await res.json();
+      } catch (e) {}
+
+      if (!json || !json.tables) {
+        try {
+          const fbRes = await fetch('sample_database.json');
+          if (fbRes.ok) json = await fbRes.json();
+        } catch (e) {}
+      }
+
+      if (json && json.tables) {
         this.tables = json.tables;
         this.company = json.company || {};
         this.companies = json.tables['00_Companies'] || [];
@@ -171,8 +182,33 @@ const appData = {
     });
 
     this.posMap = {};
-    this.positions.forEach(p => {
-      this.posMap[p.position_id] = p.position_name;
+    const extraPosMap = {
+      'TPB_HC': 'Trưởng ban Tổ chức Hành chính',
+      'TPB_KHKT': 'Trưởng phòng Kế hoạch Kỹ thuật',
+      'PB_QLTB': 'Phó ban Quản lý thiết bị',
+      'KS_XDCB': 'Kỹ sư Xây dựng cơ bản',
+      'THG_TPB_HC': 'Trưởng ban Tổ chức Hành chính',
+      'THG_TPB_KHKT': 'Trưởng phòng Kế hoạch Kỹ thuật',
+      'THG_PB_QLTB': 'Phó ban Quản lý thiết bị',
+      'THG_KS_XDCB': 'Kỹ sư Xây dựng cơ bản'
+    };
+    Object.assign(this.posMap, extraPosMap);
+
+    (this.positions || []).forEach(p => {
+      if (!p) return;
+      const pid = p.position_id;
+      const pname = p.position_name;
+      if (pid && pname) {
+        this.posMap[pid] = pname;
+        this.posMap[pid.toUpperCase()] = pname;
+        this.posMap[pid.toLowerCase()] = pname;
+        const stripped = pid.replace(/^THG_/i, '');
+        this.posMap[stripped] = pname;
+        this.posMap[stripped.toUpperCase()] = pname;
+        this.posMap[stripped.toLowerCase()] = pname;
+        this.posMap[pname] = pname;
+        this.posMap[pname.toLowerCase()] = pname;
+      }
     });
 
     this.empMap = {};
@@ -198,6 +234,40 @@ const appData = {
         this.allowanceMap[id].push(a);
       }
     });
+  },
+
+  getPositionName(codeOrName) {
+    if (!codeOrName) return '-';
+    const s = String(codeOrName).trim();
+    if (!s || s === '-') return '-';
+    if (this.posMap && this.posMap[s]) return this.posMap[s];
+    if (this.posMap && this.posMap[s.toUpperCase()]) return this.posMap[s.toUpperCase()];
+    const clean = s.replace(/^THG_/i, '');
+    if (this.posMap && this.posMap[clean]) return this.posMap[clean];
+    if (this.posMap && this.posMap[clean.toUpperCase()]) return this.posMap[clean.toUpperCase()];
+    const found = (this.positions || []).find(p =>
+      (p.position_id && p.position_id.toLowerCase() === s.toLowerCase()) ||
+      (p.position_name && p.position_name.toLowerCase() === s.toLowerCase()) ||
+      (p.position_id && p.position_id.replace(/^THG_/i, '').toLowerCase() === clean.toLowerCase())
+    );
+    if (found && found.position_name) return found.position_name;
+    return s;
+  },
+
+  getPositionId(nameOrCode) {
+    if (!nameOrCode) return '';
+    const s = String(nameOrCode).trim();
+    if (!s || s === '-') return '';
+    const clean = s.replace(/^THG_/i, '');
+    const found = (this.positions || []).find(p =>
+      (p.position_name && p.position_name.toLowerCase() === s.toLowerCase()) ||
+      (p.position_id && p.position_id.toLowerCase() === s.toLowerCase()) ||
+      (p.position_id && p.position_id.replace(/^THG_/i, '').toLowerCase() === clean.toLowerCase())
+    );
+    if (found && found.position_id) {
+      return found.position_id.replace(/^THG_/i, '');
+    }
+    return clean;
   }
 };
 

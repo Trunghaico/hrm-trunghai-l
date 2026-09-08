@@ -137,7 +137,7 @@ const appResigned = {
         const c = contactMap[e.employee_id] || {};
         const idDoc = idMap[e.employee_id] || {};
         const dName = (appData.deptMap[e.department_id] || '').toLowerCase();
-        const pName = (appData.posMap[e.position_id] || '').toLowerCase();
+        const pName = (appData.getPositionName ? appData.getPositionName(e.position_name || e.position_id) : (appData.posMap[e.position_id] || '')).toLowerCase();
 
         const match = (
           (e.employee_id || '').toLowerCase().includes(searchVal) ||
@@ -224,7 +224,7 @@ const appResigned = {
           <td style="max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${appData.deptMap[e.department_id] || e.department_id}">
             ${appData.deptMap[e.department_id] || e.department_id}
           </td>
-          <td>${appData.posMap[e.position_id] || e.position_id || '-'}</td>
+          <td>${(appData.getPositionName ? appData.getPositionName(e.position_name || e.position_id) : (appData.posMap[e.position_id] || e.position_id)) || '-'}</td>
           <td>${utils.formatDate(e.start_date || e.trial_start_date)}</td>
           <td><strong style="color: var(--accent-red);">${utils.formatDate(resignDate)}</strong></td>
           <td><span class="badge" style="background: #F1F5F9; color: #334155; font-weight: 600;">${seniority}</span></td>
@@ -320,7 +320,7 @@ const appResigned = {
         "Điện thoại": c.mobile_phone || '',
         "Email": c.work_email || '',
         "Đơn vị công tác trước khi nghỉ": appData.deptMap[e.department_id] || e.department_id,
-        "Vị trí chức danh": appData.posMap[e.position_id] || e.position_id,
+        "Vị trí chức danh": appData.getPositionName ? appData.getPositionName(e.position_name || e.position_id) : (appData.posMap[e.position_id] || e.position_id),
         "Ngày bắt đầu làm việc": utils.formatDate(e.start_date || e.trial_start_date),
         "Ngày nghỉ việc chính thức": utils.formatDate(resignDate),
         "Thâm niên công tác": this.calculateSeniority(e.start_date || e.trial_start_date, resignDate),

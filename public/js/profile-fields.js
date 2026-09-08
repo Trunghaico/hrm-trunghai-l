@@ -418,12 +418,25 @@ function buildFormModalTabsHtml() {
       posInput.addEventListener('change', () => {
         const val = posInput.value.trim();
         const positions = (typeof appData !== 'undefined' && appData.positions) ? appData.positions : [];
-        const match = positions.find(p => p.position_name.toLowerCase() === val.toLowerCase() || p.position_id.toLowerCase() === val.toLowerCase());
+        const match = positions.find(p => 
+          p.position_name.toLowerCase() === val.toLowerCase() || 
+          p.position_id.toLowerCase() === val.toLowerCase() ||
+          p.position_id.replace(/^THG_/i, '').toLowerCase() === val.toLowerCase()
+        );
         if (match) {
           posInput.value = match.position_name;
-          posIdInput.value = match.position_id;
-          if (jobTitleInput && !jobTitleInput.value) {
+          posIdInput.value = match.position_id.replace(/^THG_/i, '');
+          if (jobTitleInput && (!jobTitleInput.value || jobTitleInput.value === val)) {
             jobTitleInput.value = match.position_name;
+          }
+        } else if (typeof appData !== 'undefined' && appData.getPositionName) {
+          const resolvedName = appData.getPositionName(val);
+          if (resolvedName && resolvedName !== val) {
+            posInput.value = resolvedName;
+            posIdInput.value = appData.getPositionId(val);
+            if (jobTitleInput && (!jobTitleInput.value || jobTitleInput.value === val)) {
+              jobTitleInput.value = resolvedName;
+            }
           }
         }
       });
@@ -443,6 +456,18 @@ function fillDetailModalData(masterData, allowancesList = null) {
     const el = document.getElementById(getFieldDetailId(f.key));
     if (!el) return;
     let val = masterData[f.key];
+
+    // Standardize Position & Job Title to position name
+    if (f.key === 'Vị trí công việc' || f.key === 'Chức danh') {
+      if (typeof appData !== 'undefined' && appData.getPositionName) {
+        val = appData.getPositionName(val || masterData.position_name || masterData.position_id || masterData.job_title);
+      }
+    } else if (f.key === 'Mã vị trí công việc') {
+      if (typeof appData !== 'undefined' && appData.getPositionId) {
+        val = appData.getPositionId(val || masterData.position_id || masterData['Vị trí công việc']);
+      }
+    }
+
     if (val === undefined || val === null || val === '') {
       el.textContent = '-';
       el.style.color = 'var(--text-muted)';
@@ -578,6 +603,21 @@ function fillFormModalData(masterData = {}, isEdit = false) {
     const el = document.getElementById(getFieldInputId(f.key));
     if (!el) return;
     let val = masterData[f.key];
+
+    // Standardize Position & Job Title
+    if (f.key === 'Vị trí công việc') {
+      if (typeof appData !== 'undefined' && appData.getPositionName) {
+        val = appData.getPositionName(val || masterData.position_name || masterData.position_id || masterData.job_title);
+      }
+    } else if (f.key === 'Mã vị trí công việc') {
+      if (typeof appData !== 'undefined' && appData.getPositionId) {
+        val = appData.getPositionId(val || masterData.position_id || masterData['Vị trí công việc']);
+      }
+    } else if (f.key === 'Chức danh') {
+      if (typeof appData !== 'undefined' && appData.getPositionName) {
+        val = appData.getPositionName(val || masterData.job_title || masterData.position_name || masterData['Vị trí công việc']);
+      }
+    }
 
     if (val === undefined || val === null) {
       val = f.defaultValue !== undefined ? f.defaultValue : '';
