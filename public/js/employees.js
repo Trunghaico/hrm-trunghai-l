@@ -1003,6 +1003,12 @@ const appEmployees = {
       'Nơi ĐK KCB ban đầu': pick(base['Nơi đăng ký KCB'], base['Nơi ĐK KCB ban đầu'], base.hospital_registered, insurance.hospital_registered, emp.hospital_registered),
       'Trạng thái sổ BHXH': pick(base['Trạng thái sổ BHXH'], insurance.status, 'Đang tham gia'),
 
+      // TAB 9: Phụ Cấp & Giảm Trừ
+      'Tổng phụ cấp': pick(base['Tổng phụ cấp'], base.total_allowance, emp.total_allowance, 0),
+      'Số khoản phụ cấp': pick(base['Số khoản phụ cấp'], base.allowance_count, emp.allowance_count, 0),
+      'Tổng giảm trừ': pick(base['Tổng giảm trừ'], base.total_deduction, emp.total_deduction, 0),
+      'Ghi chú phụ cấp': pick(base['Ghi chú phụ cấp'], base.salary_note, emp.salary_note, ''),
+
       'Tài khoản đăng nhập': pick(base['Tài khoản đăng nhập'], account.username, emp.work_email, emp.employee_id),
       'Trạng thái tài khoản': pick(base['Trạng thái tài khoản'], account.status, 'Hoạt động')
     };
@@ -1026,9 +1032,10 @@ const appEmployees = {
       }
 
       const masterData = this.buildFullMasterProfile(empId, serverJson);
+      const allowances = serverJson?.data?.allowances || (typeof appData !== 'undefined' && appData.allowanceMap?.[empId]) || (typeof appData !== 'undefined' && (appData.allowances || []).filter(a => a.employee_id === empId));
 
       if (typeof fillDetailModalData === 'function') {
-        fillDetailModalData(masterData);
+        fillDetailModalData(masterData, allowances);
       }
 
       const titleEl = document.getElementById('detail-modal-emp-name');

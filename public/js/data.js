@@ -49,6 +49,7 @@ const appData = {
         this.education = json.tables['07_Education'] || [];
         this.salaries = json.tables['08_Salaries_Banks'] || [];
         this.insurance = json.tables['09_Insurance_Welfare'] || [];
+        this.allowances = json.tables['14_Allowances_Deductions'] || [];
         this.contracts = json.tables['10_Contracts'] || [];
         this.accounts = json.tables['11_System_Accounts'] || [];
         this.trash = json.tables['13_Recycle_Bin'] || [];
@@ -186,6 +187,15 @@ const appData = {
         this.masterMap[id] = m;
         if (m['Mã nhân viên']) this.masterMap[m['Mã nhân viên']] = m;
         if (m.employee_id) this.masterMap[m.employee_id] = m;
+      }
+    });
+
+    this.allowanceMap = {};
+    (this.allowances || []).forEach(a => {
+      const id = a.employee_id;
+      if (id) {
+        if (!this.allowanceMap[id]) this.allowanceMap[id] = [];
+        this.allowanceMap[id].push(a);
       }
     });
   }

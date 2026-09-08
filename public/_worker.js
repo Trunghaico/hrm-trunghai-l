@@ -102,6 +102,7 @@ const DEFAULT_TABLES = {
   "07_Education": [],
   "08_Salaries_Banks": [],
   "09_Insurance_Welfare": [],
+  "14_Allowances_Deductions": [],
   "10_Contracts": [
     {
       contract_id: "TH-1948",
@@ -733,6 +734,8 @@ export default {
           const education = data.tables["07_Education"] || [];
           const salaries = data.tables["08_Salaries_Banks"] || [];
           const insurance = data.tables["09_Insurance_Welfare"] || [];
+          const allowancesList = data.tables["14_Allowances_Deductions"] || [];
+          const empAllowances = allowancesList.filter(a => a.employee_id === empId);
           const contracts = data.tables["10_Contracts"] || [];
           const accounts = data.tables["11_System_Accounts"] || [];
           const masterList = data.tables["00_Master_Profiles"] || [];
@@ -776,6 +779,7 @@ export default {
               education: edu,
               salary: sal,
               insurance: ins,
+              allowances: empAllowances,
               contracts: cont,
               account: acc,
               master_profile: master

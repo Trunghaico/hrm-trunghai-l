@@ -12,7 +12,8 @@ const PROFILE_TABS = [
   { id: 'tab-p-emergency', name: '6. Liên Hệ Khẩn Cấp', icon: 'fa-phone-volume' },
   { id: 'tab-p-education', name: '7. Trình Độ & Học Vấn', icon: 'fa-graduation-cap' },
   { id: 'tab-p-salary', name: '8. Lương, Ngân Hàng & BHXH', icon: 'fa-money-bill-wave' },
-  { id: 'tab-p-account', name: '9. Tài Khoản & CKS', icon: 'fa-shield-halved' }
+  { id: 'tab-p-allowance', name: '9. Phụ Cấp & Giảm Trừ', icon: 'fa-hand-holding-dollar' },
+  { id: 'tab-p-account', name: '10. Tài Khoản & CKS', icon: 'fa-shield-halved' }
 ];
 
 const MASTER_FIELDS_CONFIG = [
@@ -163,7 +164,13 @@ const MASTER_FIELDS_CONFIG = [
   { key: 'Nơi đăng ký KCB', tab: 'tab-p-salary', label: 'Nơi đăng ký KCB', type: 'text', placeholder: 'Bệnh viện / Cơ sở y tế KCB ban đầu', colSpan: 2 },
   { key: 'Mật khẩu phiếu lương', tab: 'tab-p-salary', label: 'Mật khẩu phiếu lương', type: 'text', placeholder: 'Mật khẩu tra cứu' },
 
-  // TAB 9: TÀI KHOẢN & CKS (5 trường)
+  // TAB 9: PHỤ CẤP & GIẢM TRỪ (Theo file Danh sách lịch sử lương.xlsx)
+  { key: 'Tổng phụ cấp', tab: 'tab-p-allowance', label: 'Tổng định mức phụ cấp (VNĐ)', type: 'number', placeholder: '0' },
+  { key: 'Số khoản phụ cấp', tab: 'tab-p-allowance', label: 'Số khoản phụ cấp đang hưởng', type: 'number', placeholder: '0' },
+  { key: 'Tổng giảm trừ', tab: 'tab-p-allowance', label: 'Tổng giảm trừ / khấu trừ (VNĐ)', type: 'number', placeholder: '0' },
+  { key: 'Ghi chú phụ cấp', tab: 'tab-p-allowance', label: 'Ghi chú phụ cấp & giảm trừ', type: 'text', placeholder: 'Ghi chú...', colSpan: 2 },
+
+  // TAB 10: TÀI KHOẢN & CKS (5 trường)
   { key: 'ĐT tài khoản', tab: 'tab-p-account', label: 'ĐT tài khoản', type: 'text', placeholder: 'Số ĐT đăng nhập' },
   { key: 'Email tài khoản', tab: 'tab-p-account', label: 'Email tài khoản', type: 'text', placeholder: 'Email đăng nhập hệ thống' },
   { key: 'Trạng thái tài khoản', tab: 'tab-p-account', label: 'Trạng thái tài khoản', type: 'select', options: ['Kích hoạt', 'Chưa kích hoạt', 'Đã khóa'] },
@@ -189,6 +196,93 @@ function buildDetailModalTabsHtml() {
   `).join('');
 
   const tabPanesHtml = PROFILE_TABS.map((tab, idx) => {
+    if (tab.id === 'tab-p-allowance') {
+      return `
+        <div class="tab-pane det-tab-pane ${idx === 0 ? 'active' : ''}" id="${tab.id}">
+          <!-- KPI Summary Cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px;">
+            <div style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border: 1px solid #BFDBFE; border-radius: 10px; padding: 14px 18px;">
+              <div style="font-size: 11.5px; font-weight: 700; color: #1E40AF; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-money-bill-trend-up"></i> Tổng Định Mức Phụ Cấp
+              </div>
+              <div id="allowance-sum-amount" style="font-size: 22px; font-weight: 800; color: #1D4ED8; letter-spacing: -0.5px;">0 ₫</div>
+              <div id="allowance-sum-count" style="font-size: 12px; color: #3B82F6; margin-top: 3px; font-weight: 500;">0 khoản phụ cấp</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); border: 1px solid #BBF7D0; border-radius: 10px; padding: 14px 18px;">
+              <div style="font-size: 11.5px; font-weight: 700; color: #166534; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-circle-check"></i> Trạng Thái Áp Dụng
+              </div>
+              <div id="allowance-active-status" style="font-size: 19px; font-weight: 700; color: #15803D;">Đang áp dụng</div>
+              <div style="font-size: 12px; color: #16A34A; margin-top: 3px;">Chuẩn theo file Lịch sử lương</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); border: 1px solid #FECACA; border-radius: 10px; padding: 14px 18px;">
+              <div style="font-size: 11.5px; font-weight: 700; color: #991B1B; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-scale-unbalanced-flip"></i> Tổng Khoản Giảm Trừ
+              </div>
+              <div id="deduction-sum-amount" style="font-size: 22px; font-weight: 800; color: #B91C1C; letter-spacing: -0.5px;">0 ₫</div>
+              <div id="deduction-sum-count" style="font-size: 12px; color: #DC2626; margin-top: 3px; font-weight: 500;">0 khoản khấu trừ</div>
+            </div>
+          </div>
+
+          <!-- SECTION 1: BẢNG CÁC KHOẢN PHỤ CẤP -->
+          <div style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: var(--primary-navy); display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-hand-holding-dollar" style="color: #2563EB;"></i> Danh Sách Các Khoản Phụ Cấp Đang Hưởng
+              </h4>
+              <span id="allowance-table-badge" class="badge" style="background: #EFF6FF; color: #1D4ED8; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; border: 1px solid #BFDBFE;">0 khoản</span>
+            </div>
+            <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; max-height: 280px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <table class="data-table" style="margin: 0; width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead style="background: #F8FAFC; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid var(--border-color);">
+                  <tr>
+                    <th style="width: 45px; text-align: center;">STT</th>
+                    <th>Tên Khoản Phụ Cấp</th>
+                    <th>Mã Khoản</th>
+                    <th style="text-align: right;">Định Mức (VNĐ)</th>
+                    <th>Công Thức / Cách Tính</th>
+                    <th style="text-align: center;">Ngày Hiệu Lực</th>
+                    <th style="text-align: center;">Trạng Thái</th>
+                  </tr>
+                </thead>
+                <tbody id="allowance-table-body">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SECTION 2: BẢNG CÁC KHOẢN GIẢM TRỪ & KHẤU TRỪ -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: var(--primary-navy); display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-scale-unbalanced-flip" style="color: #DC2626;"></i> Danh Sách Các Khoản Khấu Trừ & Giảm Trừ
+              </h4>
+              <span id="deduction-table-badge" class="badge" style="background: #FEF2F2; color: #991B1B; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; border: 1px solid #FECACA;">0 khoản</span>
+            </div>
+            <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; max-height: 220px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <table class="data-table" style="margin: 0; width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead style="background: #F8FAFC; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid var(--border-color);">
+                  <tr>
+                    <th style="width: 45px; text-align: center;">STT</th>
+                    <th>Tên Khoản Khấu Trừ</th>
+                    <th>Mã Khoản</th>
+                    <th style="text-align: right;">Định Mức (VNĐ)</th>
+                    <th>Công Thức / Cách Tính</th>
+                    <th style="text-align: center;">Ngày Hiệu Lực</th>
+                    <th style="text-align: center;">Trạng Thái</th>
+                  </tr>
+                </thead>
+                <tbody id="deduction-table-body">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     const fields = MASTER_FIELDS_CONFIG.filter(f => f.tab === tab.id);
     const itemsHtml = fields.map(f => {
       const colStyle = f.colSpan && f.colSpan > 1 ? `style="grid-column: span ${f.colSpan};"` : '';
@@ -272,6 +366,23 @@ function buildFormModalTabsHtml() {
       `;
     }).join('');
 
+    if (tab.id === 'tab-p-allowance') {
+      const infoBanner = `
+        <div style="grid-column: 1 / -1; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 12px 16px; margin-bottom: 6px; font-size: 13px; color: #1E40AF; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-circle-info" style="font-size: 16px; color: #2563EB;"></i>
+          <span>Dữ liệu chi tiết các khoản phụ cấp (Chuyên cần, Vùng miền, Làm thêm giờ, Năng suất...) được đồng bộ tự động chuẩn từ file <strong>Danh sách lịch sử lương.xlsx</strong>.</span>
+        </div>
+      `;
+      return `
+        <div class="form-tab-pane ${idx === 0 ? 'active' : ''}" id="form-${tab.id}" style="${idx === 0 ? 'display: block;' : 'display: none;'}">
+          <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+            ${infoBanner}
+            ${itemsHtml}
+          </div>
+        </div>
+      `;
+    }
+
     return `
       <div class="form-tab-pane ${idx === 0 ? 'active' : ''}" id="form-${tab.id}" style="${idx === 0 ? 'display: block;' : 'display: none;'}">
         <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
@@ -327,8 +438,11 @@ function buildFormModalTabsHtml() {
 }
 
 // Populate values in View Detail Modal
-function fillDetailModalData(masterData) {
+function fillDetailModalData(masterData, allowancesList = null) {
   if (!masterData) masterData = {};
+  const empId = masterData['Mã nhân viên'] || masterData.employee_id;
+
+  // 1. Fill standard fields
   MASTER_FIELDS_CONFIG.forEach(f => {
     const el = document.getElementById(getFieldDetailId(f.key));
     if (!el) return;
@@ -336,7 +450,7 @@ function fillDetailModalData(masterData) {
     if (val === undefined || val === null || val === '') {
       el.textContent = '-';
       el.style.color = 'var(--text-muted)';
-    } else if (typeof val === 'number' && (f.key.includes('lương') || f.key.includes('Lương')) && !f.key.includes('Tỷ lệ') && !f.key.includes('Bậc') && !f.key.includes('Hệ số')) {
+    } else if (typeof val === 'number' && (f.key.includes('lương') || f.key.includes('Lương') || f.key.includes('phụ cấp') || f.key.includes('giảm trừ')) && !f.key.includes('Tỷ lệ') && !f.key.includes('Bậc') && !f.key.includes('Hệ số') && !f.key.includes('Số khoản')) {
       el.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
       el.style.color = '#059669';
       el.style.fontWeight = '700';
@@ -356,6 +470,110 @@ function fillDetailModalData(masterData) {
       el.style.fontWeight = '500';
     }
   });
+
+  // 2. Populate Allowances & Deductions Tab
+  let items = allowancesList;
+  if (!items && empId) {
+    if (typeof appData !== 'undefined') {
+      items = appData.allowanceMap?.[empId] || (appData.allowances || []).filter(a => a.employee_id === empId);
+    }
+  }
+  if (!items && masterData.allowances && Array.isArray(masterData.allowances)) {
+    items = masterData.allowances;
+  }
+  if (!items) items = [];
+
+  const allowances = items.filter(it => it.type === 'ALLOWANCE' || (!it.type && (it.item_name || it.name)));
+  const deductions = items.filter(it => it.type === 'DEDUCTION');
+
+  let totalAllowAmount = allowances.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+  let totalDeductAmount = deductions.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+
+  const sumAllowEl = document.getElementById('allowance-sum-amount');
+  const countAllowEl = document.getElementById('allowance-sum-count');
+  const statusAllowEl = document.getElementById('allowance-active-status');
+  const badgeAllowEl = document.getElementById('allowance-table-badge');
+  const tbodyAllowEl = document.getElementById('allowance-table-body');
+
+  const sumDeductEl = document.getElementById('deduction-sum-amount');
+  const countDeductEl = document.getElementById('deduction-sum-count');
+  const badgeDeductEl = document.getElementById('deduction-table-badge');
+  const tbodyDeductEl = document.getElementById('deduction-table-body');
+
+  if (sumAllowEl) sumAllowEl.textContent = (typeof utils !== 'undefined' && utils.formatCurrency) ? utils.formatCurrency(totalAllowAmount) : `${totalAllowAmount.toLocaleString('vi-VN')} ₫`;
+  if (countAllowEl) countAllowEl.textContent = `${allowances.length} khoản phụ cấp đang áp dụng`;
+  if (statusAllowEl) {
+    statusAllowEl.textContent = allowances.length > 0 ? 'Đang áp dụng' : 'Chưa có phụ cấp';
+    statusAllowEl.style.color = allowances.length > 0 ? '#15803D' : 'var(--text-muted)';
+  }
+  if (badgeAllowEl) badgeAllowEl.textContent = `${allowances.length} khoản`;
+
+  if (tbodyAllowEl) {
+    if (allowances.length === 0) {
+      tbodyAllowEl.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 24px 16px; color: var(--text-muted);">
+            <i class="fa-solid fa-circle-info" style="margin-right: 6px; color: #3B82F6;"></i> Nhân sự hiện chưa có khoản phụ cấp nào được ghi nhận trong hệ thống.
+          </td>
+        </tr>
+      `;
+    } else {
+      tbodyAllowEl.innerHTML = allowances.map((a, idx) => {
+        const amtStr = (typeof utils !== 'undefined' && utils.formatCurrency) ? utils.formatCurrency(a.amount) : `${(a.amount || 0).toLocaleString('vi-VN')} ₫`;
+        return `
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="text-align: center; color: var(--text-muted); font-weight: 500;">${idx + 1}</td>
+            <td style="font-weight: 600; color: var(--primary-navy);">
+              <i class="fa-solid fa-hand-holding-dollar" style="color: #2563EB; margin-right: 6px; font-size: 12px;"></i>
+              ${a.item_name || a.name || '-'}
+            </td>
+            <td><code style="background: #F1F5F9; color: #334155; padding: 3px 7px; border-radius: 4px; font-size: 11.5px; font-weight: 600;">${a.item_code || a.code || '-'}</code></td>
+            <td style="text-align: right; font-weight: 700; color: #059669; font-size: 13.5px;">${amtStr}</td>
+            <td style="font-size: 12px; color: #64748B; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${a.formula || ''}">${a.formula || 'Theo định mức chuẩn'}</td>
+            <td style="text-align: center; font-size: 12.5px; color: var(--text-secondary);">${a.effective_date || '-'}</td>
+            <td style="text-align: center;">
+              <span class="badge" style="background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px;">
+                <i class="fa-solid fa-circle-check" style="font-size: 10px; margin-right: 3px;"></i> ${a.status || 'Đang áp dụng'}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  if (sumDeductEl) sumDeductEl.textContent = (typeof utils !== 'undefined' && utils.formatCurrency) ? utils.formatCurrency(totalDeductAmount) : `${totalDeductAmount.toLocaleString('vi-VN')} ₫`;
+  if (countDeductEl) countDeductEl.textContent = `${deductions.length} khoản khấu trừ`;
+  if (badgeDeductEl) badgeDeductEl.textContent = `${deductions.length} khoản`;
+
+  if (tbodyDeductEl) {
+    if (deductions.length === 0) {
+      tbodyDeductEl.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 20px 16px; color: var(--text-muted);">
+            <i class="fa-solid fa-circle-check" style="margin-right: 6px; color: #10B981;"></i> Không phát sinh khoản giảm trừ hoặc khấu trừ lương.
+          </td>
+        </tr>
+      `;
+    } else {
+      tbodyDeductEl.innerHTML = deductions.map((d, idx) => {
+        const amtStr = (typeof utils !== 'undefined' && utils.formatCurrency) ? utils.formatCurrency(d.amount) : `${(d.amount || 0).toLocaleString('vi-VN')} ₫`;
+        return `
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="text-align: center; color: var(--text-muted); font-weight: 500;">${idx + 1}</td>
+            <td style="font-weight: 600; color: var(--primary-navy);">${d.item_name || d.name || '-'}</td>
+            <td><code style="background: #F1F5F9; color: #334155; padding: 3px 7px; border-radius: 4px; font-size: 11.5px; font-weight: 600;">${d.item_code || d.code || '-'}</code></td>
+            <td style="text-align: right; font-weight: 700; color: #DC2626; font-size: 13.5px;">${amtStr}</td>
+            <td style="font-size: 12px; color: #64748B;">${d.formula || 'Theo quy định'}</td>
+            <td style="text-align: center; font-size: 12.5px;">${d.effective_date || '-'}</td>
+            <td style="text-align: center;">
+              <span class="badge" style="background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; font-size: 11px; padding: 3px 9px; border-radius: 999px;">${d.status || 'Đang áp dụng'}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
 }
 
 // Populate values in Form Modal (Add / Edit)

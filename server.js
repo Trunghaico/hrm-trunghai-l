@@ -1838,6 +1838,7 @@ app.get('/api/employees/:id', (req, res) => {
     const education = db.tables['07_Education'] || [];
     const salaries = db.tables['08_Salaries_Banks'] || [];
     const insurance = db.tables['09_Insurance_Welfare'] || [];
+    const allowances = (db.tables['14_Allowances_Deductions'] || []).filter(a => a.employee_id === id);
     const contracts = db.tables['10_Contracts'] || [];
     const accounts = db.tables['11_System_Accounts'] || [];
     const depts = db.tables['01_Departments'] || [];
@@ -1876,6 +1877,7 @@ app.get('/api/employees/:id', (req, res) => {
             education: edu,
             salary: sal,
             insurance: ins,
+            allowances,
             contracts: cont,
             account: acc,
             master_profile: masterProfile
