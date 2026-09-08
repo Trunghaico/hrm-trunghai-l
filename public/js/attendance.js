@@ -300,6 +300,8 @@ const appAttendance = {
         statusBadge = '<span class="badge badge-resigned"><i class="fa-solid fa-xmark"></i> Vắng</span>';
       } else if (item.status === 'LEAVE') {
         statusBadge = '<span class="badge" style="background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE;"><i class="fa-solid fa-umbrella-beach"></i> Nghỉ phép</span>';
+      } else if (item.status === 'NO_CODE') {
+        statusBadge = '<span class="badge" style="background:#F8FAFC; color:#64748B; border:1px solid #E2E8F0;"><i class="fa-solid fa-ban"></i> Không CC</span>';
       } else {
         statusBadge = `<span class="badge">${item.status}</span>`;
       }
@@ -326,7 +328,9 @@ const appAttendance = {
         ? `<i class="fa-solid fa-pen" style="font-size: 10px; color: #D97706; margin-left: 4px;" title="Đã hiệu chỉnh thủ công bởi HR"></i>`
         : '';
 
-      const attCodeDisplay = item.attendance_code || (item.employee_id ? item.employee_id.replace('TH-', '') : '-');
+      const attCodeDisplay = item.attendance_code
+        ? `<strong style="color: #B45309; font-family: monospace; background: #FFFBEB; padding: 2px 6px; border-radius: 4px; border: 1px solid #FDE68A;">${item.attendance_code}</strong>`
+        : '<span style="color: #94A3B8; font-size: 11px; font-style: italic;">Không CC</span>';
 
       return `
         <tr style="${item.day_name === 'Chủ nhật' ? 'background: #FFFBEB;' : ''}">
@@ -1544,21 +1548,38 @@ const appAttendance = {
       const dName = dayNames[dObj.getDay()] || 'Thứ 2';
 
       employees.forEach(emp => {
-        const empCodes = [
-          String(emp.attendance_code || '').trim(),
-          String(emp.time_attendance_code || '').trim(),
-          String(emp.employee_id || '').trim(),
-          String(emp.employee_id || '').replace(/[^0-9]/g, '')
-        ].filter(Boolean);
+        const empCode = String(emp.attendance_code || emp.time_attendance_code || '').trim();
 
-        let empLogs = [];
-        for (const c of empCodes) {
-          const k = `${c}_${dt}`;
-          if (logsByDateAndCode[k] && logsByDateAndCode[k].length > 0) {
-            empLogs = logsByDateAndCode[k];
-            break;
-          }
+        // Nếu nhân viên không có mã chấm công -> Không áp dụng chấm công máy
+        if (!empCode) {
+          computedTimesheets.push({
+            timesheet_id: `TS_${emp.employee_id}_${dt}`,
+            employee_id: emp.employee_id,
+            attendance_code: '',
+            full_name: emp.full_name,
+            department_name: emp.department_name,
+            date: dt,
+            day_name: dName,
+            shift_id: 'CA-HC',
+            shift_name: 'Ca Hành Chính',
+            check_in: '',
+            check_out: '',
+            late_minutes: 0,
+            early_minutes: 0,
+            work_units: 0,
+            total_work_hours: 0,
+            ot_hours: 0,
+            total_all_hours: 0,
+            status: 'NO_CODE',
+            is_locked: false,
+            is_manual_edited: false,
+            note: 'Không áp dụng chấm công máy (Không có mã CC)'
+          });
+          return;
         }
+
+        const k = `${empCode}_${dt}`;
+        let empLogs = logsByDateAndCode[k] || [];
 
         // Sắp xếp tăng dần theo timestamp
         empLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -1635,7 +1656,7 @@ const appAttendance = {
         computedTimesheets.push({
           timesheet_id: `TS_${emp.employee_id}_${dt}`,
           employee_id: emp.employee_id,
-          attendance_code: emp.attendance_code || emp.time_attendance_code || (emp.employee_id ? emp.employee_id.replace('TH-', '') : ''),
+          attendance_code: empCode,
           full_name: emp.full_name,
           department_name: emp.department_name,
           date: dt,
@@ -2114,7 +2135,7 @@ const appAttendance = {
     const rows = list.map((item, idx) => [
       idx + 1,
       item.employee_id || '',
-      item.attendance_code || (item.employee_id ? item.employee_id.replace('TH-', '') : ''),
+      item.attendance_code || '',
       item.full_name || '',
       item.department_name || '',
       item.date || '',

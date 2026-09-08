@@ -2428,21 +2428,37 @@ export async function onRequest(context) {
           const dName = dayNames[dObj.getDay()] || 'Thứ 2';
 
           employees.forEach(emp => {
-            const empCodes = [
-              String(emp.attendance_code || '').trim(),
-              String(emp.time_attendance_code || '').trim(),
-              String(emp.employee_id || '').trim(),
-              String(emp.employee_id || '').replace(/[^0-9]/g, '')
-            ].filter(Boolean);
+            const empCode = String(emp.attendance_code || emp.time_attendance_code || '').trim();
 
-            let empLogs = [];
-            for (const c of empCodes) {
-              const k = `${c}_${dt}`;
-              if (logsByDateAndCode[k] && logsByDateAndCode[k].length > 0) {
-                empLogs = logsByDateAndCode[k];
-                break;
-              }
+            if (!empCode) {
+              newTimesheets.push({
+                timesheet_id: `TS_${emp.employee_id}_${dt}`,
+                employee_id: emp.employee_id,
+                attendance_code: '',
+                full_name: emp.full_name,
+                department_name: emp.department_name,
+                date: dt,
+                day_name: dName,
+                shift_id: 'CA-HC',
+                shift_name: 'Ca Hành Chính',
+                check_in: '',
+                check_out: '',
+                late_minutes: 0,
+                early_minutes: 0,
+                work_units: 0,
+                total_work_hours: 0,
+                ot_hours: 0,
+                total_all_hours: 0,
+                status: 'NO_CODE',
+                is_locked: false,
+                is_manual_edited: false,
+                note: 'Không áp dụng chấm công máy (Không có mã CC)'
+              });
+              return;
             }
+
+            const k = `${empCode}_${dt}`;
+            let empLogs = logsByDateAndCode[k] || [];
 
             empLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
@@ -2506,6 +2522,7 @@ export async function onRequest(context) {
             newTimesheets.push({
               timesheet_id: `TS_${emp.employee_id}_${dt}`,
               employee_id: emp.employee_id,
+              attendance_code: empCode,
               full_name: emp.full_name,
               department_name: emp.department_name,
               date: dt,
