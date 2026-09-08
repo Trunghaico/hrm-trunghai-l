@@ -1241,8 +1241,8 @@ app.post('/api/employees/import-excel', async (req, res) => {
                 }
             }
 
-            // Check duplicate CCCD/CMND in file
-            if (idNumber) {
+            // Check duplicate CCCD/CMND in file (only when identity tab is selected)
+            if (idNumber && isTabSelected('tab-p-identity')) {
                 if (seenFileIdNumbers.has(idNumber)) {
                     conflictErrors.push({ row: rowNum, employee_id: empId, message: `Dòng ${rowNum}: Trùng số CMND/CCCD ${idNumber} với dòng ${seenFileIdNumbers.get(idNumber)} trong file Excel` });
                 } else {
@@ -1256,8 +1256,8 @@ app.post('/api/employees/import-excel', async (req, res) => {
                 }
             }
 
-            // Check duplicate Email with DB on a DIFFERENT employee
-            if (email && email.includes('@')) {
+            // Check duplicate Email with DB on a DIFFERENT employee (only when contact tab is selected)
+            if (email && email.includes('@') && isTabSelected('tab-p-contact')) {
                 if (seenFileEmails.has(email)) {
                     conflictErrors.push({ row: rowNum, employee_id: empId, message: `Dòng ${rowNum}: Trùng Email cơ quan ${email} với dòng ${seenFileEmails.get(email)} trong file Excel` });
                 } else {
@@ -1779,22 +1779,17 @@ app.post('/api/employees/import-excel', async (req, res) => {
                     }
                 }
 
-                // Update master profiles (selective update: only update columns provided in Excel)
+                // Update master profiles (selective update: only update columns belonging to selected tabs)
                 const mpIdx = masterProfiles.findIndex(m => (m['Mã nhân viên'] === empId || m.employee_id === empId));
                 if (mpIdx >= 0) {
                     const currentMaster = { ...masterProfiles[mpIdx] };
-                    if (item.raw_data && typeof item.raw_data === 'object') {
-                        Object.keys(item.raw_data).forEach(k => {
-                            if (item.raw_data[k] !== undefined && item.raw_data[k] !== null && String(item.raw_data[k]).trim() !== '') {
-                                currentMaster[k] = item.raw_data[k];
-                            }
-                        });
-                    }
                     Object.keys(TAB_FIELDS_MAP).forEach(tabId => {
                         if (isTabSelected(tabId)) {
                             TAB_FIELDS_MAP[tabId].forEach(fKey => {
                                 if (hasVal(item, fKey) && masterRow[fKey] !== undefined && masterRow[fKey] !== null && masterRow[fKey] !== '') {
                                     currentMaster[fKey] = masterRow[fKey];
+                                } else if (item.raw_data && item.raw_data[fKey] !== undefined && item.raw_data[fKey] !== null && String(item.raw_data[fKey]).trim() !== '') {
+                                    currentMaster[fKey] = item.raw_data[fKey];
                                 }
                             });
                         }

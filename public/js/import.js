@@ -100,6 +100,7 @@ const appImport = {
       if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-circle-down"></i> Tải File Mẫu Chuẩn Định Dạng Excel (Đầy Đủ 115 Cột Nghiệp Vụ Chuẩn Hóa)';
       if (descEl) descEl.textContent = 'File mẫu đã chuẩn hóa chuẩn xác 115 trường thông tin (từ Mã nhân viên đến Mã đơn vị công tác) kèm 2 dòng dữ liệu mẫu và danh mục mã Đơn vị, Vị trí chuẩn để tra cứu.';
     }
+    this.reValidate();
   },
 
   renderTabSelectionGrid() {
@@ -134,6 +135,101 @@ const appImport = {
       this.selectedTabs.add(el.value);
     }
     this.renderTabSelectionGrid();
+    this.reValidate();
+  },
+
+  getAllowedFieldKeysForSelectedScope() {
+    if (this.scopeMode !== 'selected' || !this.selectedTabs || this.selectedTabs.size === 0) {
+      return null;
+    }
+
+    const allowed = new Set();
+    // Core employee identification keys (always allowed to link / match existing employees)
+    const idKeys = [
+      'manhanvien', 'manv', 'employeeid', 'staffid', 'id',
+      'hovaten', 'hoten', 'fullname', 'tennhanvien', 'ten', 'hovađem', 'hovadem', 'ho',
+      'stt', 'no', 'tt'
+    ];
+    idKeys.forEach(k => allowed.add(k));
+
+    if (typeof MASTER_FIELDS_CONFIG !== 'undefined') {
+      MASTER_FIELDS_CONFIG.forEach(f => {
+        if (this.selectedTabs.has(f.tab)) {
+          allowed.add(this.cleanKey(f.key));
+          if (f.label) allowed.add(this.cleanKey(f.label));
+        }
+      });
+    }
+
+    // Additional common Vietnamese headers & aliases mapped by tab
+    this.selectedTabs.forEach(tabId => {
+      if (tabId === 'tab-p-salary') {
+        [
+          'luongcoban', 'luongcobanvnd', 'tongluong', 'tongluongthunhapvnd', 'luongdongbh', 'luongdongbhxhvnd',
+          'luongdongbhxh', 'bacluong', 'heso', 'hesoluong', 'tylenhuongluong', 'tylenhuongluongpt',
+          'tknganhang', 'taikhoannganhang', 'sotaikhoannganhang', 'sotaikhoan', 'stk', 'nganhang', 'motainganhang',
+          'tennganhang', 'chinhanh', 'chinhanhnganhang', 'thuesuat', 'songuoiphuthuoc', 'giamtrubanthun',
+          'giamtrubanthan', 'thamgiabaohiem', 'thamgiabhxh', 'sosobhxh', 'masobhxh', 'soso', 'matinhcap',
+          'sothebhyt', 'noidangkykcb', 'noidkkhamchuabenhbandau', 'noidkkcbbandau', 'matkhauphieuluong',
+          'bhxh', 'bhyt', 'bhtn', 'tyledongbhxhcuanv', 'tyledongbhytcuanv', 'tyledongbhtncuanv',
+          'tyledongbhxhcuadn', 'tyledongbhytcuadn', 'tyledongbhtncuadn', 'ngaythamgiabh', 'ngaythamgiabhxh'
+        ].forEach(k => allowed.add(k));
+      } else if (tabId === 'tab-p-allowance') {
+        ['tongphucap', 'sokhoanphucap', 'tonggiamtru', 'ghichuphucap', 'phucap', 'giamtru'].forEach(k => allowed.add(k));
+      } else if (tabId === 'tab-p-contract') {
+        [
+          'loaihopdong', 'loaihd', 'ngayhocviec', 'ngaythuviec', 'ngaybatdauthuviec', 'ngaychinhthuc',
+          'ngaykyhdchinhthuc', 'thamnien', 'ngaycochieuluc', 'ngaycochieu', 'ngayhethieuluc', 'ngayketthuchdnghi',
+          'ngayketthuc', 'nhomlydonghi', 'lydonghi', 'ngaynghiviec', 'ngaynghihuudukien', 'thuocdanhsachden',
+          'thamgiacongdoan', 'doanviencongdoan', 'ngaybatdaulamviec', 'ngayvaolam'
+        ].forEach(k => allowed.add(k));
+      } else if (tabId === 'tab-p-identity') {
+        [
+          'loaigiayto', 'socmnd', 'socccd', 'cccd', 'cmnd', 'socmndcccd', 'socccdhochieu', 'sodinhdanh',
+          'ngaycapgiayto', 'ngaycapcccd', 'ngaycap', 'noicapgiayto', 'noicapcccd', 'noicap', 'ngayhethangiayto',
+          'ngayhethancccd', 'sohochieu', 'passport', 'ngaycaphochieu', 'noicaphochieu', 'ngayhethanhochieu'
+        ].forEach(k => allowed.add(k));
+      } else if (tabId === 'tab-p-contact') {
+        [
+          'dtdidong', 'sodtdidong', 'sodienthoai', 'dienthoai', 'sdt', 'dtcoquan', 'dtnharieng', 'sodtban',
+          'dtkhac', 'emailcoquan', 'emailcongviec', 'email', 'emailcanhan', 'emailkhac', 'skype', 'facebook',
+          'hokhauthuongtru', 'diachithuongtru', 'thuongtru', 'quocgiathuongtru', 'tinhthanhphothuongtru',
+          'quanhuyenthuongtru', 'phuongxathuongtru', 'sonhaduongphothuongtru', 'sosohokhau', 'masohogiadinh',
+          'lachuhu', 'choohiennay', 'diachitamtru', 'diachihientai', 'tamtru', 'hientai', 'quocgiahiennay',
+          'tinhthanhphohiennay', 'quanhuyenhiennay', 'phuongxahiennay', 'sonhaduongphohiennay'
+        ].forEach(k => allowed.add(k));
+      } else if (tabId === 'tab-p-emergency') {
+        [
+          'hovatenlhkc', 'hotenlhkc', 'hotennguoilienhekhancap', 'nguoilienhekhancap', 'nguoikhancap',
+          'quanhelhkc', 'moiquanhekhancap', 'quanhekhancap', 'quanhe', 'dtdidonglhkc', 'sodtkhancap',
+          'sdtkhancap', 'dtnharienglhkc', 'emaillhkc', 'diachilhkc'
+        ].forEach(k => allowed.add(k));
+      } else if (tabId === 'tab-p-education') {
+        [
+          'trinhdovanhua', 'trinhdovanhoa', 'trinhdodaotao', 'trinhdohocvan', 'trinhdo', 'hinhthucdaotao',
+          'noidaotao', 'truongcodaotao', 'truong', 'khoa', 'chuyennganh', 'chuyennganhdaotao', 'namtotnghiep',
+          'xeploai', 'xeploaitotnghiep', 'bangcapchuyenmonkhac', 'bangcapkhac'
+        ].forEach(k => allowed.add(k));
+      } else if (tabId === 'tab-p-org') {
+        [
+          'donvicongtac', 'madonvicongtac', 'maphongban', 'phongban', 'bophan', 'donvi', 'vitricongviec',
+          'mavitricongviec', 'machucdanh', 'chucdanh', 'chucvu', 'cap', 'bac', 'capbac', 'capbacnhansu',
+          'machamcong', 'quanlytructiep', 'maquanlytructiep', 'quanlygiantiep', 'maquanlygiantiep',
+          'nguoiduyet', 'diadiemlamviec', 'khuvuclamviec', 'khoilamviec', 'tinhchatlaodong', 'tinhchat',
+          'trangthailaodong', 'trangthailamviec', 'trangthai', 'nhansukhaithac', 'nguonungvien', 'sosoyllaodong',
+          'sosoqllaodong'
+        ].forEach(k => allowed.add(k));
+      } else if (tabId === 'tab-p-account') {
+        ['dttaikhoan', 'emailtaikhoan', 'trangthaitaikhoan', 'trangthaichukyso', 'trangthaihosocapcks'].forEach(k => allowed.add(k));
+      } else if (tabId === 'tab-p-personal') {
+        [
+          'tengoikhac', 'gioitinh', 'ngaysinh', 'noisinh', 'nguyenquan', 'tinhtranghonnhan', 'dantoc',
+          'tongiao', 'quoctich', 'mstcanhan', 'masothuecanhan', 'masothue', 'socon', 'tpgiadinh', 'tpbanthan'
+        ].forEach(k => allowed.add(k));
+      }
+    });
+
+    return allowed;
   },
 
   openModal() {
@@ -706,6 +802,9 @@ const appImport = {
       if (c.work_email) dbEmpByEmail.set(c.work_email.toLowerCase().trim(), c);
     });
 
+    const allowedKeys = this.getAllowedFieldKeysForSelectedScope();
+    const isSelectedScope = this.scopeMode === 'selected';
+
     // 1. Initial normalizations & collection for internal duplication check
     const normalizedRows = [];
     const fileEmpIdCounts = new Map();
@@ -715,10 +814,14 @@ const appImport = {
 
     rawRows.forEach((row, idx) => {
       const normMap = {};
+      const filteredRawRow = {};
       Object.keys(row).forEach(key => {
         const ck = this.cleanKey(key);
         if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
-          normMap[ck] = String(row[key]).trim();
+          if (!allowedKeys || allowedKeys.has(ck)) {
+            normMap[ck] = String(row[key]).trim();
+            filteredRawRow[key] = row[key];
+          }
         }
       });
 
@@ -731,14 +834,26 @@ const appImport = {
           fullName = `${ho} ${ten}`.trim();
         }
       }
+      if (!fullName) {
+        fullName = this.getField(row, 'Họ và tên', 'Họ và tên (*)', 'Họ tên', 'full_name', 'Tên nhân viên', 'Họ tên nhân viên');
+      }
 
-      const empId = this.getField(normMap, 'Mã nhân viên', 'Mã nhân viên (*)', 'Mã NV', 'employee_id', 'Mã số NV', 'Staff ID', 'ID').toUpperCase();
+      let empId = this.getField(normMap, 'Mã nhân viên', 'Mã nhân viên (*)', 'Mã NV', 'employee_id', 'Mã số NV', 'Staff ID', 'ID').toUpperCase();
+      if (!empId) {
+        empId = this.getField(row, 'Mã nhân viên', 'Mã nhân viên (*)', 'Mã NV', 'employee_id', 'Mã số NV', 'Staff ID', 'ID').toUpperCase();
+      }
+
       if (!fullName && empId) {
         const existing = dbEmpById.get(empId);
         if (existing) fullName = existing.full_name;
       }
       if (!fullName && !empId) return; // Skip completely empty rows
       if (!fullName && empId) fullName = `Nhân sự ${empId}`;
+
+      // Ensure key employee identity fields are preserved in filteredRawRow for backend linking
+      if (empId && !filteredRawRow['Mã nhân viên']) filteredRawRow['Mã nhân viên'] = empId;
+      if (fullName && !filteredRawRow['Họ và tên']) filteredRawRow['Họ và tên'] = fullName;
+
       const timeAttendanceCode = this.getField(normMap, 'Mã chấm công', 'time_attendance_code');
       const idNumber = this.getField(normMap, 'Số CMND', 'Số CCCD / CMND', 'Số CCCD / Hộ chiếu', 'Số CCCD', 'CCCD', 'CMND', 'id_number', 'Số định danh');
       const email = this.getField(normMap, 'Email cơ quan', 'Email công việc', 'Email', 'work_email').toLowerCase();
@@ -746,17 +861,17 @@ const appImport = {
       if (empId) {
         fileEmpIdCounts.set(empId, (fileEmpIdCounts.get(empId) || 0) + 1);
       }
-      if (idNumber) {
+      if (idNumber && (!isSelectedScope || this.selectedTabs.has('tab-p-identity'))) {
         fileIdNumCounts.set(idNumber, (fileIdNumCounts.get(idNumber) || 0) + 1);
       }
-      if (email && email.includes('@')) {
+      if (email && email.includes('@') && (!isSelectedScope || this.selectedTabs.has('tab-p-contact'))) {
         fileEmailCounts.set(email, (fileEmailCounts.get(email) || 0) + 1);
       }
-      if (timeAttendanceCode) {
+      if (timeAttendanceCode && (!isSelectedScope || this.selectedTabs.has('tab-p-org'))) {
         fileTimeCodeCounts.set(timeAttendanceCode, (fileTimeCodeCounts.get(timeAttendanceCode) || 0) + 1);
       }
 
-      normalizedRows.push({ rowIdx: idx + 1, normMap, rawRow: row, empId, timeAttendanceCode, idNumber, email, fullName });
+      normalizedRows.push({ rowIdx: idx + 1, normMap, rawRow: filteredRawRow, empId, timeAttendanceCode, idNumber, email, fullName });
     });
 
     // 2. Comprehensive validation pass
@@ -894,10 +1009,10 @@ const appImport = {
       if (empId && fileEmpIdCounts.get(empId) > 1) {
         errors.push(`Trùng Mã nhân viên ${empId} với dòng khác trong file Excel`);
       }
-      if (rawIdNumber && fileIdNumCounts.get(rawIdNumber) > 1) {
+      if (rawIdNumber && (!isSelectedScope || this.selectedTabs.has('tab-p-identity')) && fileIdNumCounts.get(rawIdNumber) > 1) {
         errors.push(`Trùng số CCCD ${rawIdNumber} với dòng khác trong file Excel`);
       }
-      if (rawEmail && fileEmailCounts.get(rawEmail) > 1) {
+      if (rawEmail && (!isSelectedScope || this.selectedTabs.has('tab-p-contact')) && fileEmailCounts.get(rawEmail) > 1) {
         errors.push(`Trùng Email ${rawEmail} với dòng khác trong file Excel`);
       }
 
@@ -906,16 +1021,16 @@ const appImport = {
         rowStatus = 'LINKED'; // Khóa liên kết thành công với nhân sự đã có trong CSDL
       }
 
-      // Check 4: CCCD uniqueness against DB (chỉ kiểm tra nếu file có cột CCCD và khác nhân sự hiện tại)
-      if (rawIdNumber) {
+      // Check 4: CCCD uniqueness against DB (chỉ kiểm tra nếu tab CCCD được chọn và file có cột CCCD và khác nhân sự hiện tại)
+      if (rawIdNumber && (!isSelectedScope || this.selectedTabs.has('tab-p-identity'))) {
         const existingCCCD = dbEmpByIdNumber.get(rawIdNumber);
         if (existingCCCD && (!empId || existingCCCD.employee_id !== empId)) {
           errors.push(`Số CCCD ${rawIdNumber} trùng với NV ${existingCCCD.employee_id} (${existingCCCD.full_name}) trong hệ thống`);
         }
       }
 
-      // Check 5: Work Email uniqueness against DB (chỉ kiểm tra nếu file có cột Email và khác nhân sự hiện tại)
-      if (rawEmail && rawEmail.includes('@')) {
+      // Check 5: Work Email uniqueness against DB (chỉ kiểm tra nếu tab Contact được chọn và file có cột Email và khác nhân sự hiện tại)
+      if (rawEmail && rawEmail.includes('@') && (!isSelectedScope || this.selectedTabs.has('tab-p-contact'))) {
         const existingEmail = dbEmpByEmail.get(rawEmail);
         if (existingEmail && (!empId || existingEmail.employee_id !== empId)) {
           errors.push(`Email ${rawEmail} trùng với NV ${existingEmail.employee_id} (${existingEmail.full_name}) trong hệ thống`);
@@ -1062,6 +1177,8 @@ const appImport = {
              ck === 'hovaten' || ck === 'hoten' || ck === 'fullname' || ck === 'tennhanvien';
     };
 
+    const allowedKeys = this.getAllowedFieldKeysForSelectedScope();
+
     // Build lookup from cleanKey to field definition
     const fieldMap = new Map();
     if (typeof MASTER_FIELDS_CONFIG !== 'undefined') {
@@ -1073,10 +1190,17 @@ const appImport = {
 
     const cols = [];
     const tabCounts = new Map();
+    let ignoredColsCount = 0;
 
     (rawHeaders || []).forEach(header => {
       if (!header || isIdCol(header)) return;
       const ck = this.cleanKey(header);
+
+      // In selected tabs scope, automatically filter out fields from other tabs
+      if (allowedKeys && !allowedKeys.has(ck)) {
+        ignoredColsCount++;
+        return;
+      }
 
       let tabId = 'other';
       let fieldDef = fieldMap.get(ck);
@@ -1125,6 +1249,7 @@ const appImport = {
     });
 
     this.dynamicColumns = cols;
+    this.ignoredColsCount = ignoredColsCount;
     this.presentTabs = [];
 
     if (typeof PROFILE_TABS !== 'undefined') {
@@ -1294,6 +1419,35 @@ const appImport = {
     const validCount = this.validEmployees.length;
     const overwriteCount = this.overwriteEmployees.length;
     const conflictCount = this.conflictEmployees.length;
+
+    // Auto-detect fields notice banner
+    const noticeEl = document.getElementById('import-scope-auto-detect-notice');
+    if (noticeEl) {
+      if (this.scopeMode === 'selected' && (this.ignoredColsCount > 0 || this.dynamicColumns.length > 0)) {
+        const selectedNames = Array.from(this.selectedTabs || []).map(tid => {
+          const t = (typeof PROFILE_TABS !== 'undefined') ? PROFILE_TABS.find(x => x.id === tid) : null;
+          return t ? t.name : tid;
+        }).join(', ');
+
+        noticeEl.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 15px; color: #1E40AF;"></i>
+              <span>
+                <strong>Tự nhận diện trường theo tab:</strong> Đã chọn đúng <strong>${this.dynamicColumns.length} trường</strong> thuộc [<strong>${selectedNames}</strong>] từ file tổng Excel${this.ignoredColsCount > 0 ? ` và tự động bỏ qua <strong>${this.ignoredColsCount} trường</strong> của các tab khác.` : '.'}
+              </span>
+            </div>
+            <span class="badge" style="background: #DBEAFE; color: #1E40AF; font-weight: 600; border: 1px solid #BFDBFE; white-space: nowrap;">
+              <i class="fa-solid fa-check"></i> Đã chọn lọc
+            </span>
+          </div>
+        `;
+        noticeEl.style.display = 'flex';
+      } else {
+        noticeEl.style.display = 'none';
+        noticeEl.innerHTML = '';
+      }
+    }
 
     // Summary Stat Badges
     const statSummary = document.getElementById('import-stat-summary');

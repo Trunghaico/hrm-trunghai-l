@@ -930,7 +930,7 @@ export default {
         await saveTableToD1(db, "00_Master_Profiles", Array.from(masterMap.values()));
 
         // 3. Đồng bộ vào 08_Salaries_Banks
-        if (isTabSelected('tab-p-salary') || employees.some(e => isKeyProvided(e, 'base_salary', 'Lương cơ bản', 'TK ngân hàng', 'bank_account_number'))) {
+        if (isTabSelected('tab-p-salary')) {
           const existingSalaries = data.tables["08_Salaries_Banks"] || [];
           const salMap = new Map(existingSalaries.map(s => [s.employee_id, { ...s }]));
           employees.forEach(emp => {
@@ -949,8 +949,8 @@ export default {
           await saveTableToD1(db, "08_Salaries_Banks", Array.from(salMap.values()));
         }
 
-        // 4. Đồng bộ vào 10_Contracts (Nếu tab hợp đồng được chọn hoặc có dữ liệu hợp đồng)
-        if (isTabSelected('tab-p-contract') || employees.some(e => isKeyProvided(e, 'contract_type', 'Loại hợp đồng', 'start_date'))) {
+        // 4. Đồng bộ vào 10_Contracts (Nếu tab hợp đồng được chọn)
+        if (isTabSelected('tab-p-contract')) {
           const existingContracts = data.tables["10_Contracts"] || [];
           const contractMap = new Map(existingContracts.map(c => [c.employee_id, { ...c }]));
           employees.forEach(emp => {
@@ -972,8 +972,8 @@ export default {
           await saveTableToD1(db, "10_Contracts", Array.from(contractMap.values()));
         }
 
-        // 5. Đồng bộ vào 04_Contacts_Addresses (Nếu tab liên hệ được chọn hoặc có dữ liệu liên hệ)
-        if (isTabSelected('tab-p-contact') || employees.some(e => isKeyProvided(e, 'work_email', 'mobile_phone', 'permanent_address_full'))) {
+        // 5. Đồng bộ vào 04_Contacts_Addresses (Nếu tab liên hệ được chọn)
+        if (isTabSelected('tab-p-contact')) {
           const existingContacts = data.tables["04_Contacts_Addresses"] || [];
           const contactMap = new Map(existingContacts.map(c => [c.employee_id, { ...c }]));
           employees.forEach(emp => {
@@ -988,8 +988,8 @@ export default {
           await saveTableToD1(db, "04_Contacts_Addresses", Array.from(contactMap.values()));
         }
 
-        // 6. Đồng bộ vào 05_Identity_Docs (Nếu tab định danh được chọn hoặc có dữ liệu CCCD)
-        if (isTabSelected('tab-p-identity') || employees.some(e => isKeyProvided(e, 'id_number', 'Số CMND', 'Số CCCD'))) {
+        // 6. Đồng bộ vào 05_Identity_Docs (Nếu tab định danh được chọn)
+        if (isTabSelected('tab-p-identity')) {
           const existingIdentity = data.tables["05_Identity_Docs"] || [];
           const idMap = new Map(existingIdentity.map(i => [i.employee_id, { ...i }]));
           employees.forEach(emp => {
