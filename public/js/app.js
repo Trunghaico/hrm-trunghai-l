@@ -31,6 +31,9 @@ const app = {
       appContracts.init();
       appContracts.render();
     }
+    if (window.appAttendance) {
+      appAttendance.init();
+    }
 
     // 4. Update sidebar count badges
     const sideCompCount = document.getElementById('sidebar-company-count');
@@ -52,6 +55,12 @@ const app = {
         sideContractCount.style.display = 'inline-block';
         sideContractCount.style.background = '#F59E0B';
       }
+    }
+    const sideZkCount = document.getElementById('sidebar-zk-devices-count');
+    if (sideZkCount) {
+      const devCount = (appData.attendanceDevices || []).length;
+      sideZkCount.textContent = devCount;
+      sideZkCount.style.display = devCount > 0 ? 'inline-block' : 'none';
     }
 
     // 5. Navigation setup
@@ -156,6 +165,12 @@ const app = {
         if (typeof appAccounts.closeDeleteModal === 'function') appAccounts.closeDeleteModal();
         if (typeof appAccounts.closeBulkDeleteModal === 'function') appAccounts.closeBulkDeleteModal();
       }
+      if (window.appAttendance) {
+        if (typeof appAttendance.closeManualEditModal === 'function') appAttendance.closeManualEditModal();
+        if (typeof appAttendance.closeCreateRequestModal === 'function') appAttendance.closeCreateRequestModal();
+        if (typeof appAttendance.closeDeviceModal === 'function') appAttendance.closeDeviceModal();
+        if (typeof appAttendance.closeShiftModal === 'function') appAttendance.closeShiftModal();
+      }
       if (window.appPWA && typeof appPWA.closeIosModal === 'function') {
         appPWA.closeIosModal();
       }
@@ -230,6 +245,8 @@ const app = {
       'positions': '<i class="fa-solid fa-briefcase"></i> <span>Vị Trí Công Việc</span>',
       'org-chart': '<i class="fa-solid fa-sitemap"></i> <span>Sơ Đồ Cơ Cấu Tổ Chức</span>',
       'contracts': '<i class="fa-solid fa-file-contract"></i> <span>Hợp Đồng & Cảnh Báo</span>',
+      'attendance': '<i class="fa-solid fa-clock"></i> <span>Quản Lý Chấm Công</span>',
+      'zk-devices': '<i class="fa-solid fa-fingerprint"></i> <span>Máy Chấm Công & Kết Nối Ronald Jack</span>',
       'resigned': '<i class="fa-solid fa-user-xmark"></i> <span>Quản Lý Nhân Sự Nghỉ Việc</span>',
       'reports': '<i class="fa-solid fa-chart-line"></i> <span>Báo Cáo Biến Động Nhân Sự</span>',
       'accounts': '<i class="fa-solid fa-user-shield"></i> <span>Tài Khoản & Phân Quyền</span>',
@@ -280,6 +297,14 @@ const app = {
           } else {
             appOrganization.renderContractsTable();
           }
+        } else if (viewId === 'attendance') {
+          if (window.appAttendance) {
+            appAttendance.render();
+          }
+        } else if (viewId === 'zk-devices') {
+          if (window.appAttendance) {
+            appAttendance.renderZkDevicesView();
+          }
         } else if (viewId === 'accounts') {
           appAccounts.init();
         } else if (viewId === 'logs') {
@@ -318,7 +343,11 @@ const app = {
     const quickExportBtn = document.getElementById('btn-quick-export');
     if (quickExportBtn) {
       quickExportBtn.addEventListener('click', () => {
-        appReports.exportCompleteWorkbook();
+        if (app.currentView === 'attendance' && window.appAttendance) {
+          appAttendance.exportTimesheetToExcel();
+        } else {
+          appReports.exportCompleteWorkbook();
+        }
       });
     }
   }
