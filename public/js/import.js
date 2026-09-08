@@ -7,12 +7,16 @@ const appImport = {
   isImporting: false,
   currentStep: 1,
   currentFilter: 'all',
+  currentPreviewTab: 'all',
   scopeMode: 'all', // 'all' | 'selected'
   selectedTabs: new Set([
     'tab-p-personal', 'tab-p-org', 'tab-p-contract', 'tab-p-identity',
     'tab-p-contact', 'tab-p-emergency', 'tab-p-education', 'tab-p-salary',
     'tab-p-allowance', 'tab-p-account'
   ]),
+  detectedHeaders: [],
+  dynamicColumns: [],
+  presentTabs: [],
   parsedEmployees: [],
   validEmployees: [],
   overwriteEmployees: [],
@@ -147,6 +151,10 @@ const appImport = {
   resetState() {
     this.currentStep = 1;
     this.currentFilter = 'all';
+    this.currentPreviewTab = 'all';
+    this.detectedHeaders = [];
+    this.dynamicColumns = [];
+    this.presentTabs = [];
     this.parsedEmployees = [];
     this.validEmployees = [];
     this.overwriteEmployees = [];
@@ -520,6 +528,7 @@ const appImport = {
     }
 
     const headers = rawRows[headerRowIdx].map(h => String(h || '').trim());
+    this.detectedHeaders = headers.filter(h => h && h.length > 0);
     const dataRows = [];
     for (let i = headerRowIdx + 1; i < rawRows.length; i++) {
       const row = rawRows[i];
@@ -531,6 +540,15 @@ const appImport = {
       dataRows.push(obj);
     }
     return dataRows;
+  },
+
+  escapeHtml(str) {
+    if (str === undefined || str === null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   },
 
   cleanKey(str) {
@@ -661,6 +679,11 @@ const appImport = {
     this.validEmployees = [];
     this.overwriteEmployees = [];
     this.conflictEmployees = [];
+
+    if ((!this.detectedHeaders || this.detectedHeaders.length === 0) && rawRows && rawRows.length > 0) {
+      this.detectedHeaders = Object.keys(rawRows[0]).filter(k => k && k.trim().length > 0);
+    }
+    this.buildDynamicColumns(this.detectedHeaders);
 
     const overwrite = document.getElementById('import-chk-overwrite')?.checked ?? true;
 
@@ -982,6 +1005,7 @@ const appImport = {
         status: rowStatus,
         is_linked: isEmpExisting,
         raw_data: rawRow,
+        normMap: normMap,
         provided_fields: Object.keys(normMap),
         errors,
         warnings
@@ -1022,6 +1046,236 @@ const appImport = {
     });
   },
 
+  buildDynamicColumns(rawHeaders) {
+    const isIdCol = (h) => {
+      const ck = this.cleanKey(h);
+      return ck === 'stt' || ck === 'no' || ck === 'tt' ||
+             ck === 'manhanvien' || ck === 'manv' || ck === 'employeeid' || ck === 'staffid' ||
+             ck === 'hovaten' || ck === 'hoten' || ck === 'fullname' || ck === 'tennhanvien';
+    };
+
+    // Build lookup from cleanKey to field definition
+    const fieldMap = new Map();
+    if (typeof MASTER_FIELDS_CONFIG !== 'undefined') {
+      MASTER_FIELDS_CONFIG.forEach(f => {
+        fieldMap.set(this.cleanKey(f.key), f);
+        if (f.label) fieldMap.set(this.cleanKey(f.label), f);
+      });
+    }
+
+    const cols = [];
+    const tabCounts = new Map();
+
+    (rawHeaders || []).forEach(header => {
+      if (!header || isIdCol(header)) return;
+      const ck = this.cleanKey(header);
+
+      let tabId = 'other';
+      let fieldDef = fieldMap.get(ck);
+
+      if (!fieldDef) {
+        if (ck.includes('luong') || ck.includes('bhxh') || ck.includes('bhyt') || ck.includes('bhtn') || ck.includes('nganhang') || ck.includes('thue') || ck.includes('phieuluong') || ck.includes('tknganhang')) {
+          tabId = 'tab-p-salary';
+        } else if (ck.includes('phucap') || ck.includes('giamtru')) {
+          tabId = 'tab-p-allowance';
+        } else if (ck.includes('hopdong') || ck.includes('loaihd') || ck.includes('thuviec') || ck.includes('chinhthuc') || ck.includes('thamnien')) {
+          tabId = 'tab-p-contract';
+        } else if (ck.includes('cccd') || ck.includes('cmnd') || ck.includes('hochieu') || ck.includes('giayto') || ck.includes('sohochieu')) {
+          tabId = 'tab-p-identity';
+        } else if (ck.includes('dienthoai') || ck.includes('dt') || ck.includes('email') || ck.includes('diachi') || ck.includes('thuongtru') || ck.includes('tamtru') || ck.includes('hokhau') || ck.includes('skype') || ck.includes('facebook')) {
+          tabId = 'tab-p-contact';
+        } else if (ck.includes('khan_cap') || ck.includes('khancap') || ck.includes('lhkc')) {
+          tabId = 'tab-p-emergency';
+        } else if (ck.includes('daotao') || ck.includes('bangcap') || ck.includes('hocvan') || ck.includes('truong') || ck.includes('chuyennganh') || ck.includes('totnghiep')) {
+          tabId = 'tab-p-education';
+        } else if (ck.includes('donvi') || ck.includes('phongban') || ck.includes('vitri') || ck.includes('chucdanh') || ck.includes('quanly') || ck.includes('diadiemlamviec')) {
+          tabId = 'tab-p-org';
+        } else if (ck.includes('taikhoan') || ck.includes('chukyso') || ck.includes('cks')) {
+          tabId = 'tab-p-account';
+        } else if (ck.includes('gioitinh') || ck.includes('ngaysinh') || ck.includes('noisinh') || ck.includes('nguyenquan') || ck.includes('honnhan') || ck.includes('dantoc') || ck.includes('tongiao') || ck.includes('quoctich') || ck.includes('mst')) {
+          tabId = 'tab-p-personal';
+        }
+      } else {
+        tabId = fieldDef.tab;
+      }
+
+      const isMoney = ck.includes('luong') || ck.includes('thunhap') || ck.includes('phucap') || ck.includes('giamtru') || ck.includes('sotien');
+      const isDate = ck.includes('ngay') || ck.includes('date');
+      const isCenter = isDate || ck.includes('gioitinh') || ck.includes('ma') || ck.includes('bac') || ck.includes('cap') || ck.includes('tyle');
+
+      cols.push({
+        header,
+        cleanKey: ck,
+        tab: tabId,
+        align: isMoney ? 'right' : (isCenter ? 'center' : 'left'),
+        isMoney,
+        isDate,
+        label: fieldDef?.label || header
+      });
+
+      tabCounts.set(tabId, (tabCounts.get(tabId) || 0) + 1);
+    });
+
+    this.dynamicColumns = cols;
+    this.presentTabs = [];
+
+    if (typeof PROFILE_TABS !== 'undefined') {
+      PROFILE_TABS.forEach(t => {
+        const count = tabCounts.get(t.id) || 0;
+        if (count > 0) {
+          this.presentTabs.push({ ...t, count });
+        }
+      });
+    }
+
+    // Determine initial tab filter
+    if (this.presentTabs.length === 1) {
+      this.currentPreviewTab = this.presentTabs[0].id;
+    } else if (this.scopeMode === 'selected' && this.selectedTabs && this.selectedTabs.size > 0) {
+      const match = this.presentTabs.find(pt => this.selectedTabs.has(pt.id));
+      this.currentPreviewTab = match ? match.id : 'all';
+    } else {
+      this.currentPreviewTab = 'all';
+    }
+  },
+
+  renderPreviewTabFilters() {
+    const bar = document.getElementById('import-preview-tab-filters-bar');
+    const pillsContainer = document.getElementById('import-preview-tab-pills');
+    const countEl = document.getElementById('import-preview-col-count');
+    if (!bar || !pillsContainer) return;
+
+    if (!this.dynamicColumns || this.dynamicColumns.length === 0) {
+      bar.style.display = 'none';
+      return;
+    }
+
+    bar.style.display = 'flex';
+
+    const totalCols = this.dynamicColumns.length;
+    const isAll = this.currentPreviewTab === 'all';
+
+    let pillsHtml = `
+      <button type="button" class="btn btn-sm" onclick="appImport.setPreviewTab('all')"
+        style="font-size: 11.5px; padding: 3px 10px; border-radius: 20px; cursor: pointer; transition: all 0.15s ease; ${isAll ? 'background: #1E40AF; color: #FFFFFF; font-weight: 700; border: 1px solid #1E40AF;' : 'background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; font-weight: 500;'}">
+        <i class="fa-solid fa-list-check"></i> Tất cả các cột (${totalCols})
+      </button>
+    `;
+
+    this.presentTabs.forEach(tab => {
+      const isActive = this.currentPreviewTab === tab.id;
+      pillsHtml += `
+        <button type="button" class="btn btn-sm" onclick="appImport.setPreviewTab('${tab.id}')"
+          style="font-size: 11.5px; padding: 3px 10px; border-radius: 20px; cursor: pointer; transition: all 0.15s ease; ${isActive ? 'background: #2563EB; color: #FFFFFF; font-weight: 700; border: 1px solid #2563EB;' : 'background: #FFFFFF; color: #334155; border: 1px solid #CBD5E1; font-weight: 500;'}">
+          <i class="fa-solid ${tab.icon}" style="${isActive ? 'color: #FFFFFF;' : 'color: #2563EB;'}"></i> ${tab.name} (${tab.count})
+        </button>
+      `;
+    });
+
+    pillsContainer.innerHTML = pillsHtml;
+
+    if (countEl) {
+      let activeCount = totalCols;
+      if (!isAll) {
+        const t = this.presentTabs.find(x => x.id === this.currentPreviewTab);
+        activeCount = t ? t.count : 0;
+        countEl.innerHTML = `<i class="fa-solid fa-eye"></i> Đang hiển thị: <strong>${activeCount}</strong> cột (${t ? t.name : ''})`;
+      } else {
+        countEl.innerHTML = `<i class="fa-solid fa-eye"></i> Đang hiển thị: <strong>${activeCount}</strong> cột trong file`;
+      }
+    }
+  },
+
+  setPreviewTab(tabId) {
+    this.currentPreviewTab = tabId;
+    this.renderPreviewTabFilters();
+    this.renderPreviewTable();
+  },
+
+  renderPreviewThead(activeCols) {
+    const thead = document.getElementById('import-preview-thead');
+    if (!thead) return;
+
+    if (!activeCols || activeCols.length === 0) {
+      thead.innerHTML = `
+        <tr>
+          <th style="width: 40px; text-align: center;">STT</th>
+          <th style="width: 150px; text-align: center;">Trạng Thái Liên Kết & Đối Soát</th>
+          <th style="width: 100px;">Mã NV</th>
+          <th style="width: 220px;">Họ và Tên & Chi Tiết Lỗi</th>
+          <th style="width: 75px;">Giới Tính</th>
+          <th style="width: 130px;">Số CCCD / CMND</th>
+          <th style="width: 180px;">Email Công Việc</th>
+          <th style="width: 120px;">Phòng Ban</th>
+          <th style="width: 130px;">Vị Trí</th>
+        </tr>
+      `;
+      return;
+    }
+
+    thead.innerHTML = `
+      <tr>
+        <th style="width: 45px; text-align: center; white-space: nowrap;">STT</th>
+        <th style="width: 155px; text-align: center; white-space: nowrap;">Trạng Thái Liên Kết & Đối Soát</th>
+        <th style="width: 110px; white-space: nowrap;">Mã NV</th>
+        <th style="width: 220px; white-space: nowrap;">Họ và Tên & Chi Tiết Lỗi</th>
+        ${activeCols.map(col => `
+          <th style="min-width: 130px; white-space: nowrap; text-align: ${col.align || 'left'}; font-weight: 600; color: #1E293B; background: #F8FAFC;">
+            ${this.escapeHtml(col.header)}
+          </th>
+        `).join('')}
+      </tr>
+    `;
+  },
+
+  formatPreviewCellValue(e, col) {
+    let raw = undefined;
+    if (e.raw_data && e.raw_data[col.header] !== undefined && e.raw_data[col.header] !== null) {
+      raw = e.raw_data[col.header];
+    } else if (e.normMap && e.normMap[col.cleanKey] !== undefined && e.normMap[col.cleanKey] !== null) {
+      raw = e.normMap[col.cleanKey];
+    }
+
+    if (raw === undefined || raw === null || String(raw).trim() === '') {
+      return '<span style="color: #CBD5E1; font-style: italic;">-</span>';
+    }
+
+    const str = String(raw).trim();
+    const lowerHeader = (col.header || '').toLowerCase();
+
+    // Check if monetary value
+    if (col.isMoney || lowerHeader.includes('lương') || lowerHeader.includes('thu nhập') || lowerHeader.includes('phụ cấp') || lowerHeader.includes('giảm trừ') || lowerHeader.includes('số tiền')) {
+      const num = parseFloat(str.replace(/[^0-9.-]+/g, ''));
+      if (!isNaN(num)) {
+        return `<span style="color: #047857; font-weight: 600; font-family: monospace;">${num.toLocaleString('vi-VN')} ₫</span>`;
+      }
+    }
+
+    // Check if percentage
+    if (lowerHeader.includes('%') || lowerHeader.includes('tỷ lệ') || lowerHeader.includes('ty le')) {
+      if (!str.endsWith('%') && !isNaN(Number(str))) {
+        const num = Number(str);
+        const pct = num <= 1 ? (num * 100).toFixed(1) + '%' : num + '%';
+        return `<span style="font-weight: 500;">${pct}</span>`;
+      }
+      return `<span style="font-weight: 500;">${this.escapeHtml(str)}</span>`;
+    }
+
+    // Check if date
+    if (col.isDate || lowerHeader.includes('ngày') || lowerHeader.includes('date')) {
+      const formattedDate = this.formatDate(str);
+      return `<span style="color: #1E293B;">${formattedDate || this.escapeHtml(str)}</span>`;
+    }
+
+    // Special styling for Department / Position if ID/name
+    if (lowerHeader.includes('phòng ban') || lowerHeader.includes('đơn vị')) {
+      const deptName = (typeof appData !== 'undefined' && appData.deptMap?.[str]) || str;
+      return `<span class="badge badge-navy" title="${this.escapeHtml(deptName)}">${this.escapeHtml(deptName)}</span>`;
+    }
+
+    return `<span title="${this.escapeHtml(str)}">${this.escapeHtml(str)}</span>`;
+  },
+
   renderPreview() {
     const total = this.parsedEmployees.length;
     const validCount = this.validEmployees.length;
@@ -1049,6 +1303,7 @@ const appImport = {
       `;
     }
 
+    this.renderPreviewTabFilters();
     this.renderPreviewTable();
     this.updateSubmitButtonState();
   },
@@ -1062,10 +1317,24 @@ const appImport = {
     else if (this.currentFilter === 'overwrite') itemsToRender = this.overwriteEmployees;
     else if (this.currentFilter === 'conflict') itemsToRender = this.conflictEmployees;
 
+    // Filter active columns based on this.currentPreviewTab
+    let activeCols = [];
+    if (this.dynamicColumns && this.dynamicColumns.length > 0) {
+      if (this.currentPreviewTab === 'all') {
+        activeCols = this.dynamicColumns;
+      } else {
+        activeCols = this.dynamicColumns.filter(c => c.tab === this.currentPreviewTab);
+      }
+    }
+
+    this.renderPreviewThead(activeCols);
+
+    const totalColSpan = (activeCols && activeCols.length > 0) ? (4 + activeCols.length) : 9;
+
     if (itemsToRender.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="9" style="text-align: center; padding: 24px; color: var(--text-muted);">
+          <td colspan="${totalColSpan}" style="text-align: center; padding: 24px; color: var(--text-muted);">
             <i class="fa-solid fa-inbox" style="font-size: 24px; margin-bottom: 6px; display: block;"></i>
             Không có dòng dữ liệu nào trong danh mục này.
           </td>
@@ -1087,25 +1356,51 @@ const appImport = {
       }
 
       if (e.errors && e.errors.length > 0) {
-        errorMsgHtml = `<div style="font-size: 11px; color: #DC2626; margin-top: 4px; font-weight: 500;"><i class="fa-solid fa-circle-xmark"></i> ${e.errors.join('; ')}</div>`;
+        errorMsgHtml = `<div style="font-size: 11px; color: #DC2626; margin-top: 4px; font-weight: 500;"><i class="fa-solid fa-circle-xmark"></i> ${this.escapeHtml(e.errors.join('; '))}</div>`;
       } else if (e.warnings && e.warnings.length > 0) {
-        errorMsgHtml = `<div style="font-size: 11px; color: #D97706; margin-top: 4px;"><i class="fa-solid fa-circle-exclamation"></i> ${e.warnings.join('; ')}</div>`;
+        errorMsgHtml = `<div style="font-size: 11px; color: #D97706; margin-top: 4px;"><i class="fa-solid fa-circle-exclamation"></i> ${this.escapeHtml(e.warnings.join('; '))}</div>`;
       }
 
       const hasIdError = e.errors.some(err => err.toLowerCase().includes('mã') || err.toLowerCase().includes('id'));
-      const hasCccdError = e.errors.some(err => err.toLowerCase().includes('cccd'));
-      const hasEmailError = e.errors.some(err => err.toLowerCase().includes('email'));
-
       const idStyle = hasIdError ? 'color: #DC2626; font-weight: 700; background: #FEF2F2; padding: 2px 4px; border-radius: 3px;' : 'color: var(--primary-navy); font-weight: 600;';
-      const cccdStyle = hasCccdError ? 'color: #DC2626; font-weight: 700; background: #FEF2F2; padding: 2px 4px; border-radius: 3px;' : '';
-      const emailStyle = hasEmailError ? 'color: #DC2626; font-weight: 700; background: #FEF2F2; padding: 2px 4px; border-radius: 3px;' : '';
 
       const linkKeyHtml = e.is_linked
         ? `<div style="font-size: 10px; color: #059669; font-weight: 600; margin-top: 2px; white-space: nowrap;"><i class="fa-solid fa-database"></i> Khóa liên kết CSDL</div>`
         : '';
 
-      const deptDisplay = (typeof appData !== 'undefined' && appData.deptMap?.[e.department_id]) || e.department_id || 'Mặc định';
-      const posDisplay = (typeof appData !== 'undefined' && appData.posMap?.[e.position_id]) || e.position_id || 'Mặc định';
+      if (!activeCols || activeCols.length === 0) {
+        const hasCccdError = e.errors.some(err => err.toLowerCase().includes('cccd'));
+        const hasEmailError = e.errors.some(err => err.toLowerCase().includes('email'));
+        const cccdStyle = hasCccdError ? 'color: #DC2626; font-weight: 700; background: #FEF2F2; padding: 2px 4px; border-radius: 3px;' : '';
+        const emailStyle = hasEmailError ? 'color: #DC2626; font-weight: 700; background: #FEF2F2; padding: 2px 4px; border-radius: 3px;' : '';
+        const deptDisplay = (typeof appData !== 'undefined' && appData.deptMap?.[e.department_id]) || e.department_id || 'Mặc định';
+        const posDisplay = (typeof appData !== 'undefined' && appData.posMap?.[e.position_id]) || e.position_id || 'Mặc định';
+
+        return `
+          <tr style="${e.status === 'CONFLICT' ? 'background: #FFF5F5;' : ''}">
+            <td style="text-align: center; color: var(--text-secondary); font-size: 11.5px;">${e.stt}</td>
+            <td style="text-align: center;">${statusBadge}</td>
+            <td>
+              <span style="${idStyle}; font-family: monospace;">${e.employee_id || '(Tự tạo)'}</span>
+              ${linkKeyHtml}
+            </td>
+            <td>
+              <strong>${this.escapeHtml(e.full_name)}</strong>
+              ${errorMsgHtml}
+            </td>
+            <td>${e.gender || '-'}</td>
+            <td><span style="${cccdStyle}">${e.id_number || '-'}</span></td>
+            <td><span style="${emailStyle}">${e.work_email || '-'}</span></td>
+            <td><span class="badge badge-navy" title="${deptDisplay}">${deptDisplay}</span></td>
+            <td><span title="${posDisplay}">${posDisplay}</span></td>
+          </tr>
+        `;
+      }
+
+      const dynamicCellsHtml = activeCols.map(col => {
+        const cellHtml = this.formatPreviewCellValue(e, col);
+        return `<td style="white-space: nowrap; text-align: ${col.align || 'left'};">${cellHtml}</td>`;
+      }).join('');
 
       return `
         <tr style="${e.status === 'CONFLICT' ? 'background: #FFF5F5;' : ''}">
@@ -1116,14 +1411,10 @@ const appImport = {
             ${linkKeyHtml}
           </td>
           <td>
-            <strong>${e.full_name}</strong>
+            <strong>${this.escapeHtml(e.full_name)}</strong>
             ${errorMsgHtml}
           </td>
-          <td>${e.gender || '-'}</td>
-          <td><span style="${cccdStyle}">${e.id_number || '-'}</span></td>
-          <td><span style="${emailStyle}">${e.work_email || '-'}</span></td>
-          <td><span class="badge badge-navy" title="${deptDisplay}">${deptDisplay}</span></td>
-          <td><span title="${posDisplay}">${posDisplay}</span></td>
+          ${dynamicCellsHtml}
         </tr>
       `;
     }).join('');
