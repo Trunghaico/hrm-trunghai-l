@@ -18,6 +18,11 @@ const appData = {
   contracts: [],
   accounts: [],
   trash: [],
+  shifts: [],
+  schedules: [],
+  attendanceLogs: [],
+  attendanceRequests: [],
+  timesheets: [],
 
   company: {},
 
@@ -65,6 +70,11 @@ const appData = {
         this.accounts = json.tables['11_System_Accounts'] || [];
         this.trash = json.tables['13_Recycle_Bin'] || [];
         this.masterProfiles = json.tables['00_Master_Profiles'] || [];
+        this.shifts = json.tables['15_Attendance_Shifts'] || [];
+        this.schedules = json.tables['16_Attendance_Schedules'] || [];
+        this.attendanceLogs = json.tables['17_Attendance_Logs'] || [];
+        this.attendanceRequests = json.tables['18_Attendance_Requests'] || [];
+        this.timesheets = json.tables['19_Attendance_Timesheets'] || [];
 
         // Tự động đồng bộ / tự chữa lành (auto-heal) danh bạ liên hệ nếu thiếu
         if ((this.contacts || []).length < (this.employees || []).length) {

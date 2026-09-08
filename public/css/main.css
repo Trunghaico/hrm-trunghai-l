@@ -3478,6 +3478,74 @@ tr.row-selected {
   }
 }
 
+/* ==========================================================================
+   TIME & ATTENDANCE MODULE STYLES (CHẤM CÔNG & THIẾT BỊ RONALD JACK 009)
+   ========================================================================== */
+.att-subnav-bar {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #E2E8F0;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.att-nav-tab {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.att-nav-tab:hover {
+  background: #E2E8F0;
+  color: var(--primary-navy);
+}
+
+.att-nav-tab.active {
+  background: var(--primary-navy) !important;
+  color: #FFFFFF !important;
+  border-color: var(--primary-navy) !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+}
+
+.att-tab-content {
+  display: none;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.att-tab-content.active {
+  display: block;
+}
+
+.att-kpi-card {
+  padding: 16px;
+  background: #FFFFFF;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.att-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
 
 
 
