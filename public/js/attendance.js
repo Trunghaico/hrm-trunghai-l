@@ -68,13 +68,11 @@ const appAttendance = {
       if (allTsDates.length > 0) {
         const minAvailable = allTsDates[0];
         const maxAvailable = allTsDates[allTsDates.length - 1];
-        const hasRecords = (appData.timesheets || []).some(t => t.date && t.date >= this.fromDate && t.date <= this.toDate);
-        if (!hasRecords) {
-          this.fromDate = minAvailable;
-          this.toDate = maxAvailable;
-          this.selectedDate = maxAvailable;
-          this.currentMonth = maxAvailable.substring(0, 7);
-        }
+        const startOfMonth = maxAvailable.substring(0, 7) + '-01';
+        this.fromDate = (minAvailable < startOfMonth) ? minAvailable : startOfMonth;
+        this.toDate = maxAvailable;
+        this.selectedDate = maxAvailable;
+        this.currentMonth = maxAvailable.substring(0, 7);
       }
     } catch (e) {}
 
@@ -430,9 +428,9 @@ const appAttendance = {
 
     // Set date pickers default if not set
     const fromPicker = document.getElementById('att-from-date-picker');
-    if (fromPicker && !fromPicker.value) fromPicker.value = this.fromDate;
+    if (fromPicker) fromPicker.value = this.fromDate;
     const toPicker = document.getElementById('att-to-date-picker');
-    if (toPicker && !toPicker.value) toPicker.value = this.toDate;
+    if (toPicker) toPicker.value = this.toDate;
 
     this.updateDeptButtonLabel();
 
@@ -1863,7 +1861,8 @@ const appAttendance = {
       const dName = dayNames[dObj.getDay()] || 'Thứ 2';
 
       employees.forEach(emp => {
-        const empCode = String(emp.attendance_code || emp.time_attendance_code || '').trim();
+        const master = (appData.masterProfiles || []).find(m => m.employee_id === emp.employee_id) || {};
+        const empCode = String(emp.attendance_code || emp.time_attendance_code || emp['Mã chấm công'] || master['Mã chấm công'] || master.time_attendance_code || master.attendance_code || '').trim();
 
         // Nếu nhân viên không có mã chấm công -> Không áp dụng chấm công máy
         if (!empCode) {
@@ -1893,8 +1892,19 @@ const appAttendance = {
           return;
         }
 
-        const k = `${empCode}_${dt}`;
-        let empLogs = logsByDateAndCode[k] || [];
+        let empLogs = [];
+        if (empCode) {
+          const k1 = `${empCode}_${dt}`;
+          empLogs = empLogs.concat(logsByDateAndCode[k1] || []);
+        }
+        if (emp.employee_id) {
+          const k2 = `${emp.employee_id}_${dt}`;
+          if (logsByDateAndCode[k2]) {
+            logsByDateAndCode[k2].forEach(l => {
+              if (!empLogs.includes(l)) empLogs.push(l);
+            });
+          }
+        }
 
         // Sắp xếp tăng dần theo timestamp
         empLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
