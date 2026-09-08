@@ -23,6 +23,7 @@ const appData = {
   attendanceLogs: [],
   attendanceRequests: [],
   timesheets: [],
+  attendanceDevices: [],
 
   company: {},
 
@@ -75,6 +76,7 @@ const appData = {
         this.attendanceLogs = json.tables['17_Attendance_Logs'] || [];
         this.attendanceRequests = json.tables['18_Attendance_Requests'] || [];
         this.timesheets = json.tables['19_Attendance_Timesheets'] || [];
+        this.attendanceDevices = json.tables['20_Attendance_Devices'] || [];
 
         // Tự động đồng bộ / tự chữa lành (auto-heal) danh bạ liên hệ nếu thiếu
         if ((this.contacts || []).length < (this.employees || []).length) {

@@ -5321,35 +5321,107 @@ app.post('/api/attendance/requests/approve', (req, res) => {
 
 // 8. Device Management & Ronald Jack 009 Integration
 app.get('/api/attendance/devices', (req, res) => {
-    res.json({ success: true, devices: ronaldJackService.devices });
+    try {
+        const db = loadDatabase();
+        ensureAttendanceTables(db);
+        if (!db.tables['20_Attendance_Devices'] || db.tables['20_Attendance_Devices'].length === 0) {
+            db.tables['20_Attendance_Devices'] = ronaldJackService.devices.map(d => ({ ...d, location: 'Văn phòng', note: '' }));
+            saveDatabase(db);
+        }
+        res.json({ success: true, devices: db.tables['20_Attendance_Devices'] });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
 });
 
 app.post('/api/attendance/devices/save', (req, res) => {
     try {
-        const { id, name, ip, port, enabled } = req.body;
-        const dev = ronaldJackService.devices.find(d => d.id === id);
-        if (dev) {
-            if (name !== undefined) dev.name = name;
-            if (ip !== undefined) dev.ip = ip;
-            if (port !== undefined) dev.port = parseInt(port, 10);
-            if (enabled !== undefined) dev.enabled = !!enabled;
-            res.json({ success: true, message: 'Đã cập nhật cấu hình thiết bị!', device: dev });
+        const db = loadDatabase();
+        ensureAttendanceTables(db);
+        if (!db.tables['20_Attendance_Devices']) db.tables['20_Attendance_Devices'] = [];
+
+        const { device_id, id, name, device_name, ip, port, location, note, enabled } = req.body;
+        const targetId = device_id || id;
+        const devName = device_name || name || 'Ronald Jack 009';
+        const devIp = (ip || '192.168.1.201').trim();
+        const devPort = parseInt(port, 10) || 5005;
+
+        const idx = db.tables['20_Attendance_Devices'].findIndex(d => (d.device_id || d.id) === targetId);
+        let savedDev = null;
+
+        if (idx >= 0) {
+            const existing = db.tables['20_Attendance_Devices'][idx];
+            existing.device_name = devName;
+            existing.name = devName;
+            existing.ip = devIp;
+            existing.port = devPort;
+            if (location !== undefined) existing.location = location;
+            if (note !== undefined) existing.note = note;
+            if (enabled !== undefined) existing.enabled = !!enabled;
+            savedDev = existing;
         } else {
-            const newDev = {
-                id: id || 'DEV-' + Date.now().toString(36).toUpperCase(),
-                name: name || 'Ronald Jack 009',
-                ip: ip || '192.168.1.201',
-                port: parseInt(port, 10) || 5005,
-                in_out_mode: 'AUTO',
+            savedDev = {
+                device_id: targetId || 'DEV-' + Date.now().toString(36).toUpperCase(),
+                device_name: devName,
+                name: devName,
+                ip: devIp,
+                port: devPort,
+                location: location || 'Văn phòng chính',
+                status: 'ONLINE',
                 enabled: enabled !== undefined ? !!enabled : true,
                 last_sync: null,
-                status: 'STANDBY'
+                note: note || 'Thiết bị Ronald Jack 009 thêm thủ công'
             };
-            ronaldJackService.devices.push(newDev);
-            res.json({ success: true, message: 'Đã thêm thiết bị mới!', device: newDev });
+            db.tables['20_Attendance_Devices'].push(savedDev);
         }
+
+        saveDatabase(db);
+
+        // Synchronize in-memory ronaldJackService devices
+        ronaldJackService.devices = db.tables['20_Attendance_Devices'].map(d => ({
+            id: d.device_id || d.id,
+            name: d.device_name || d.name,
+            ip: d.ip,
+            port: d.port,
+            in_out_mode: 'AUTO',
+            enabled: d.enabled !== false,
+            last_sync: d.last_sync,
+            status: d.status || 'ONLINE'
+        }));
+
+        res.json({ success: true, message: 'Đã lưu cấu hình máy chấm công thành công!', device: savedDev });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(500).json({ success: false, message: 'Lỗi lưu máy chấm công: ' + err.message });
+    }
+});
+
+app.post('/api/attendance/devices/delete', (req, res) => {
+    try {
+        const db = loadDatabase();
+        ensureAttendanceTables(db);
+        const { device_id, id } = req.body;
+        const targetId = device_id || id;
+        if (!targetId) return res.status(400).json({ success: false, message: 'Thiếu device_id cần xóa' });
+
+        if (db.tables['20_Attendance_Devices']) {
+            db.tables['20_Attendance_Devices'] = db.tables['20_Attendance_Devices'].filter(d => (d.device_id || d.id) !== targetId);
+            saveDatabase(db);
+        }
+
+        ronaldJackService.devices = (db.tables['20_Attendance_Devices'] || []).map(d => ({
+            id: d.device_id || d.id,
+            name: d.device_name || d.name,
+            ip: d.ip,
+            port: d.port,
+            in_out_mode: 'AUTO',
+            enabled: d.enabled !== false,
+            last_sync: d.last_sync,
+            status: d.status || 'ONLINE'
+        }));
+
+        res.json({ success: true, message: `Đã xóa thiết bị ${targetId} thành công!` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi xóa thiết bị: ' + err.message });
     }
 });
 

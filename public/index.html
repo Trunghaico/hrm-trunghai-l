@@ -1473,102 +1473,63 @@
           </div>
         </div>
 
-        <!-- Attendance Sub-tabs Navigation -->
-        <div class="att-subnav-bar" style="display: flex; gap: 8px; border-bottom: 2px solid #E2E8F0; margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px;">
+        <!-- Attendance Sub-tabs Navigation (5 Distinct Tabs) -->
+        <div class="att-subnav-bar" style="display: flex; gap: 8px; border-bottom: 2px solid #E2E8F0; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;">
           <button class="btn btn-secondary att-nav-tab active" data-tab="dashboard" onclick="appAttendance.switchSubTab('dashboard')">
-            <i class="fa-solid fa-chart-pie"></i> Tổng Quan Hôm Nay
-          </button>
-          <button class="btn btn-secondary att-nav-tab" data-tab="timesheets" onclick="appAttendance.switchSubTab('timesheets')">
-            <i class="fa-solid fa-calendar-days"></i> Bảng Công Chi Tiết Tháng
+            <i class="fa-solid fa-chart-line"></i> Dashboard Bảng Công
           </button>
           <button class="btn btn-secondary att-nav-tab" data-tab="shifts" onclick="appAttendance.switchSubTab('shifts')">
-            <i class="fa-solid fa-business-time"></i> Ca Làm Việc & Lịch
+            <i class="fa-solid fa-business-time"></i> Ca Làm Việc & Phân Lịch
           </button>
           <button class="btn btn-secondary att-nav-tab" data-tab="requests" onclick="appAttendance.switchSubTab('requests')">
             <i class="fa-solid fa-file-signature"></i> Đơn Từ & Phê Duyệt
           </button>
           <button class="btn btn-secondary att-nav-tab" data-tab="devices" onclick="appAttendance.switchSubTab('devices')">
-            <i class="fa-solid fa-fingerprint"></i> Máy Ronald Jack 009
+            <i class="fa-solid fa-fingerprint"></i> Máy Chấm Công Ronald Jack
           </button>
           <button class="btn btn-secondary att-nav-tab" data-tab="portal" onclick="appAttendance.switchSubTab('portal')">
-            <i class="fa-solid fa-user-clock"></i> Chấm Công Cá Nhân
+            <i class="fa-solid fa-user-clock"></i> Cổng Chấm Công Cá Nhân
           </button>
         </div>
 
-        <!-- SUBTAB 1: REAL-TIME DASHBOARD -->
+        <!-- SUBTAB 1: UNIFIED DASHBOARD BẢNG CÔNG (KPIs + BẢNG CÔNG CHI TIẾT) -->
         <div class="att-tab-content active" id="att-tab-dashboard">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px;">
+          <!-- Realtime KPIs -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 18px;">
             <div class="card att-kpi-card" style="border-left: 4px solid #3B82F6;">
-              <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tổng Nhân Sự Ca</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tổng Nhân Sự Ca</div>
               <div id="att-kpi-total" style="font-size: 26px; font-weight: 800; color: #1E293B; margin-top: 4px;">...</div>
               <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Theo lịch phân ca hôm nay</div>
             </div>
             <div class="card att-kpi-card" style="border-left: 4px solid #10B981;">
-              <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Đang Làm Việc</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Đang Làm Việc</div>
               <div id="att-kpi-working" style="font-size: 26px; font-weight: 800; color: #047857; margin-top: 4px;">...</div>
               <div style="font-size: 11px; color: #10B981; margin-top: 2px;">Đã ghi nhận quẹt thẻ vào</div>
             </div>
             <div class="card att-kpi-card" style="border-left: 4px solid #F59E0B;">
-              <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Đi Muộn</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Đi Muộn</div>
               <div id="att-kpi-late" style="font-size: 26px; font-weight: 800; color: #D97706; margin-top: 4px;">...</div>
-              <div style="font-size: 11px; color: #F59E0B; margin-top: 2px;">Vượt qua phút du di ca</div>
+              <div style="font-size: 11px; color: #F59E0B; margin-top: 2px;">Vượt quá phút du di ca</div>
             </div>
             <div class="card att-kpi-card" style="border-left: 4px solid #8B5CF6;">
-              <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Về Sớm</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Về Sớm</div>
               <div id="att-kpi-early" style="font-size: 26px; font-weight: 800; color: #7C3AED; margin-top: 4px;">...</div>
               <div style="font-size: 11px; color: #8B5CF6; margin-top: 2px;">Quẹt ra trước kết thúc ca</div>
             </div>
             <div class="card att-kpi-card" style="border-left: 4px solid #06B6D4;">
-              <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Nghỉ Phép Có Đơn</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Nghỉ Phép Có Đơn</div>
               <div id="att-kpi-leave" style="font-size: 26px; font-weight: 800; color: #0891B2; margin-top: 4px;">...</div>
               <div style="font-size: 11px; color: #06B6D4; margin-top: 2px;">Đã được quản lý duyệt</div>
             </div>
             <div class="card att-kpi-card" style="border-left: 4px solid #EF4444;">
-              <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Vắng Mặt</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Vắng Mặt</div>
               <div id="att-kpi-absent" style="font-size: 26px; font-weight: 800; color: #DC2626; margin-top: 4px;">...</div>
-              <div style="font-size: 11px; color: #EF4444; margin-top: 2px;">Không có log quẹt thẻ & đơn</div>
+              <div style="font-size: 11px; color: #EF4444; margin-top: 2px;">Không có quẹt thẻ & đơn</div>
             </div>
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-            <div style="font-weight: 700; color: var(--primary-navy); font-size: 15px;">
-              <i class="fa-solid fa-satellite-dish" style="color: #10B981;"></i> Dữ Liệu Quẹt Thẻ Trực Tiếp Hôm Nay
-            </div>
-            <div style="display: flex; gap: 8px;">
-              <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng Quẹt Thẻ Hôm Nay
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="appAttendance.recalculateTimesheets()">
-                <i class="fa-solid fa-calculator"></i> Đối Soát & Tính Lại Công
-              </button>
-              <button class="btn btn-primary btn-sm" onclick="appAttendance.syncFromRonaldJack()">
-                <i class="fa-solid fa-rotate"></i> Đồng Bộ Máy Ronald Jack 009
-              </button>
-            </div>
-          </div>
-
-          <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
-            <table class="table" style="width: 100%; font-size: 12.5px;">
-              <thead>
-                <tr>
-                  <th style="width: 50px; text-align: center;">STT</th>
-                  <th style="width: 130px;">Mã Chấm Công</th>
-                  <th>Họ Và Tên</th>
-                  <th>Phòng Ban</th>
-                  <th style="width: 130px;">Giờ Quẹt Thẻ</th>
-                  <th>Thiết Bị Ghi Nhận</th>
-                </tr>
-              </thead>
-              <tbody id="att-live-stream-tbody">
-                <!-- Live logs stream populated by attendance.js -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- SUBTAB 2: DETAILED MONTHLY TIMESHEET -->
-        <div class="att-tab-content" id="att-tab-timesheets">
-          <div class="filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; background: #F8FAFC; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); align-items: center;">
+          <!-- Timesheet Filter Toolbar & Action Buttons -->
+          <div class="filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; background: #F8FAFC; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); align-items: center;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <label for="att-month-picker" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0;">Tháng:</label>
               <input type="month" id="att-month-picker" class="filter-select" style="height: 34px; font-weight: 600;">
@@ -1593,20 +1554,27 @@
             <div style="flex: 1; min-width: 180px;">
               <input type="text" id="att-search-input" class="filter-input" placeholder="Tìm theo tên hoặc mã nhân sự..." style="height: 34px;">
             </div>
-            <div style="display: flex; gap: 8px;">
-              <button class="btn btn-secondary" onclick="appAttendance.recalculateTimesheets()" title="Tính lại công">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.syncFromRonaldJack()" title="Đồng bộ từ máy chấm công">
+                <i class="fa-solid fa-rotate"></i> Đồng Bộ Máy
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.recalculateTimesheets()" title="Tính lại công theo log quẹt thẻ và đơn">
                 <i class="fa-solid fa-calculator"></i> Tính Lại
               </button>
-              <button class="btn btn-secondary" id="att-btn-lock" onclick="appAttendance.toggleLockTimesheet()" title="Khóa sổ công để tính lương">
+              <button class="btn btn-secondary btn-sm" id="att-btn-lock" onclick="appAttendance.toggleLockTimesheet()" title="Khóa sổ công để tính lương">
                 <i class="fa-solid fa-lock"></i> Khóa Sổ
               </button>
-              <button class="btn btn-primary" onclick="appAttendance.exportTimesheetToExcel()" title="Xuất file Excel chuẩn tính lương">
+              <button class="btn btn-primary btn-sm" onclick="appAttendance.exportTimesheetToExcel()" title="Xuất file Excel chuẩn tính lương">
                 <i class="fa-solid fa-file-excel"></i> Xuất Excel
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()" title="Mô phỏng dữ liệu quẹt thẻ kiểm thử">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng
               </button>
             </div>
           </div>
 
-          <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto;">
+          <!-- The Primary Timesheet Table -->
+          <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <table class="table" style="width: 100%; font-size: 12px; white-space: nowrap;">
               <thead>
                 <tr style="background: #F1F5F9;">
@@ -1703,11 +1671,28 @@
           </div>
         </div>
 
-        <!-- SUBTAB 5: RONALD JACK 009 DEVICES -->
+        <!-- SUBTAB 4: RONALD JACK 009 DEVICES (THÊM THỦ CÔNG & QUẢN LÝ) -->
         <div class="att-tab-content" id="att-tab-devices">
-          <div style="margin-bottom: 14px;">
-            <h3 style="margin: 0 0 4px 0; font-size: 15px; font-weight: 700; color: #1E293B;">Hệ Thống Thiết Bị Ronald Jack 009 (Port 5005, 5006, 5007)</h3>
-            <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">Kết nối qua giao thức node-zklib. Tự động loại bỏ quẹt lặp 5 phút và lấy lượt đầu/cuối chính xác.</p>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: #1E293B;">
+                <i class="fa-solid fa-fingerprint" style="color: #2563EB;"></i> Hệ Thống Máy Chấm Công Ronald Jack 009
+              </h3>
+              <p style="margin: 0; font-size: 12.5px; color: var(--text-secondary);">
+                Thêm thủ công các máy chấm công thực tế theo IP & Port (5005, 5006, 5007...). Quản lý kết nối, đồng bộ và xem bản ghi thô.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary btn-sm" onclick="appAttendance.openAddDeviceModal()" title="Thêm máy chấm công thực tế mới">
+                <i class="fa-solid fa-plus"></i> Thêm Máy Chấm Công Mới
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.syncFromRonaldJack()" title="Kéo dữ liệu từ tất cả máy chấm công">
+                <i class="fa-solid fa-rotate"></i> Đồng Bộ Tất Cả Máy
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()" title="Tạo dữ liệu kiểm thử quẹt thẻ">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng Log
+              </button>
+            </div>
           </div>
 
           <!-- Devices cards grid -->
@@ -1719,9 +1704,6 @@
             <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: #1E293B;">
               <i class="fa-solid fa-list-ol"></i> Bản Ghi Quẹt Thẻ Gốc Mới Nhất (Raw Punch Logs)
             </h4>
-            <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng Thêm Log Kiểm Thử
-            </button>
           </div>
 
           <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
@@ -3788,6 +3770,65 @@
       <button class="btn btn-secondary btn-sm" onclick="appAttendance.closeCreateRequestModal()">Hủy Bỏ</button>
       <button class="btn btn-primary btn-sm" onclick="appAttendance.submitRequest()">
         <i class="fa-solid fa-paper-plane"></i> Gửi Đơn Phê Duyệt
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: ATTENDANCE DEVICE EDIT (THÊM / SỬA MÁY CHẤM CÔNG THỦ CÔNG)
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-att-device-edit">
+  <div class="modal-container" style="max-width: 500px;">
+    <div class="modal-header" style="background: var(--primary-navy); color: #fff; padding: 14px 18px;">
+      <div class="modal-title" style="font-size: 15px; font-weight: 700; color: #fff;">
+        <i class="fa-solid fa-microchip"></i> <span id="att-dev-modal-title">Cấu Hình Máy Chấm Công</span>
+      </div>
+      <button class="modal-close" style="color: #fff;" onclick="appAttendance.closeDeviceModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px 18px;">
+      <div style="margin-bottom: 14px;">
+        <label for="att-dev-id" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Mã thiết bị (Device ID):</label>
+        <input type="text" id="att-dev-id" class="form-control" placeholder="DEV-01" style="font-family: monospace; font-weight: 700; color: #1E40AF;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label for="att-dev-name" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Tên máy chấm công:</label>
+        <input type="text" id="att-dev-name" class="form-control" placeholder="Ví dụ: Ronald Jack 009 - Cửa Bảo Vệ" style="font-weight: 600;">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-bottom: 14px;">
+        <div>
+          <label for="att-dev-ip" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Địa chỉ IP mạng nội bộ:</label>
+          <input type="text" id="att-dev-ip" class="form-control" placeholder="192.168.1.201" style="font-family: monospace; font-weight: 600;">
+        </div>
+        <div>
+          <label for="att-dev-port" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Cổng Port (UDP/TCP):</label>
+          <input type="number" id="att-dev-port" class="form-control" value="5005" placeholder="5005" style="font-family: monospace; font-weight: 600;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label for="att-dev-location" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Vị trí lắp đặt thực tế:</label>
+        <input type="text" id="att-dev-location" class="form-control" placeholder="Ví dụ: Cổng chính, Tầng 1 Nhà kho, Xưởng A...">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label for="att-dev-note" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Ghi chú thiết bị:</label>
+        <input type="text" id="att-dev-note" class="form-control" placeholder="Máy quẹt thẻ vân tay / thẻ từ Ronald Jack 009...">
+      </div>
+
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px 12px; border-radius: var(--radius-sm);">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #1E293B; cursor: pointer; margin: 0;">
+          <input type="checkbox" id="att-dev-enabled" checked style="width: 16px; height: 16px;">
+          <span>Kích hoạt kết nối và tự động đồng bộ máy này</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 12px 18px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn btn-secondary btn-sm" onclick="appAttendance.closeDeviceModal()">Hủy Bỏ</button>
+      <button class="btn btn-primary btn-sm" onclick="appAttendance.saveDevice()">
+        <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình Máy
       </button>
     </div>
   </div>

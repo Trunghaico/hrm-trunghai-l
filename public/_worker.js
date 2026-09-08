@@ -2409,6 +2409,44 @@ export default {
         if (path === "attendance/zk/simulate" && method === "POST") {
           return jsonResponse({ success: true, message: "Đã tạo dữ liệu quẹt thẻ kiểm thử thực tế thành công!" });
         }
+
+        // GET /api/attendance/devices
+        if (path === "attendance/devices" && method === "GET") {
+          let devices = data.tables["20_Attendance_Devices"] || [];
+          return jsonResponse({ success: true, devices });
+        }
+
+        // POST /api/attendance/devices/save
+        if (path === "attendance/devices/save" && method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          let devices = data.tables["20_Attendance_Devices"] || [];
+          const targetId = body.device_id || body.id;
+          const idx = devices.findIndex(d => (d.device_id || d.id) === targetId);
+          let savedDev = null;
+          if (idx >= 0) {
+            devices[idx] = { ...devices[idx], ...body };
+            savedDev = devices[idx];
+          } else {
+            savedDev = {
+              device_id: targetId || `DEV-${Date.now().toString().slice(-4)}`,
+              ...body,
+              status: "ONLINE"
+            };
+            devices.push(savedDev);
+          }
+          await saveTableToD1(db, "20_Attendance_Devices", devices);
+          return jsonResponse({ success: true, message: "Đã lưu cấu hình máy chấm công thành công!", device: savedDev });
+        }
+
+        // POST /api/attendance/devices/delete
+        if (path === "attendance/devices/delete" && method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          let devices = data.tables["20_Attendance_Devices"] || [];
+          const targetId = body.device_id || body.id;
+          devices = devices.filter(d => (d.device_id || d.id) !== targetId);
+          await saveTableToD1(db, "20_Attendance_Devices", devices);
+          return jsonResponse({ success: true, message: `Đã xóa thiết bị ${targetId} thành công!` });
+        }
       }
 
       // Fallback for unknown /api/* routes

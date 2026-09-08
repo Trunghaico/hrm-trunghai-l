@@ -1,10 +1,10 @@
 // ==========================================================================
 // TIME & ATTENDANCE MODULE (PHÂN HỆ QUẢN LÝ CHẤM CÔNG & RONALD JACK 009)
-// HRM Trung Hải Enterprise Edition
+// HRM Trung Hải Enterprise Edition - Redesigned Clean UI
 // ==========================================================================
 
 const appAttendance = {
-  currentSubTab: 'dashboard', // dashboard | timesheets | shifts | requests | devices | portal
+  currentSubTab: 'dashboard', // dashboard | shifts | requests | devices | portal
   currentMonth: new Date().toISOString().substring(0, 7), // YYYY-MM
   selectedDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
   filterDept: 'all',
@@ -13,39 +13,54 @@ const appAttendance = {
   portalEmployeeId: '',
   devices: [
     {
-      id: 'DEV-01',
-      name: 'Ronald Jack 009 - Cửa Chính',
+      device_id: 'DEV-01',
+      device_name: 'Ronald Jack 009 - Cổng Chính',
+      name: 'Ronald Jack 009 - Cổng Chính',
       ip: '192.168.1.201',
       port: 5005,
+      location: 'Cổng bảo vệ / Lối vào chính',
       in_out_mode: 'AUTO',
       enabled: true,
       last_sync: '08/09/2026 16:30:15',
-      status: 'ONLINE'
+      status: 'ONLINE',
+      note: 'Máy vân tay & thẻ từ Ronald Jack 009'
     },
     {
-      id: 'DEV-02',
+      device_id: 'DEV-02',
+      device_name: 'Ronald Jack 009 - Văn Phòng Kho',
       name: 'Ronald Jack 009 - Văn Phòng Kho',
       ip: '192.168.1.202',
       port: 5006,
+      location: 'Tầng 1 - Khu vực kho tổng',
       in_out_mode: 'AUTO',
       enabled: true,
       last_sync: '08/09/2026 16:30:22',
-      status: 'ONLINE'
+      status: 'ONLINE',
+      note: 'Phục vụ nhân viên kho vận'
     },
     {
-      id: 'DEV-03',
+      device_id: 'DEV-03',
+      device_name: 'Ronald Jack 009 - Xưởng Sản Xuất',
       name: 'Ronald Jack 009 - Xưởng Sản Xuất',
       ip: '192.168.1.203',
       port: 5007,
+      location: 'Khu xưởng cơ khí - gia công',
       in_out_mode: 'AUTO',
       enabled: false,
       last_sync: '08/09/2026 12:00:00',
-      status: 'STANDBY'
+      status: 'STANDBY',
+      note: 'Máy quẹt thẻ xưởng dự phòng'
     }
   ],
 
   init() {
     console.log('Initializing Time & Attendance Module...');
+
+    // Load devices from appData if available
+    if (window.appData && appData.attendanceDevices && appData.attendanceDevices.length > 0) {
+      this.devices = appData.attendanceDevices;
+    }
+
     // Set default portal employee if logged in or first employee
     const emps = (window.appData && appData.employees) || [];
     if (emps.length > 0 && !this.portalEmployeeId) {
@@ -128,9 +143,6 @@ const appAttendance = {
       case 'dashboard':
         this.renderDashboard();
         break;
-      case 'timesheets':
-        this.renderTimesheets();
-        break;
       case 'shifts':
         this.renderShifts();
         break;
@@ -149,14 +161,13 @@ const appAttendance = {
   },
 
   // ========================================================================
-  // 1. REAL-TIME ATTENDANCE DASHBOARD
+  // 1. DASHBOARD CHẤM CÔNG (KPIs + BẢNG DỮ LIỆU CÔNG CHI TIẾT)
   // ========================================================================
   renderDashboard() {
     const date = this.selectedDate || new Date().toISOString().split('T')[0];
     const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
     const timesheets = (appData.timesheets || []).filter(t => t.date === date);
     const requests = (appData.attendanceRequests || []).filter(r => r.date === date && r.status === 'APPROVED');
-    const logs = (appData.attendanceLogs || []).filter(l => (l.timestamp || '').startsWith(date));
 
     const totalScheduled = employees.length;
     let workingCount = 0;
@@ -188,50 +199,12 @@ const appAttendance = {
     setKpi('att-kpi-absent', absentCount);
     setKpi('att-kpi-leave', leaveCount);
 
-    // Render live check-in stream
-    const streamContainer = document.getElementById('att-live-stream-tbody');
-    if (streamContainer) {
-      const sortedLogs = [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 20);
-      if (sortedLogs.length === 0) {
-        streamContainer.innerHTML = `
-          <tr>
-            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
-              <i class="fa-solid fa-clock-rotate-left" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
-              Chưa có dữ liệu quẹt thẻ hôm nay. Nhấn "Đồng bộ từ máy Ronald Jack" để kéo log mới nhất.
-            </td>
-          </tr>
-        `;
-      } else {
-        streamContainer.innerHTML = sortedLogs.map((l, idx) => {
-          const emp = (appData.employees || []).find(e =>
-            String(e.attendance_code || '').trim() === String(l.attendance_code || '').trim() ||
-            e.employee_id === l.attendance_code
-          );
-          const name = emp ? emp.full_name : `Mã chấm công ${l.attendance_code}`;
-          const dept = emp ? (emp.department_name || emp.department_id) : '-';
-          const time = l.timestamp.substring(11, 19);
-
-          return `
-            <tr>
-              <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
-              <td style="font-weight: 700; color: #1E40AF; font-family: monospace;">${l.attendance_code}</td>
-              <td><strong>${name}</strong></td>
-              <td><span class="badge badge-navy">${dept}</span></td>
-              <td>
-                <span style="font-family: monospace; font-weight: 700; color: #047857; background: #ECFDF5; padding: 2px 6px; border-radius: 4px;">
-                  <i class="fa-solid fa-fingerprint"></i> ${time}
-                </span>
-              </td>
-              <td style="font-size: 11.5px; color: var(--text-muted);">${l.device_name || 'Ronald Jack 009'}</td>
-            </tr>
-          `;
-        }).join('');
-      }
-    }
+    // Render the primary timesheet table in the Dashboard
+    this.renderTimesheets();
   },
 
   // ========================================================================
-  // 2. DETAILED MONTHLY TIMESHEET (BẢNG CÔNG CHI TIẾT THEO THÁNG)
+  // 2. DETAILED TIMESHEET DATA TABLE (BẢNG DỮ LIỆU CÔNG CHI TIẾT)
   // ========================================================================
   renderTimesheets() {
     const tbody = document.getElementById('att-timesheet-tbody');
@@ -249,27 +222,17 @@ const appAttendance = {
       });
     }
 
+    // Filter timesheet entries
     let list = (appData.timesheets || []).filter(t => (t.date || '').startsWith(this.currentMonth));
 
-    // Filter department
     if (this.filterDept && this.filterDept !== 'all') {
-      list = list.filter(t => t.department_name === this.filterDept || t.department_id === this.filterDept);
+      list = list.filter(t => (t.department_name || '').toLowerCase() === this.filterDept.toLowerCase());
     }
 
-    // Filter status
     if (this.filterStatus && this.filterStatus !== 'ALL') {
-      if (this.filterStatus === 'LATE') {
-        list = list.filter(t => t.late_minutes > 0);
-      } else if (this.filterStatus === 'EARLY') {
-        list = list.filter(t => t.early_minutes > 0);
-      } else if (this.filterStatus === 'OT') {
-        list = list.filter(t => t.ot_hours > 0);
-      } else {
-        list = list.filter(t => t.status === this.filterStatus);
-      }
+      list = list.filter(t => t.status === this.filterStatus);
     }
 
-    // Search
     if (this.filterSearch) {
       list = list.filter(t =>
         (t.full_name || '').toLowerCase().includes(this.filterSearch) ||
@@ -278,74 +241,73 @@ const appAttendance = {
       );
     }
 
-    // Update month title
-    const countEl = document.getElementById('att-timesheet-count');
-    if (countEl) countEl.textContent = `Tổng cộng: ${list.length} dòng công`;
+    // Sort by date desc, then employee_id
+    list.sort((a, b) => b.date.localeCompare(a.date) || a.employee_id.localeCompare(b.employee_id));
 
     if (list.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="16" style="text-align: center; color: var(--text-muted); padding: 36px;">
-            <i class="fa-solid fa-calendar-xmark" style="font-size: 28px; margin-bottom: 8px; display: block; color: #94A3B8;"></i>
-            Không tìm thấy dữ liệu bảng công cho tháng <strong>${this.currentMonth}</strong>.
-            <div style="margin-top: 10px;">
-              <button class="btn btn-primary btn-sm" onclick="appAttendance.recalculateTimesheets()">
-                <i class="fa-solid fa-calculator"></i> Tính Bảng Công Tháng Này
-              </button>
-            </div>
+          <td colspan="17" style="text-align: center; color: var(--text-muted); padding: 36px 16px;">
+            <i class="fa-solid fa-calendar-xmark" style="font-size: 28px; margin-bottom: 10px; display: block; color: #94A3B8;"></i>
+            Không có dữ liệu bảng công cho tháng ${this.currentMonth}. Hãy nhấn "Tính Lại Công" hoặc "Đồng bộ từ máy Ronald Jack".
           </td>
         </tr>
       `;
       return;
     }
 
-    // Render table rows matching EXACT user columns
+    // Check lock state for this month
+    const isLocked = list.length > 0 && !!list[0].is_locked;
+    const lockBtn = document.getElementById('att-btn-lock');
+    if (lockBtn) {
+      lockBtn.innerHTML = isLocked
+        ? '<i class="fa-solid fa-lock-open"></i> Mở Khóa Sổ'
+        : '<i class="fa-solid fa-lock"></i> Khóa Sổ / Chốt Công';
+      lockBtn.className = isLocked ? 'btn btn-warning' : 'btn btn-secondary';
+    }
+
     tbody.innerHTML = list.map((item, idx) => {
-      const lateHtml = item.late_minutes > 0
-        ? `<span class="badge" style="background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; font-weight: 700;">+${item.late_minutes}p</span>`
-        : '<span style="color: #CBD5E1;">-</span>';
-
-      const earlyHtml = item.early_minutes > 0
-        ? `<span class="badge" style="background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; font-weight: 700;">-${item.early_minutes}p</span>`
-        : '<span style="color: #CBD5E1;">-</span>';
-
-      const workUnitBadge = item.work_units >= 1.0
-        ? `<span style="font-weight: 700; color: #047857; background: #ECFDF5; padding: 2px 6px; border-radius: 4px;">${item.work_units}</span>`
-        : (item.work_units > 0
-            ? `<span style="font-weight: 700; color: #D97706; background: #FEF3C7; padding: 2px 6px; border-radius: 4px;">${item.work_units}</span>`
-            : '<span style="color: #94A3B8; font-weight: 600;">0</span>');
-
-      const otBadge = item.ot_hours > 0
-        ? `<span class="badge" style="background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; font-weight: 700;"><i class="fa-solid fa-bolt"></i> +${item.ot_hours}h</span>`
-        : '<span style="color: #CBD5E1;">-</span>';
-
       let statusBadge = '';
       if (item.status === 'VALID') {
-        statusBadge = '<span class="badge badge-active"><i class="fa-solid fa-circle-check"></i> Đủ công</span>';
+        statusBadge = '<span class="badge badge-active"><i class="fa-solid fa-check"></i> Hợp lệ</span>';
       } else if (item.status === 'LATE') {
-        statusBadge = '<span class="badge" style="background: #FEF2F2; color: #DC2626;"><i class="fa-solid fa-clock"></i> Đi muộn</span>';
+        statusBadge = '<span class="badge" style="background:#FEF3C7; color:#D97706; border:1px solid #FCD34D;"><i class="fa-solid fa-clock"></i> Đi muộn</span>';
       } else if (item.status === 'EARLY') {
-        statusBadge = '<span class="badge" style="background: #FFFBEB; color: #D97706;"><i class="fa-solid fa-clock"></i> Về sớm</span>';
+        statusBadge = '<span class="badge" style="background:#EDE9FE; color:#7C3AED; border:1px solid #DDD6FE;"><i class="fa-solid fa-person-walking-arrow-right"></i> Về sớm</span>';
       } else if (item.status === 'ABSENT') {
-        statusBadge = '<span class="badge badge-resigned"><i class="fa-solid fa-circle-xmark"></i> Vắng</span>';
-      } else if (item.status === 'LEAVE_PAID') {
-        statusBadge = '<span class="badge" style="background: #EFF6FF; color: #1D4ED8;"><i class="fa-solid fa-umbrella-beach"></i> Nghỉ phép</span>';
-      } else if (item.status === 'WEEKEND') {
-        statusBadge = '<span class="badge" style="background: #F1F5F9; color: #64748B;">Nghỉ tuần</span>';
+        statusBadge = '<span class="badge badge-resigned"><i class="fa-solid fa-xmark"></i> Vắng</span>';
+      } else if (item.status === 'LEAVE') {
+        statusBadge = '<span class="badge" style="background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE;"><i class="fa-solid fa-umbrella-beach"></i> Nghỉ phép</span>';
       } else {
         statusBadge = `<span class="badge">${item.status}</span>`;
       }
 
+      const lateHtml = item.late_minutes > 0
+        ? `<span style="color: #DC2626; font-weight: 700;">+${item.late_minutes}p</span>`
+        : '<span style="color: #94A3B8;">0</span>';
+
+      const earlyHtml = item.early_minutes > 0
+        ? `<span style="color: #7C3AED; font-weight: 700;">-${item.early_minutes}p</span>`
+        : '<span style="color: #94A3B8;">0</span>';
+
+      const workUnitBadge = item.work_units >= 1.0
+        ? `<span class="badge" style="background: #ECFDF5; color: #047857; font-weight: 700;">${item.work_units}</span>`
+        : (item.work_units > 0
+          ? `<span class="badge" style="background: #FEF3C7; color: #D97706; font-weight: 700;">${item.work_units}</span>`
+          : `<span class="badge" style="background: #FEE2E2; color: #DC2626; font-weight: 700;">0</span>`);
+
+      const otBadge = item.ot_hours > 0
+        ? `<span class="badge" style="background: #F5F3FF; color: #7C3AED; font-weight: 700;">+${item.ot_hours}h</span>`
+        : '<span style="color: #94A3B8;">-</span>';
+
       const manualEditedIndicator = item.is_manual_edited
-        ? '<span title="Đã chỉnh sửa thủ công bởi HR" style="color: #2563EB; margin-left: 4px;"><i class="fa-solid fa-pen-to-square"></i></span>'
+        ? `<i class="fa-solid fa-pen" style="font-size: 10px; color: #D97706; margin-left: 4px;" title="Đã hiệu chỉnh thủ công bởi HR"></i>`
         : '';
 
-      const isLocked = item.is_locked;
-
       return `
-        <tr style="${item.status === 'ABSENT' ? 'background: #FFFDFD;' : ''}">
+        <tr style="${item.day_name === 'Chủ nhật' ? 'background: #FFFBEB;' : ''}">
           <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
-          <td><strong style="color: var(--primary-navy); font-family: monospace;">${item.employee_id}</strong></td>
+          <td style="font-weight: 700; color: #1E40AF; font-family: monospace;">${item.employee_id}</td>
           <td>
             <strong>${item.full_name}</strong>
             ${manualEditedIndicator}
@@ -392,7 +354,7 @@ const appAttendance = {
         <td style="text-align: center; font-weight: 600; color: #D97706;">Cho phép ${s.grace_late_minutes || 15}p</td>
         <td style="text-align: center; font-weight: 700; color: #047857;">${s.work_units} công (${s.standard_hours}h)</td>
         <td style="text-align: center;">
-          <button class="btn btn-icon btn-sm" onclick="appAttendance.openEditShiftModal('${s.shift_id}')" title="Sửa ca">
+          <button class="btn btn-icon btn-sm" onclick="utils.showToast('Ca chuẩn: ' + '${s.shift_name}', 'info')" title="Sửa ca">
             <i class="fa-solid fa-pen"></i>
           </button>
         </td>
@@ -475,41 +437,62 @@ const appAttendance = {
   },
 
   // ========================================================================
-  // 5. RONALD JACK 009 DEVICE MANAGEMENT (KẾT NỐI MÁY CHẤM CÔNG)
+  // 5. RONALD JACK 009 DEVICE MANAGEMENT (THÊM THỦ CÔNG & QUẢN LÝ THIẾT BỊ)
   // ========================================================================
   renderDevices() {
+    // Synchronize devices with appData if present
+    if (appData.attendanceDevices && appData.attendanceDevices.length > 0) {
+      this.devices = appData.attendanceDevices;
+    }
+
     const container = document.getElementById('att-devices-grid');
     if (container) {
-      container.innerHTML = this.devices.map(dev => `
-        <div class="card" style="border: 1px solid ${dev.enabled ? '#BFDBFE' : '#E2E8F0'}; background: ${dev.enabled ? '#F8FAFC' : '#F1F5F9'};">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <div>
-              <span class="badge" style="background: ${dev.enabled ? '#EFF6FF' : '#E2E8F0'}; color: ${dev.enabled ? '#1D4ED8' : '#64748B'}; font-weight: 700; margin-bottom: 6px;">
-                <i class="fa-solid fa-microchip"></i> ${dev.id}
+      container.innerHTML = this.devices.map(dev => {
+        const devId = dev.device_id || dev.id;
+        const devName = dev.device_name || dev.name || 'Ronald Jack 009';
+        const isOnline = dev.status === 'ONLINE';
+
+        return `
+          <div class="card att-device-card" style="border: 1px solid ${dev.enabled ? '#BFDBFE' : '#E2E8F0'}; background: ${dev.enabled ? '#FFFFFF' : '#F8FAFC'}; padding: 18px; border-radius: var(--radius-md); box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+              <div>
+                <span class="badge" style="background: ${dev.enabled ? '#EFF6FF' : '#E2E8F0'}; color: ${dev.enabled ? '#1D4ED8' : '#64748B'}; font-weight: 700; margin-bottom: 6px;">
+                  <i class="fa-solid fa-microchip"></i> ${devId}
+                </span>
+                <h3 style="font-size: 15px; font-weight: 700; margin: 4px 0 0 0; color: #1E293B;">${devName}</h3>
+                <div style="font-size: 12px; color: #64748B; margin-top: 2px;">
+                  <i class="fa-solid fa-location-dot" style="color: #EF4444;"></i> ${dev.location || 'Chưa thiết lập vị trí'}
+                </div>
+              </div>
+              <span class="badge" style="background: ${isOnline ? '#ECFDF5' : '#F1F5F9'}; color: ${isOnline ? '#047857' : '#64748B'}; border: 1px solid ${isOnline ? '#A7F3D0' : '#CBD5E1'}; font-weight: 700;">
+                <i class="fa-solid fa-circle" style="font-size: 8px; margin-right: 4px;"></i> ${dev.status || 'STANDBY'}
               </span>
-              <h3 style="font-size: 15px; font-weight: 700; margin: 0; color: #1E293B;">${dev.name}</h3>
             </div>
-            <span class="badge" style="background: ${dev.status === 'ONLINE' ? '#ECFDF5' : '#F1F5F9'}; color: ${dev.status === 'ONLINE' ? '#047857' : '#64748B'}; border: 1px solid ${dev.status === 'ONLINE' ? '#A7F3D0' : '#CBD5E1'}; font-weight: 700;">
-              <i class="fa-solid fa-circle" style="font-size: 8px; margin-right: 4px;"></i> ${dev.status}
-            </span>
-          </div>
 
-          <div style="font-size: 13px; color: #475569; margin-bottom: 14px; line-height: 1.8;">
-            <div><i class="fa-solid fa-network-wired" style="width: 18px; color: #2563EB;"></i> IP máy: <strong style="font-family: monospace; color: #1E293B;">${dev.ip}</strong></div>
-            <div><i class="fa-solid fa-ethernet" style="width: 18px; color: #2563EB;"></i> Cổng kết nối: <strong style="font-family: monospace; color: #047857;">Port ${dev.port}</strong> (node-zklib UDP/TCP)</div>
-            <div><i class="fa-solid fa-clock-rotate-left" style="width: 18px; color: #2563EB;"></i> Đồng bộ gần nhất: <span style="font-size: 12px;">${dev.last_sync || 'Chưa đồng bộ'}</span></div>
-          </div>
+            <div style="font-size: 13px; color: #475569; margin-bottom: 16px; line-height: 1.8; background: #F8FAFC; padding: 10px 12px; border-radius: var(--radius-sm);">
+              <div><i class="fa-solid fa-network-wired" style="width: 18px; color: #2563EB;"></i> IP máy: <strong style="font-family: monospace; color: #1E293B;">${dev.ip}</strong></div>
+              <div><i class="fa-solid fa-ethernet" style="width: 18px; color: #2563EB;"></i> Cổng kết nối: <strong style="font-family: monospace; color: #047857;">Port ${dev.port}</strong> (node-zklib UDP/TCP)</div>
+              <div><i class="fa-solid fa-clock-rotate-left" style="width: 18px; color: #2563EB;"></i> Đồng bộ gần nhất: <span style="font-size: 12px;">${dev.last_sync || 'Chưa đồng bộ'}</span></div>
+              ${dev.note ? `<div style="font-size: 11.5px; color: #64748B; margin-top: 2px;"><i class="fa-solid fa-info-circle" style="width: 18px;"></i> ${dev.note}</div>` : ''}
+            </div>
 
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary btn-sm" onclick="appAttendance.testDeviceConnection('${dev.ip}', ${dev.port})" style="flex: 1; font-size: 11.5px;">
-              <i class="fa-solid fa-bolt"></i> Kiểm Tra Kết Nối
-            </button>
-            <button class="btn btn-primary btn-sm" onclick="appAttendance.syncFromRonaldJack()" style="flex: 1; font-size: 11.5px;" ${!dev.enabled ? 'disabled' : ''}>
-              <i class="fa-solid fa-rotate"></i> Lấy Dữ Liệu
-            </button>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.testDeviceConnection('${dev.ip}', ${dev.port})" style="flex: 1; font-size: 11.5px;" title="Kiểm tra kết nối">
+                <i class="fa-solid fa-bolt"></i> Test Ping
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.openEditDeviceModal('${devId}')" style="font-size: 11.5px;" title="Sửa cấu hình">
+                <i class="fa-solid fa-pen"></i> Sửa
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="appAttendance.deleteDevice('${devId}')" style="font-size: 11.5px; padding: 4px 8px;" title="Xóa máy">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="appAttendance.syncFromRonaldJack()" style="flex: 1.2; font-size: 11.5px;" ${!dev.enabled ? 'disabled' : ''} title="Kéo dữ liệu quẹt thẻ từ máy này">
+                <i class="fa-solid fa-rotate"></i> Kéo Log
+              </button>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     // Render Raw Attendance Logs
@@ -519,8 +502,8 @@ const appAttendance = {
       if (logs.length === 0) {
         rawTbody.innerHTML = `
           <tr>
-            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">
-              Chưa có bản ghi quẹt thẻ nào. Hãy nhấn "Mô phỏng dữ liệu quẹt thẻ" hoặc kết nối máy Ronald Jack để kéo log.
+            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 28px;">
+              Chưa có bản ghi quẹt thẻ nào. Hãy kết nối máy Ronald Jack hoặc nhấn "Mô phỏng dữ liệu quẹt thẻ" để kiểm tra.
             </td>
           </tr>
         `;
@@ -536,12 +519,126 @@ const appAttendance = {
               <td><span style="font-family: monospace; color: #1E40AF; font-weight: 700;">${l.attendance_code}</span></td>
               <td><strong>${emp ? emp.full_name : 'Chưa gán nhân sự'}</strong></td>
               <td style="font-family: monospace; color: #047857; font-weight: 600;">${l.timestamp}</td>
-              <td style="font-size: 11.5px;">${l.device_name || 'Ronald Jack 009'} (${l.device_ip}:${l.device_port})</td>
+              <td style="font-size: 11.5px;">${l.device_name || 'Ronald Jack 009'} (${l.device_ip || '192.168.1.201'}:${l.device_port || '5005'})</td>
               <td><span class="badge" style="background: #F1F5F9; color: #334155;">${l.verify_type || 'Vân tay'}</span></td>
             </tr>
           `;
         }).join('');
       }
+    }
+  },
+
+  // ========================================================================
+  // MANUAL DEVICE MODAL (THÊM / SỬA MÁY CHẤM CÔNG THỦ CÔNG)
+  // ========================================================================
+  openAddDeviceModal() {
+    const modal = document.getElementById('modal-att-device-edit');
+    if (!modal) return;
+
+    document.getElementById('att-dev-modal-title').textContent = 'Thêm Máy Chấm Công Thủ Công (Ronald Jack 009)';
+    document.getElementById('att-dev-id').value = 'DEV-0' + (this.devices.length + 1);
+    document.getElementById('att-dev-name').value = 'Ronald Jack 009 - Cổng ' + (this.devices.length + 1);
+    document.getElementById('att-dev-ip').value = '192.168.1.' + (200 + this.devices.length + 1);
+    document.getElementById('att-dev-port').value = (5005 + this.devices.length);
+    document.getElementById('att-dev-location').value = '';
+    document.getElementById('att-dev-enabled').checked = true;
+    document.getElementById('att-dev-note').value = '';
+
+    modal.classList.add('active');
+  },
+
+  openEditDeviceModal(deviceId) {
+    const dev = this.devices.find(d => (d.device_id || d.id) === deviceId);
+    if (!dev) return;
+
+    const modal = document.getElementById('modal-att-device-edit');
+    if (!modal) return;
+
+    document.getElementById('att-dev-modal-title').textContent = 'Cập Nhật Cấu Hình Máy Chấm Công';
+    document.getElementById('att-dev-id').value = dev.device_id || dev.id;
+    document.getElementById('att-dev-name').value = dev.device_name || dev.name || '';
+    document.getElementById('att-dev-ip').value = dev.ip || '';
+    document.getElementById('att-dev-port').value = dev.port || 5005;
+    document.getElementById('att-dev-location').value = dev.location || '';
+    document.getElementById('att-dev-enabled').checked = dev.enabled !== false;
+    document.getElementById('att-dev-note').value = dev.note || '';
+
+    modal.classList.add('active');
+  },
+
+  closeDeviceModal() {
+    const modal = document.getElementById('modal-att-device-edit');
+    if (modal) modal.classList.remove('active');
+  },
+
+  async saveDevice() {
+    const devId = document.getElementById('att-dev-id').value.trim();
+    const devName = document.getElementById('att-dev-name').value.trim();
+    const devIp = document.getElementById('att-dev-ip').value.trim();
+    const devPort = parseInt(document.getElementById('att-dev-port').value.trim(), 10) || 5005;
+    const devLocation = document.getElementById('att-dev-location').value.trim();
+    const devEnabled = document.getElementById('att-dev-enabled').checked;
+    const devNote = document.getElementById('att-dev-note').value.trim();
+
+    if (!devName || !devIp) {
+      utils.showToast('Vui lòng nhập tên máy và địa chỉ IP', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/attendance/devices/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          device_id: devId,
+          device_name: devName,
+          ip: devIp,
+          port: devPort,
+          location: devLocation,
+          enabled: devEnabled,
+          note: devNote
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        utils.showToast(data.message, 'success');
+        const idx = this.devices.findIndex(d => (d.device_id || d.id) === devId);
+        if (idx >= 0) {
+          this.devices[idx] = data.device;
+        } else {
+          this.devices.push(data.device);
+        }
+        if (appData) appData.attendanceDevices = this.devices;
+        this.closeDeviceModal();
+        this.renderDevices();
+      } else {
+        utils.showToast(data.message || 'Lỗi lưu máy chấm công', 'error');
+      }
+    } catch (err) {
+      utils.showToast('Lỗi lưu thiết bị: ' + err.message, 'error');
+    }
+  },
+
+  async deleteDevice(deviceId) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa máy chấm công ${deviceId}?`)) return;
+
+    try {
+      const res = await fetch('/api/attendance/devices/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: deviceId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        utils.showToast(data.message, 'success');
+        this.devices = this.devices.filter(d => (d.device_id || d.id) !== deviceId);
+        if (appData) appData.attendanceDevices = this.devices;
+        this.renderDevices();
+      } else {
+        utils.showToast(data.message || 'Lỗi xóa thiết bị', 'error');
+      }
+    } catch (err) {
+      utils.showToast('Lỗi xóa thiết bị: ' + err.message, 'error');
     }
   },
 
@@ -557,7 +654,6 @@ const appAttendance = {
         opt.value = e.employee_id;
         opt.textContent = `${e.employee_id} - ${e.full_name}`;
         if (e.employee_id === this.portalEmployeeId) opt.selected = true;
-        deptSelect = e.employee_id;
         empSelect.appendChild(opt);
       });
       empSelect.addEventListener('change', (e) => {
@@ -651,7 +747,7 @@ const appAttendance = {
   },
 
   // ========================================================================
-  // ACTIONS & MODALS
+  // ACTIONS & SYNC WITH RONALD JACK 009
   // ========================================================================
   async recalculateTimesheets() {
     utils.showToast('Đang đối soát và tính toán bảng công...', 'info');
@@ -672,7 +768,6 @@ const appAttendance = {
       }
     } catch (err) {
       console.warn('Lỗi gọi API calculate:', err);
-      // Client-side fallback calculation if offline
       this.recalculateClientSide();
     }
   },
@@ -795,7 +890,6 @@ const appAttendance = {
       const data = await res.json();
       if (data.success) {
         utils.showToast('Cập nhật bảng công thủ công thành công!', 'success');
-        // Update local state
         const idx = (appData.timesheets || []).findIndex(t => t.timesheet_id === tsId);
         if (idx >= 0) {
           appData.timesheets[idx] = { ...appData.timesheets[idx], check_in: checkIn, check_out: checkOut, work_units: workUnits, ot_hours: otHours, status, note, is_manual_edited: true };
@@ -853,11 +947,9 @@ const appAttendance = {
     const modal = document.getElementById('modal-att-create-request');
     if (!modal) return;
 
-    // Set default date
     const dateInput = document.getElementById('att-req-date');
     if (dateInput) dateInput.value = this.selectedDate || new Date().toISOString().split('T')[0];
 
-    // Populate employees select
     const empSelect = document.getElementById('att-req-emp-select');
     if (empSelect && empSelect.options.length <= 1) {
       (appData.employees || []).forEach(e => {
@@ -1021,7 +1113,7 @@ const appAttendance = {
     const wsData = [
       titleRow,
       subTitle,
-      [], // Empty row
+      [],
       headers,
       ...rows
     ];
@@ -1029,25 +1121,24 @@ const appAttendance = {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // Set column widths
     ws['!cols'] = [
-      { wch: 6 },  // STT
-      { wch: 14 }, // Mã NV
-      { wch: 24 }, // Tên NV
-      { wch: 28 }, // Phòng ban
-      { wch: 14 }, // Ngày
-      { wch: 12 }, // Thứ
-      { wch: 10 }, // Giờ vào
-      { wch: 10 }, // Giờ ra
-      { wch: 12 }, // Trễ
-      { wch: 12 }, // Sớm
-      { wch: 8 },  // Công
-      { wch: 14 }, // Tổng giờ làm
-      { wch: 14 }, // Tăng ca
-      { wch: 14 }, // Tổng toàn bộ
-      { wch: 20 }, // Ca
-      { wch: 16 }, // Trạng thái
-      { wch: 30 }  // Ghi chú
+      { wch: 6 },
+      { wch: 14 },
+      { wch: 24 },
+      { wch: 28 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 8 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 20 },
+      { wch: 16 },
+      { wch: 30 }
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, `Bang_Cong_${this.currentMonth.replace('-', '_')}`);

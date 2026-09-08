@@ -253723,7 +253723,42 @@
                                                         "ot_hours":  0,
                                                         "is_locked":  false
                                                     }
-                                                ]
+                                                ],
+                   "20_Attendance_Devices":  [
+                                                 {
+                                                     "device_id":  "DEV-01",
+                                                     "device_name":  "Ronald Jack 009 - Cá»•ng ChÃ­nh",
+                                                     "ip":  "192.168.1.201",
+                                                     "port":  5005,
+                                                     "location":  "Cá»•ng báº£o vá»‡ / Lá»‘i vÃ o chÃ­nh",
+                                                     "status":  "ONLINE",
+                                                     "enabled":  true,
+                                                     "last_sync":  "08/09/2026 16:30:15",
+                                                     "note":  "MÃ¡y vÃ¢n tay \u0026 tháº» tá»« Ronald Jack 009 káº¿t ná»‘i Port 5005"
+                                                 },
+                                                 {
+                                                     "device_id":  "DEV-02",
+                                                     "device_name":  "Ronald Jack 009 - VÄƒn PhÃ²ng Kho",
+                                                     "ip":  "192.168.1.202",
+                                                     "port":  5006,
+                                                     "location":  "Táº§ng 1 - Khu vá»±c kho tá»•ng",
+                                                     "status":  "ONLINE",
+                                                     "enabled":  true,
+                                                     "last_sync":  "08/09/2026 16:30:22",
+                                                     "note":  "Phá»¥c vá»¥ nhÃ¢n viÃªn kho váº­n káº¿t ná»‘i Port 5006"
+                                                 },
+                                                 {
+                                                     "device_id":  "DEV-03",
+                                                     "device_name":  "Ronald Jack 009 - XÆ°á»Ÿng Sáº£n Xuáº¥t",
+                                                     "ip":  "192.168.1.203",
+                                                     "port":  5007,
+                                                     "location":  "Khu xÆ°á»Ÿng cÆ¡ khÃ­ - gia cÃ´ng",
+                                                     "status":  "STANDBY",
+                                                     "enabled":  false,
+                                                     "last_sync":  "08/09/2026 12:00:00",
+                                                     "note":  "MÃ¡y quáº¹t tháº» xÆ°á»Ÿng dá»± phÃ²ng Port 5007"
+                                                 }
+                                             ]
                },
     "company":  {
                     "brand_name":  "TRUNG HẢI",
