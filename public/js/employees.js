@@ -31,18 +31,98 @@ const appEmployees = {
   },
 
   populateFilterDropdowns() {
-    // Dept filter for table
+    // 1. Company & Department / Unit / Project filter (4 Companies with child departments, units, projects)
     const deptSelect = document.getElementById('emp-filter-dept');
     if (deptSelect) {
-      const opts = appData.departments.map(d => `<option value="${d.department_id}">${d.department_name}</option>`).join('');
-      deptSelect.innerHTML = `<option value="">-- Tất cả Đơn vị / Phòng ban --</option>` + opts;
+      const companies = appData.companies || [];
+      const departments = appData.departments || [];
+
+      let html = `<option value="">-- Tất cả Công ty / Phòng ban --</option>`;
+
+      companies.forEach(comp => {
+        const cId = comp.company_id;
+        const compName = comp.company_name;
+
+        // Departments, units, projects belonging to this company
+        const childDepts = departments.filter(d => {
+          if (d.company_id === cId) return true;
+          if (d.department_id && (d.department_id.endsWith('.' + cId) || d.department_id.startsWith(cId + '_') || d.department_id.startsWith(cId + '-') || d.department_id === cId)) return true;
+          return false;
+        });
+
+        // Count total employees belonging to this company
+        const compEmpCount = (appData.employees || []).filter(e => {
+          if (e.company_id === cId) return true;
+          const ed = e.department_id || '';
+          if (childDepts.some(d => d.department_id === ed)) return true;
+          if (ed.endsWith('.' + cId) || ed.startsWith(cId + '_') || ed.startsWith(cId + '-') || ed === cId) return true;
+          return false;
+        }).length;
+
+        html += `<optgroup label="🏢 ${compName} (${cId})">`;
+        html += `<option value="COMP:${cId}">📌 Toàn bộ ${compName} (${compEmpCount} nhân sự)</option>`;
+
+        childDepts.forEach(d => {
+          const deptEmpCount = (appData.employees || []).filter(e => e.department_id === d.department_id).length;
+          const countLabel = deptEmpCount > 0 ? ` (${deptEmpCount})` : '';
+          html += `<option value="${d.department_id}">${d.department_name}${countLabel}</option>`;
+        });
+
+        html += `</optgroup>`;
+      });
+
+      // Any unassigned departments (if any)
+      const assignedDeptIds = new Set();
+      companies.forEach(comp => {
+        departments.forEach(d => {
+          if (d.company_id === comp.company_id || d.department_id.endsWith('.' + comp.company_id)) {
+            assignedDeptIds.add(d.department_id);
+          }
+        });
+      });
+      const unassigned = departments.filter(d => !assignedDeptIds.has(d.department_id));
+      if (unassigned.length > 0) {
+        html += `<optgroup label="📁 Đơn vị / Phòng ban khác">`;
+        unassigned.forEach(d => {
+          const count = (appData.employees || []).filter(e => e.department_id === d.department_id).length;
+          const countLabel = count > 0 ? ` (${count})` : '';
+          html += `<option value="${d.department_id}">${d.department_name}${countLabel}</option>`;
+        });
+        html += `</optgroup>`;
+      }
+
+      deptSelect.innerHTML = html;
     }
 
-    // Pos filter for table
+    // 2. Position filter (Sorted unique Vietnamese position names with count)
     const posSelect = document.getElementById('emp-filter-pos');
     if (posSelect) {
-      const opts = appData.positions.map(p => `<option value="${p.position_id}">${p.position_name}</option>`).join('');
-      posSelect.innerHTML = `<option value="">-- Tất cả Vị trí --</option>` + opts;
+      const posNameSet = new Set();
+      (appData.positions || []).forEach(p => {
+        if (p && p.position_name && p.position_name.trim()) {
+          posNameSet.add(p.position_name.trim());
+        }
+      });
+      (appData.employees || []).forEach(e => {
+        const pName = e.position_name || e['Vị trí công việc'];
+        if (pName && pName.trim() && !pName.match(/^[A-Z0-9_]{2,8}$/)) {
+          posNameSet.add(pName.trim());
+        }
+      });
+
+      const sortedPosNames = Array.from(posNameSet).sort((a, b) => a.localeCompare(b, 'vi', { sensitivity: 'base' }));
+
+      let posHtml = `<option value="">-- Tất cả Vị trí --</option>`;
+      sortedPosNames.forEach(name => {
+        const count = (appData.employees || []).filter(e => {
+          const epName = (appData.getPositionName ? appData.getPositionName(e.position_name || e.position_id) : (e.position_name || '')).trim().toLowerCase();
+          return epName === name.toLowerCase();
+        }).length;
+        const countLabel = count > 0 ? ` (${count})` : '';
+        posHtml += `<option value="${name}">${name}${countLabel}</option>`;
+      });
+
+      posSelect.innerHTML = posHtml;
     }
 
     // Direct manager dropdown for form
@@ -397,28 +477,81 @@ const appEmployees = {
     const natureVal = document.getElementById('emp-filter-nature')?.value || '';
 
     const contactMap = {};
-    appData.contacts.forEach(c => contactMap[c.employee_id] = c);
+    (appData.contacts || []).forEach(c => contactMap[c.employee_id] = c);
     const idMap = {};
-    appData.identity.forEach(i => idMap[i.employee_id] = i);
+    (appData.identity || []).forEach(i => idMap[i.employee_id] = i);
 
-    this.filteredList = appData.employees.filter(e => {
-      if (deptVal && e.department_id !== deptVal) return false;
-      if (posVal && e.position_id !== posVal) return false;
+    this.filteredList = (appData.employees || []).filter(e => {
+      // 1. Department / Company filter
+      if (deptVal) {
+        if (deptVal.startsWith('COMP:')) {
+          const targetCompId = deptVal.replace('COMP:', '').trim();
+          const deptObj = (appData.departments || []).find(d => d.department_id === e.department_id);
+          const isCompMatch = (
+            e.company_id === targetCompId ||
+            (deptObj && deptObj.company_id === targetCompId) ||
+            (e.department_id && (
+              e.department_id.endsWith('.' + targetCompId) ||
+              e.department_id.startsWith(targetCompId + '_') ||
+              e.department_id.startsWith(targetCompId + '-') ||
+              e.department_id === targetCompId
+            )) ||
+            (targetCompId === 'THG' && (e.department_id === 'CTY' || e.department_id === 'THG')) ||
+            (targetCompId === 'PM' && (e.department_id === 'BDHDA.PM' || e.department_id === 'BGD.PM'))
+          );
+          if (!isCompMatch) return false;
+        } else {
+          const targetDeptObj = (appData.departments || []).find(d => d.department_id === deptVal);
+          const targetDeptName = (targetDeptObj?.department_name || (appData.deptMap && appData.deptMap[deptVal]) || '').toLowerCase().trim();
+          const empDeptName = ((appData.deptMap && appData.deptMap[e.department_id]) || e.department_name || '').toLowerCase().trim();
+
+          const isDeptMatch = (
+            e.department_id === deptVal ||
+            (targetDeptName && empDeptName && targetDeptName === empDeptName)
+          );
+          if (!isDeptMatch) return false;
+        }
+      }
+
+      // 2. Position filter
+      if (posVal) {
+        const targetPosName = posVal.toLowerCase().trim();
+        const empPosName = (appData.getPositionName ? appData.getPositionName(e.position_name || e['Vị trí công việc'] || e.position_id) : (e.position_name || appData.posMap[e.position_id] || '')).toLowerCase().trim();
+        const rawEmpPosName = (e.position_name || e['Vị trí công việc'] || '').toLowerCase().trim();
+        const empPosId = (e.position_id || '').toLowerCase().trim();
+        const cleanEmpPosId = empPosId.replace(/^thg_/, '');
+        const cleanTarget = targetPosName.replace(/^thg_/, '');
+
+        const isPosMatch = (
+          empPosName === targetPosName ||
+          rawEmpPosName === targetPosName ||
+          empPosId === targetPosName ||
+          cleanEmpPosId === cleanTarget ||
+          (appData.posMap && appData.posMap[e.position_id] && appData.posMap[e.position_id].toLowerCase().trim() === targetPosName) ||
+          (appData.getPositionName && appData.getPositionName(targetPosName).toLowerCase().trim() === empPosName)
+        );
+        if (!isPosMatch) return false;
+      }
+
+      // 3. Status filter
       if (statusVal && e.employment_status !== statusVal) return false;
+
+      // 4. Labor nature filter
       if (natureVal && e.labor_nature !== natureVal) return false;
 
+      // 5. Full text search
       if (searchVal) {
         const c = contactMap[e.employee_id] || {};
         const idDoc = idMap[e.employee_id] || {};
-        const dName = (appData.deptMap[e.department_id] || '').toLowerCase();
-        const pName = (appData.getPositionName ? appData.getPositionName(e.position_name || e.position_id) : (appData.posMap[e.position_id] || '')).toLowerCase();
+        const dName = ((appData.deptMap && appData.deptMap[e.department_id]) || e.department_name || '').toLowerCase();
+        const pName = (appData.getPositionName ? appData.getPositionName(e.position_name || e['Vị trí công việc'] || e.position_id) : (appData.posMap[e.position_id] || '')).toLowerCase();
 
         const match = (
           (e.employee_id || '').toLowerCase().includes(searchVal) ||
           (e.full_name || '').toLowerCase().includes(searchVal) ||
-          (c.mobile_phone || '').includes(searchVal) ||
-          (c.work_email || '').toLowerCase().includes(searchVal) ||
-          (idDoc.id_number || '').includes(searchVal) ||
+          (c.mobile_phone || e.mobile_phone || '').includes(searchVal) ||
+          (c.work_email || e.work_email || '').toLowerCase().includes(searchVal) ||
+          (idDoc.id_number || e.id_number || '').includes(searchVal) ||
           dName.includes(searchVal) ||
           pName.includes(searchVal)
         );

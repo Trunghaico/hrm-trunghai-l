@@ -1,4 +1,4 @@
-﻿{
+{
     "success":  true,
     "tables":  {
                    "06_Emergency_Contacts":  [
@@ -31908,6 +31908,13 @@
                                               "_errors":  [
 
                                                           ]
+                                          },
+                                          {
+                                              "department_name":  "BAN ĐIỀU HÀNH DỰ ÁN PHÚ MINH",
+                                              "parent_id":  "PM",
+                                              "company_id":  "PM",
+                                              "is_active":  true,
+                                              "department_id":  "BDHDA.PM"
                                           }
                                       ],
                    "02_Positions":  [
