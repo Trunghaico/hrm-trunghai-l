@@ -1,5 +1,5 @@
 // Service Worker for TRUNG HẢI HRM PWA
-const CACHE_NAME = 'trunghai-hrm-cache-v21';
+const CACHE_NAME = 'trunghai-hrm-cache-v3.9.11';
 
 const STATIC_ASSETS = [
   './',
@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
 
 // Install Event - Pre-cache core app shell
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Pre-caching app shell assets');
@@ -23,10 +24,9 @@ self.addEventListener('install', (event) => {
       });
     })
   );
-  self.skipWaiting();
 });
 
-// Activate Event - Clean up old caches
+// Activate Event - Clean up old caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -42,7 +42,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event - Stale-While-Revalidate for static assets, Network-First for APIs and HTML Navigation
+// Fetch Event - Network-First for Scripts & HTML to avoid stale bugs, Cache fallback for offline
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
@@ -60,8 +60,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML Navigation: Network-First with cache fallback for offline
-  if (request.mode === 'navigate') {
+  // HTML Navigation & JavaScript files: Network-First with cache fallback
+  if (request.mode === 'navigate' || url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname.endsWith('.json')) {
     event.respondWith(
       fetch(request)
         .then((networkResponse) => {
@@ -71,7 +71,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => caches.match('./index.html') || caches.match('./'))
+        .catch(() => caches.match(request) || (request.mode === 'navigate' ? caches.match('./index.html') : null))
     );
     return;
   }
@@ -94,7 +94,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App Shell & Static assets: Stale-While-Revalidate
+  // Static images & CSS: Stale-While-Revalidate
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(request).then((cachedResponse) => {
