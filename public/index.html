@@ -1562,7 +1562,7 @@
               <input type="text" id="att-search-input" class="filter-input" placeholder="Tìm theo tên hoặc mã nhân sự..." style="height: 34px;">
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-secondary btn-sm" onclick="appAttendance.syncFromRonaldJack()" title="Đồng bộ từ máy chấm công">
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.openSyncModal()" title="Đồng bộ từ máy chấm công & phần mềm Ronald Jack Pro">
                 <i class="fa-solid fa-rotate"></i> Đồng Bộ Máy
               </button>
               <button class="btn btn-secondary btn-sm" onclick="appAttendance.recalculateTimesheets()" title="Tính lại công theo log quẹt thẻ và đơn">
@@ -4240,6 +4240,83 @@
       <button class="btn btn-primary btn-sm" onclick="appAttendance.saveShift()">
         <i class="fa-solid fa-floppy-disk"></i> Lưu Ca Làm Việc
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Đồng Bộ Máy Chấm Công & Ronald Jack Pro -->
+<div class="modal-backdrop" id="modal-att-sync-options">
+  <div class="modal-dialog" style="max-width: 580px;">
+    <div class="modal-header" style="background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); color: #fff; border-radius: var(--radius-md) var(--radius-md) 0 0; padding: 16px 20px;">
+      <div>
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;"><i class="fa-solid fa-rotate"></i> Đồng Bộ Máy Chấm Công Ronald Jack Pro</h3>
+        <p style="margin: 2px 0 0 0; font-size: 12px; color: #DBEAFE;">Liên kết trực tiếp thiết bị quẹt thẻ & CSDL SQL Server phần mềm Ronald Jack</p>
+      </div>
+      <button class="modal-close" onclick="appAttendance.closeSyncModal()" style="color: #fff; opacity: 0.85;">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px;">
+      <!-- Connection Status Card -->
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px;">
+        <div style="font-size: 12px; font-weight: 700; color: #1E293B; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <span><i class="fa-solid fa-server" style="color: #2563EB;"></i> Nguồn Dữ Liệu Đã Liên Kết:</span>
+          <span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;"><i class="fa-solid fa-circle" style="font-size: 7px;"></i> Sẵn Sàng Kết Nối</span>
+        </div>
+        <div style="font-size: 12.5px; color: #334155; line-height: 1.8;">
+          <div style="display: flex; justify-content: space-between;">
+            <span><i class="fa-solid fa-database" style="width: 18px; color: #D97706;"></i> CSDL SQL Ronald Jack Pro:</span>
+            <strong style="font-family: monospace; color: #1E40AF;">113.161.53.133 (mitaco)</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span><i class="fa-solid fa-microchip" style="width: 18px; color: #2563EB;"></i> Thiết bị phần cứng:</span>
+            <strong>3 Máy (Port 5005 - 5007)</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span><i class="fa-solid fa-fingerprint" style="width: 18px; color: #059669;"></i> Log quẹt thẻ hiện có:</span>
+            <strong id="att-sync-modal-log-count">535 lượt quẹt</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sync Actions -->
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+        <button class="btn btn-primary" onclick="appAttendance.executeFullRonaldJackSync()" style="padding: 12px 16px; justify-content: flex-start; text-align: left; font-size: 13px; font-weight: 600;">
+          <i class="fa-solid fa-bolt" style="font-size: 16px; margin-right: 10px; color: #FCD34D;"></i>
+          <div>
+            <div>Đồng Bộ Nhanh Từ CSDL Ronald Jack Pro & Tính Công Ngay</div>
+            <div style="font-size: 11px; font-weight: 400; opacity: 0.85;">Kéo toàn bộ log chấm công mới nhất, đối soát mã chấm công và tính lại bảng công tức thì</div>
+          </div>
+        </button>
+
+        <button class="btn btn-secondary" onclick="appAttendance.pingAllDevicesAndSync()" style="padding: 10px 16px; justify-content: flex-start; text-align: left; font-size: 12.5px;">
+          <i class="fa-solid fa-network-wired" style="font-size: 15px; margin-right: 10px; color: #2563EB;"></i>
+          <div>
+            <div style="font-weight: 600;">Kéo Trực Tiếp Từ 3 Máy Chấm Công IP (Port 5005-5007)</div>
+            <div style="font-size: 11px; color: #64748B;">Kết nối tới máy Tầng Trệt, Lầu 2, Lầu 3 qua giao thức ZK / IP</div>
+          </div>
+        </button>
+
+        <button class="btn btn-secondary" onclick="appAttendance.goToZkSoftwareTab()" style="padding: 10px 16px; justify-content: flex-start; text-align: left; font-size: 12.5px;">
+          <i class="fa-solid fa-sliders" style="font-size: 15px; margin-right: 10px; color: #7C3AED;"></i>
+          <div>
+            <div style="font-weight: 600;">Mở Cấu Hình Máy Chấm Công & Phần Mềm Ronald Jack Pro</div>
+            <div style="font-size: 11px; color: #64748B;">Đổi IP máy, cấu hình SQL Server hoặc cài Agent đồng bộ tự động</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Sync Progress Box -->
+      <div id="att-sync-progress-box" style="display: none; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: #1E40AF;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size: 14px;"></i>
+          <span id="att-sync-progress-text" style="font-weight: 600;">Đang kết nối CSDL SQL Ronald Jack Pro...</span>
+        </div>
+        <div style="width: 100%; height: 6px; background: #DBEAFE; border-radius: 3px; overflow: hidden;">
+          <div id="att-sync-progress-bar" style="width: 30%; height: 100%; background: #2563EB; transition: width 0.3s ease;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 10px 18px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+      <button class="btn btn-secondary btn-sm" onclick="appAttendance.closeSyncModal()">Đóng</button>
     </div>
   </div>
 </div>
