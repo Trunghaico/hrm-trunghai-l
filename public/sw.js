@@ -1,5 +1,5 @@
 // Service Worker for TRUNG HẢI HRM PWA
-const CACHE_NAME = 'trunghai-hrm-cache-v19';
+const CACHE_NAME = 'trunghai-hrm-cache-v21';
 
 const STATIC_ASSETS = [
   './',
@@ -42,7 +42,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event - Stale-While-Revalidate for static assets, Network-First for APIs
+// Fetch Event - Stale-While-Revalidate for static assets, Network-First for APIs and HTML Navigation
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
@@ -56,6 +56,22 @@ self.addEventListener('fetch', (event) => {
           { headers: { 'Content-Type': 'application/json' }, status: 503 }
         );
       })
+    );
+    return;
+  }
+
+  // HTML Navigation: Network-First with cache fallback for offline
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match('./index.html') || caches.match('./'))
     );
     return;
   }
@@ -89,13 +105,7 @@ self.addEventListener('fetch', (event) => {
             }
             return networkResponse;
           })
-          .catch(() => {
-            // Fallback to index.html if navigating to an HTML route offline
-            if (request.mode === 'navigate') {
-              return cache.match('./index.html') || cache.match('./');
-            }
-            return cachedResponse;
-          });
+          .catch(() => cachedResponse);
 
         return cachedResponse || fetchPromise;
       });
