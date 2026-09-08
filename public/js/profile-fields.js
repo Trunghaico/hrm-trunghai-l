@@ -323,8 +323,14 @@ function buildFormModalTabsHtml() {
     <datalist id="dl-profile-departments">
       ${depts.map(d => `<option value="${d.department_name}">${d.department_id}</option>`).join('')}
     </datalist>
+    <datalist id="dl-profile-dept-ids">
+      ${depts.map(d => `<option value="${d.department_id}">${d.department_name}</option>`).join('')}
+    </datalist>
     <datalist id="dl-profile-positions">
       ${positions.map(p => `<option value="${p.position_name}">${p.position_id}</option>`).join('')}
+    </datalist>
+    <datalist id="dl-profile-position-ids">
+      ${positions.map(p => `<option value="${p.position_id}">${p.position_name}</option>`).join('')}
     </datalist>
   `;
 
@@ -346,8 +352,12 @@ function buildFormModalTabsHtml() {
         controlHtml = `<input type="number" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" ${reqAttr}>`;
       } else if (f.key === 'Đơn vị công tác') {
         controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-departments" ${reqAttr}>`;
+      } else if (f.key === 'Mã đơn vị công tác') {
+        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-dept-ids" ${reqAttr}>`;
       } else if (f.key === 'Vị trí công việc') {
         controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-positions" ${reqAttr}>`;
+      } else if (f.key === 'Mã vị trí công việc') {
+        controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" list="dl-profile-position-ids" ${reqAttr}>`;
       } else {
         controlHtml = `<input type="text" id="${inputId}" class="form-control" placeholder="${f.placeholder || ''}" ${reqAttr}>`;
       }
@@ -400,46 +410,70 @@ function buildFormModalTabsHtml() {
     const deptInput = document.getElementById(getFieldInputId('Đơn vị công tác'));
     const deptIdInput = document.getElementById(getFieldInputId('Mã đơn vị công tác'));
     if (deptInput && deptIdInput) {
-      deptInput.addEventListener('change', () => {
+      const syncFromDept = () => {
         const val = deptInput.value.trim();
-        const depts = (typeof appData !== 'undefined' && appData.departments) ? appData.departments : [];
-        const match = depts.find(d => d.department_name.toLowerCase() === val.toLowerCase() || d.department_id.toLowerCase() === val.toLowerCase());
-        if (match) {
-          deptInput.value = match.department_name;
-          deptIdInput.value = match.department_id;
+        if (!val) return;
+        if (typeof appData !== 'undefined' && appData.getDepartmentId) {
+          const matchedId = appData.getDepartmentId(val);
+          const matchedName = appData.getDepartmentName(val);
+          if (matchedId) deptIdInput.value = matchedId;
+          if (matchedName && matchedName !== '-') deptInput.value = matchedName;
         }
-      });
+      };
+      const syncFromDeptId = () => {
+        const val = deptIdInput.value.trim();
+        if (!val) return;
+        if (typeof appData !== 'undefined' && appData.getDepartmentName) {
+          const matchedName = appData.getDepartmentName(val);
+          const matchedId = appData.getDepartmentId(val);
+          if (matchedName && matchedName !== '-') deptInput.value = matchedName;
+          if (matchedId) deptIdInput.value = matchedId;
+        }
+      };
+      deptInput.addEventListener('change', syncFromDept);
+      deptInput.addEventListener('blur', syncFromDept);
+      deptIdInput.addEventListener('change', syncFromDeptId);
+      deptIdInput.addEventListener('blur', syncFromDeptId);
     }
 
     const posInput = document.getElementById(getFieldInputId('Vị trí công việc'));
     const posIdInput = document.getElementById(getFieldInputId('Mã vị trí công việc'));
     const jobTitleInput = document.getElementById(getFieldInputId('Chức danh'));
     if (posInput && posIdInput) {
-      posInput.addEventListener('change', () => {
+      const syncFromPos = () => {
         const val = posInput.value.trim();
-        const positions = (typeof appData !== 'undefined' && appData.positions) ? appData.positions : [];
-        const match = positions.find(p => 
-          p.position_name.toLowerCase() === val.toLowerCase() || 
-          p.position_id.toLowerCase() === val.toLowerCase() ||
-          p.position_id.replace(/^THG_/i, '').toLowerCase() === val.toLowerCase()
-        );
-        if (match) {
-          posInput.value = match.position_name;
-          posIdInput.value = match.position_id.replace(/^THG_/i, '');
-          if (jobTitleInput && (!jobTitleInput.value || jobTitleInput.value === val)) {
-            jobTitleInput.value = match.position_name;
-          }
-        } else if (typeof appData !== 'undefined' && appData.getPositionName) {
-          const resolvedName = appData.getPositionName(val);
-          if (resolvedName && resolvedName !== val) {
-            posInput.value = resolvedName;
-            posIdInput.value = appData.getPositionId(val);
+        if (!val) return;
+        if (typeof appData !== 'undefined') {
+          const matchedName = appData.getPositionName(val);
+          const matchedId = appData.getPositionId(val);
+          if (matchedName && matchedName !== '-') {
+            posInput.value = matchedName;
             if (jobTitleInput && (!jobTitleInput.value || jobTitleInput.value === val)) {
-              jobTitleInput.value = resolvedName;
+              jobTitleInput.value = matchedName;
             }
           }
+          if (matchedId) posIdInput.value = matchedId;
         }
-      });
+      };
+      const syncFromPosId = () => {
+        const val = posIdInput.value.trim();
+        if (!val) return;
+        if (typeof appData !== 'undefined') {
+          const matchedName = appData.getPositionName(val);
+          const matchedId = appData.getPositionId(val);
+          if (matchedName && matchedName !== '-') {
+            posInput.value = matchedName;
+            if (jobTitleInput && (!jobTitleInput.value || jobTitleInput.value === val)) {
+              jobTitleInput.value = matchedName;
+            }
+          }
+          if (matchedId) posIdInput.value = matchedId;
+        }
+      };
+      posInput.addEventListener('change', syncFromPos);
+      posInput.addEventListener('blur', syncFromPos);
+      posIdInput.addEventListener('change', syncFromPosId);
+      posIdInput.addEventListener('blur', syncFromPosId);
     }
   }, 50);
 
@@ -467,14 +501,15 @@ function fillDetailModalData(masterData, allowancesList = null) {
         val = appData.getPositionId(val || masterData.position_id || masterData['Vị trí công việc']);
       }
     } else if (f.key === 'Đơn vị công tác') {
-      const dId = masterData['Mã đơn vị công tác'] || masterData.department_id;
-      if (dId && typeof appData !== 'undefined' && appData.deptMap && appData.deptMap[dId]) {
-        val = appData.deptMap[dId];
+      if (typeof appData !== 'undefined' && appData.getDepartmentName) {
+        val = appData.getDepartmentName(val || masterData['Mã đơn vị công tác'] || masterData.department_id || masterData.department_name);
       } else if (!val && masterData.department_name) {
         val = masterData.department_name;
       }
     } else if (f.key === 'Mã đơn vị công tác') {
-      if (!val && masterData.department_id) {
+      if (typeof appData !== 'undefined' && appData.getDepartmentId) {
+        val = appData.getDepartmentId(val || masterData.department_id || masterData['Đơn vị công tác'] || masterData.department_name);
+      } else if (!val && masterData.department_id) {
         val = masterData.department_id;
       }
     }
@@ -629,14 +664,15 @@ function fillFormModalData(masterData = {}, isEdit = false) {
         val = appData.getPositionName(val || masterData.job_title || masterData.position_name || masterData['Vị trí công việc']);
       }
     } else if (f.key === 'Đơn vị công tác') {
-      const dId = masterData['Mã đơn vị công tác'] || masterData.department_id;
-      if (dId && typeof appData !== 'undefined' && appData.deptMap && appData.deptMap[dId]) {
-        val = appData.deptMap[dId];
+      if (typeof appData !== 'undefined' && appData.getDepartmentName) {
+        val = appData.getDepartmentName(val || masterData['Mã đơn vị công tác'] || masterData.department_id || masterData.department_name);
       } else if (!val && masterData.department_name) {
         val = masterData.department_name;
       }
     } else if (f.key === 'Mã đơn vị công tác') {
-      if (!val && masterData.department_id) {
+      if (typeof appData !== 'undefined' && appData.getDepartmentId) {
+        val = appData.getDepartmentId(val || masterData.department_id || masterData['Đơn vị công tác'] || masterData.department_name);
+      } else if (!val && masterData.department_id) {
         val = masterData.department_id;
       }
     }
@@ -672,6 +708,38 @@ function collectFormModalData() {
       data[f.key] = val;
     }
   });
+
+  // Strict cross-field enforcement
+  if (typeof appData !== 'undefined') {
+    const deptVal = data['Đơn vị công tác'];
+    const deptIdVal = data['Mã đơn vị công tác'];
+    const resolvedDeptId = appData.getDepartmentId ? appData.getDepartmentId(deptIdVal || deptVal) : (deptIdVal || deptVal);
+    const resolvedDeptName = appData.getDepartmentName ? appData.getDepartmentName(deptVal || deptIdVal) : (deptVal || deptIdVal);
+    if (resolvedDeptId) {
+      data['Mã đơn vị công tác'] = resolvedDeptId;
+      data.department_id = resolvedDeptId;
+    }
+    if (resolvedDeptName && resolvedDeptName !== '-') {
+      data['Đơn vị công tác'] = resolvedDeptName;
+      data.department_name = resolvedDeptName;
+    }
+
+    const posVal = data['Vị trí công việc'];
+    const posIdVal = data['Mã vị trí công việc'];
+    const resolvedPosId = appData.getPositionId ? appData.getPositionId(posIdVal || posVal) : (posIdVal || posVal);
+    const resolvedPosName = appData.getPositionName ? appData.getPositionName(posVal || posIdVal) : (posVal || posIdVal);
+    if (resolvedPosId) {
+      data['Mã vị trí công việc'] = resolvedPosId;
+      data.position_id = resolvedPosId;
+    }
+    if (resolvedPosName && resolvedPosName !== '-') {
+      data['Vị trí công việc'] = resolvedPosName;
+      if (!data['Chức danh'] || data['Chức danh'] === posVal) {
+        data['Chức danh'] = resolvedPosName;
+      }
+    }
+  }
+
   return data;
 }
 

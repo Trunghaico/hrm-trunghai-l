@@ -789,7 +789,13 @@ const appImport = {
       const childrenCount = parseInt(this.getField(normMap, 'Số con', 'children_count') || existingMaster['Số con'] || 0, 10) || 0;
 
       // Organization & Position (nếu file không có -> giữ nguyên từ DB)
-      const dept = this.getField(normMap, 'Mã đơn vị công tác', 'Đơn vị công tác', 'Mã phòng ban', 'Phòng/Ban', 'department_id', 'Phòng ban', 'Bộ phận', 'Đơn vị') || existingMaster['Mã đơn vị công tác'] || (isEmpExisting ? dbEmpWithId.department_id : '');
+      const rawDept = this.getField(normMap, 'Mã đơn vị công tác', 'Đơn vị công tác', 'Mã phòng ban', 'Phòng/Ban', 'department_id', 'Phòng ban', 'Bộ phận', 'Đơn vị') || existingMaster['Mã đơn vị công tác'] || (isEmpExisting ? dbEmpWithId.department_id : '');
+      const dept = (typeof appData !== 'undefined' && appData.getDepartmentId) ? appData.getDepartmentId(rawDept) : rawDept;
+      const deptName = (typeof appData !== 'undefined' && appData.getDepartmentName) ? appData.getDepartmentName(rawDept || dept) : (existingMaster['Đơn vị công tác'] || '');
+      if (dept) {
+        normMap['Mã đơn vị công tác'] = dept;
+        if (deptName && deptName !== '-') normMap['Đơn vị công tác'] = deptName;
+      }
       const pos = this.getField(normMap, 'Mã vị trí công việc', 'Vị trí công việc', 'Mã chức danh / Vị trí', 'Mã chức danh', 'Chức danh', 'Vị trí', 'position_id', 'Chức vụ') || existingMaster['Mã vị trí công việc'] || (isEmpExisting ? dbEmpWithId.position_id : '');
       const jobRank = this.getField(normMap, 'Bậc', 'Cấp bậc nhân sự', 'Cấp bậc', 'job_rank') || existingMaster['Bậc'] || 'Bậc 3';
       const professionalTitle = this.getField(normMap, 'Chức danh', 'Chức danh chuyên môn', 'job_title') || existingMaster['Chức danh'] || pos || 'Chuyên viên';
@@ -940,6 +946,7 @@ const appImport = {
         marital_status: maritalStatus,
         children_count: childrenCount,
         department_id: dept,
+        department_name: deptName || (typeof appData !== 'undefined' && appData.getDepartmentName ? appData.getDepartmentName(dept) : ''),
         position_id: (typeof appData !== 'undefined' && appData.getPositionId) ? appData.getPositionId(pos) : pos,
         position_name: (typeof appData !== 'undefined' && appData.getPositionName) ? appData.getPositionName(pos || professionalTitle) : (pos || professionalTitle),
         job_rank: jobRank,

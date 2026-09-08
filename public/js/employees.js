@@ -1020,8 +1020,8 @@ const appEmployees = {
       'Quốc tịch': pick(base['Quốc tịch'], emp.nationality, 'Việt Nam'),
       'MST cá nhân': pick(base['MST cá nhân'], emp.personal_tax_code, emp.tax_code),
 
-      'Đơn vị công tác': appData.deptMap?.[emp.department_id] || emp.department_name || pick(base['Đơn vị công tác'], emp.department_id),
-      'Mã đơn vị công tác': emp.department_id || pick(base['Mã đơn vị công tác']),
+      'Đơn vị công tác': appData.getDepartmentName ? appData.getDepartmentName(emp.department_name || emp.department_id || base['Đơn vị công tác'] || base['Mã đơn vị công tác']) : (appData.deptMap?.[emp.department_id] || emp.department_name || pick(base['Đơn vị công tác'], emp.department_id)),
+      'Mã đơn vị công tác': appData.getDepartmentId ? appData.getDepartmentId(emp.department_id || base['Mã đơn vị công tác'] || emp.department_name || base['Đơn vị công tác']) : (emp.department_id || pick(base['Mã đơn vị công tác'])),
       'Vị trí công việc': appData.getPositionName ? appData.getPositionName(emp.position_name || emp.position_id || base['Vị trí công việc'] || emp.job_title) : pick(base['Vị trí công việc'], emp.position_name, emp.position_id),
       'Mã vị trí công việc': appData.getPositionId ? appData.getPositionId(emp.position_id || base['Mã vị trí công việc'] || emp.position_name) : pick(base['Mã vị trí công việc'], emp.position_id),
       'Chức danh': appData.getPositionName ? appData.getPositionName(emp.position_name || emp.job_title || base['Chức danh'] || emp.position_id) : pick(base['Chức danh'], emp.job_title, emp.position_name),
@@ -1329,16 +1329,11 @@ const appEmployees = {
     }
 
     // 1. Resolve & bind Department
-    let boundDeptId = (masterData['Mã đơn vị công tác'] || masterData['Đơn vị công tác'] || '').trim();
-    let boundDeptName = (masterData['Đơn vị công tác'] || '').trim();
-    if (boundDeptId && appData.deptMap && appData.deptMap[boundDeptId]) {
-      boundDeptName = appData.deptMap[boundDeptId];
-    } else if (boundDeptName && appData.departments) {
-      const foundD = appData.departments.find(d => d.department_name.toLowerCase() === boundDeptName.toLowerCase());
-      if (foundD) {
-        boundDeptId = foundD.department_id;
-        boundDeptName = foundD.department_name;
-      }
+    let rawDept = (masterData['Mã đơn vị công tác'] || masterData['Đơn vị công tác'] || '').trim();
+    let boundDeptId = appData.getDepartmentId ? appData.getDepartmentId(rawDept) : rawDept;
+    let boundDeptName = appData.getDepartmentName ? appData.getDepartmentName(masterData['Đơn vị công tác'] || rawDept || boundDeptId) : (masterData['Đơn vị công tác'] || '');
+    if (!boundDeptId && masterData['Đơn vị công tác']) {
+      boundDeptId = appData.getDepartmentId ? appData.getDepartmentId(masterData['Đơn vị công tác']) : '';
     }
 
     // 2. Resolve & bind Position

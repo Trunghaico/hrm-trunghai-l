@@ -222,6 +222,96 @@ function fixExcelSerialDate(val) {
   return val;
 }
 
+function normalizeDepartmentCode(codeOrName) {
+  if (!codeOrName) return "";
+  const s = String(codeOrName).trim();
+  if (!s || s === "-") return "";
+  const low = s.toLowerCase();
+  if (low.includes('tổng giám đốc') || low === 'bgd' || low === 'btgd' || low === 'btgd.th') return 'BTGD.TH';
+  if (low.includes('tổ chức hành chính') || low === 'btchc' || low === 'btchc.th') return 'BTCHC.TH';
+  if (low.includes('tài chính kế toán') && (low.includes('trung hải') || low.includes('.th'))) return 'BTCKT.TH';
+  if (low.includes('kế hoạch tổng hợp') && (low.includes('trung hải') || low.includes('.th'))) return 'BKHTH.TH';
+  if (low.includes('pháp chế')) return 'BPC.TH';
+  if (low.includes('thiết bị')) return 'BQLTB.TH';
+  if (low.includes('trực tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'TRUCTIEP_BDHDA.TH';
+  if (low.includes('gián tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'GIANTIEP_BDHDA.TH';
+  if (low.includes('văn phòng') && (low.includes('trung hải') || low.includes('.th'))) return 'VP_BDHDA.TH';
+  if (low === 'cty' || low === 'thg' || (low.includes('trung hải') && !low.includes('dự án') && !low.includes('ban') && !low.includes('phòng'))) return 'CTY';
+
+  if (low.includes('phú minh') || low.includes('.pm')) {
+    if (low.includes('giám đốc') || low === 'bgd.pm') return 'BGD.PM';
+    if (low.includes('điều hành dự án') || low === 'bdhda.pm') return 'BDHDA.PM';
+    if (low.includes('hành chính nhân sự') || low === 'phcns.pm') return 'PHCNS.PM';
+    if (low.includes('kế hoạch') || low === 'pkhth.pm') return 'PKHTH.PM';
+    if (low.includes('kế toán') || low === 'ptckt.pm') return 'PTCKT.PM';
+    if (low.includes('trực tiếp') || low.includes('tructiep')) return 'TRUCTIEP_BDHDA.PM';
+    if (low.includes('gián tiếp') || low.includes('giantiep')) return 'GIANTIEP_BDHDA.PM';
+  }
+
+  if (low.includes('thành phát') || low.includes('.tp')) {
+    if (low.includes('hành chính nhân sự') || low === 'phcns.tp') return 'PHCNS.TP';
+    if (low.includes('kế hoạch') || low === 'pkhth.tp') return 'PKHTH.TP';
+    if (low.includes('kế toán') || low === 'ptckt.tp') return 'PTCKT.TP';
+    if (low.includes('trực tiếp') || low.includes('tructiep')) return 'TRUCTIEP_BDHDA.TP';
+    if (low.includes('gián tiếp') || low.includes('giantiep')) return 'GIANTIEP_BDHDA.TP';
+  }
+
+  if (low.includes('trung nam') || low.includes('.tn')) {
+    if (low.includes('điều hành dự án') || low === 'bđhda.tn') return 'BĐHDA.TN';
+    if (low.includes('hành chính nhân sự') || low === 'phcns.tn') return 'PHCNS.TN';
+    if (low.includes('thương mại') || low.includes('kinh doanh') || low === 'pkdtm.tn') return 'PKDTM.TN';
+    if (low.includes('kế toán') || low === 'ptckt.tn') return 'PTCKT.TN';
+    if (low === 'tn' || low.includes('công ty')) return 'TN';
+  }
+
+  return s;
+}
+
+function normalizeDepartmentName(codeOrName) {
+  if (!codeOrName) return "";
+  const s = String(codeOrName).trim();
+  if (!s || s === "-") return "";
+  const low = s.toLowerCase();
+  if (low.includes('tổng giám đốc') || low === 'bgd' || low === 'btgd' || low === 'btgd.th') return 'BAN TỔNG GIÁM ĐỐC TRUNG HẢI';
+  if (low.includes('tổ chức hành chính') || low === 'btchc' || low === 'btchc.th') return 'BAN TỔ CHỨC HÀNH CHÍNH TRUNG HẢI';
+  if (low.includes('tài chính kế toán') && (low.includes('trung hải') || low.includes('.th'))) return 'BAN TÀI CHÍNH KẾ TOÁN TRUNG HẢI';
+  if (low.includes('kế hoạch tổng hợp') && (low.includes('trung hải') || low.includes('.th'))) return 'BAN KẾ HOẠCH TỔNG HỢP TRUNG HẢI';
+  if (low.includes('pháp chế')) return 'BAN PHÁP CHẾ TRUNG HẢI';
+  if (low.includes('thiết bị')) return 'BAN QUẢN LÝ THIẾT BỊ TRUNG HẢI';
+  if (low.includes('trực tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'KHỐI TRỰC TIẾP-DỰ ÁN TRUNG HẢI';
+  if (low.includes('gián tiếp') && (low.includes('trung hải') || low.includes('.th'))) return 'KHỐI GIÁN TIẾP- DỰ ÁN TRUNG HẢI';
+  if (low.includes('văn phòng') && (low.includes('trung hải') || low.includes('.th'))) return 'KHỐI VĂN PHÒNG-DỰ ÁN TRUNG HẢI';
+  if (low === 'cty' || low === 'thg' || (low.includes('trung hải') && !low.includes('dự án') && !low.includes('ban') && !low.includes('phòng'))) return 'CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI';
+
+  if (low.includes('phú minh') || low.includes('.pm')) {
+    if (low.includes('giám đốc') || low === 'bgd.pm') return 'BAN GIÁM ĐỐC PHÚ MINH';
+    if (low.includes('điều hành dự án') || low === 'bdhda.pm') return 'BAN ĐIỀU HÀNH DỰ ÁN PHÚ MINH';
+    if (low.includes('hành chính nhân sự') || low === 'phcns.pm') return 'PHÒNG HÀNH CHÍNH NHÂN SỰ PHÚ MINH';
+    if (low.includes('kế hoạch') || low === 'pkhth.pm') return 'PHÒNG KẾ HOẠCH TỔNG HỢP PHÚ MINH';
+    if (low.includes('kế toán') || low === 'ptckt.pm') return 'PHÒNG TÀI CHÍNH KẾ TOÁN PHÚ MINH';
+    if (low.includes('trực tiếp') || low.includes('tructiep')) return 'KHỐI TRỰC TIẾP-DỰ ÁN PHÚ MINH';
+    if (low.includes('gián tiếp') || low.includes('giantiep')) return 'KHỐI GIÁN TIẾP_DỰ ÁN PHÚ MINH';
+  }
+
+  if (low.includes('thành phát') || low.includes('.tp')) {
+    if (low.includes('hành chính nhân sự') || low === 'phcns.tp') return 'PHÒNG HÀNH CHÍNH NHÂN SỰ THÀNH PHÁT';
+    if (low.includes('kế hoạch') || low === 'pkhth.tp') return 'PHÒNG KẾ HOẠCH TỔNG HỢP THÀNH PHÁT';
+    if (low.includes('kế toán') || low === 'ptckt.tp') return 'PHÒNG TÀI CHÍNH KẾ TOÁN THÀNH PHÁT';
+    if (low.includes('trực tiếp') || low.includes('tructiep')) return 'KHỐI TRỰC TIẾP-DỰ ÁN THÀNH PHÁT';
+    if (low.includes('gián tiếp') || low.includes('giantiep')) return 'KHỐI GIÁN TIẾP-DỰ ÁN THÀNH PHÁT';
+  }
+
+  if (low.includes('trung nam') || low.includes('.tn')) {
+    if (low.includes('điều hành dự án') || low === 'bđhda.tn') return 'BAN ĐIỀU HÀNH DỰ ÁN TRUNG NAM';
+    if (low.includes('hành chính nhân sự') || low === 'phcns.tn') return 'PHÒNG HÀNH CHÍNH NHÂN SỰ TRUNG NAM';
+    if (low.includes('thương mại') || low.includes('kinh doanh') || low === 'pkdtm.tn') return 'PHÒNG KINH DOANH THƯƠNG MẠI TRUNG NAM';
+    if (low.includes('kế toán') || low === 'ptckt.tn') return 'PHÒNG TÀI CHÍNH KẾ TOÁN TRUNG NAM';
+    if (low === 'tn' || low.includes('công ty')) return 'CÔNG TY TNHH ĐẦU TƯ VÀ KINH DOANH TRUNG NAM';
+  }
+
+  return s;
+}
+
 // Load all tables from D1 with chunk reassembly
 async function loadAllFromD1(db) {
   await initD1Store(db);
@@ -264,7 +354,7 @@ async function loadAllFromD1(db) {
     if (!tables[tName]) tables[tName] = [];
   }
 
-  // Auto-heal dates in 03_Employees and 00_Master_Profiles
+  // Auto-heal dates and department codes in 03_Employees and 00_Master_Profiles
   if (Array.isArray(tables["03_Employees"])) {
     tables["03_Employees"].forEach(e => {
       if (e.date_of_birth) e.date_of_birth = fixExcelSerialDate(e.date_of_birth);
@@ -272,12 +362,32 @@ async function loadAllFromD1(db) {
       if (e.start_date) e.start_date = fixExcelSerialDate(e.start_date);
       if (e.trial_start_date) e.trial_start_date = fixExcelSerialDate(e.trial_start_date);
       if (e.official_date) e.official_date = fixExcelSerialDate(e.official_date);
+      if (e.department_id) {
+        const clean = normalizeDepartmentCode(e.department_id);
+        if (clean) e.department_id = clean;
+      }
+      if (!e.department_name && e.department_id) {
+        e.department_name = normalizeDepartmentName(e.department_id);
+      }
     });
   }
   if (Array.isArray(tables["00_Master_Profiles"])) {
     tables["00_Master_Profiles"].forEach(m => {
       if (m['Ngày sinh']) m['Ngày sinh'] = fixExcelSerialDate(m['Ngày sinh']);
       if (m.date_of_birth) m.date_of_birth = fixExcelSerialDate(m.date_of_birth);
+      const rawDept = m['Mã đơn vị công tác'] || m.department_id || m['Đơn vị công tác'] || m.department_name;
+      if (rawDept) {
+        const cleanId = normalizeDepartmentCode(rawDept);
+        if (cleanId) {
+          m['Mã đơn vị công tác'] = cleanId;
+          m.department_id = cleanId;
+        }
+        const cleanName = normalizeDepartmentName(m['Đơn vị công tác'] || rawDept);
+        if (cleanName) {
+          m['Đơn vị công tác'] = cleanName;
+          m.department_name = cleanName;
+        }
+      }
     });
   }
 
@@ -674,7 +784,7 @@ export async function onRequest(context) {
           }
 
           if (isTabSelected('tab-p-org')) {
-            if (isKeyProvided(emp, 'department_id', 'Mã đơn vị công tác', 'Mã phòng ban')) updated.department_id = emp.department_id;
+            if (isKeyProvided(emp, 'department_id', 'Mã đơn vị công tác', 'Mã phòng ban')) updated.department_id = normalizeDepartmentCode(emp.department_id) || emp.department_id;
             if (isKeyProvided(emp, 'position_id', 'Mã vị trí công việc', 'Mã chức danh')) updated.position_id = emp.position_id;
             if (isKeyProvided(emp, 'job_rank', 'Bậc')) updated.job_rank = emp.job_rank;
             if (isKeyProvided(emp, 'job_title', 'Chức danh')) updated.job_title = emp.job_title;
@@ -749,7 +859,7 @@ export async function onRequest(context) {
           if (isKeyProvided(emp, 'date_of_birth', 'Ngày sinh')) mRow['Ngày sinh'] = emp.date_of_birth;
           if (isKeyProvided(emp, 'id_number', 'Số CMND', 'Số CCCD')) mRow['Số CMND'] = emp.id_number;
           if (isKeyProvided(emp, 'work_email', 'Email cơ quan')) mRow['Email cơ quan'] = emp.work_email;
-          if (isKeyProvided(emp, 'department_id', 'Mã đơn vị công tác')) mRow['Mã đơn vị công tác'] = emp.department_id;
+          if (isKeyProvided(emp, 'department_id', 'Mã đơn vị công tác')) mRow['Mã đơn vị công tác'] = normalizeDepartmentCode(emp.department_id) || emp.department_id;
           if (isKeyProvided(emp, 'position_id', 'Mã vị trí công việc')) mRow['Mã vị trí công việc'] = emp.position_id;
           if (isKeyProvided(emp, 'base_salary', 'Lương cơ bản')) mRow['Lương cơ bản'] = emp.base_salary;
           if (isKeyProvided(emp, 'total_salary', 'Tổng lương')) mRow['Tổng lương'] = emp.total_salary;
@@ -758,8 +868,25 @@ export async function onRequest(context) {
           if (isKeyProvided(emp, 'bank_branch', 'Chi nhánh')) mRow['Chi nhánh'] = emp.bank_branch;
           if (isKeyProvided(emp, 'total_allowance', 'Tổng phụ cấp')) mRow['Tổng phụ cấp'] = emp.total_allowance;
           if (isKeyProvided(emp, 'allowance_count', 'Số khoản phụ cấp')) mRow['Số khoản phụ cấp'] = emp.allowance_count;
+          const rawDept = emp.department_id || mRow['Mã đơn vị công tác'] || mRow['Đơn vị công tác'];
+          if (rawDept) {
+            const cleanDeptId = normalizeDepartmentCode(rawDept);
+            if (cleanDeptId) {
+              mRow['Mã đơn vị công tác'] = cleanDeptId;
+              mRow.department_id = cleanDeptId;
+            }
+            const cleanDeptName = normalizeDepartmentName(mRow['Đơn vị công tác'] || rawDept);
+            if (cleanDeptName) {
+              mRow['Đơn vị công tác'] = cleanDeptName;
+              mRow.department_name = cleanDeptName;
+            }
+          }
           masterMap.set(emp.employee_id, mRow);
         } else {
+          const raw = emp.raw_data || {};
+          const rowDept = emp.department_id || raw['Mã đơn vị công tác'] || raw['Đơn vị công tác'] || '';
+          const cleanDeptId = normalizeDepartmentCode(rowDept);
+          const cleanDeptName = normalizeDepartmentName(raw['Đơn vị công tác'] || rowDept);
           masterMap.set(emp.employee_id, {
             'Mã nhân viên': emp.employee_id,
             'Họ và tên': emp.full_name,
@@ -768,15 +895,17 @@ export async function onRequest(context) {
             'Số CMND': emp.id_number || '',
             'Email cơ quan': emp.work_email || '',
             'ĐT di động': emp.mobile_phone || '',
-            'Mã đơn vị công tác': emp.department_id || '',
-            'Mã vị trí công việc': emp.position_id || '',
             'Bậc lương': emp.salary_grade || 3,
             'Lương cơ bản': emp.base_salary || 0,
             'Tổng lương': emp.total_salary || 0,
             'TK ngân hàng': emp.bank_account_number || '',
             'Ngân hàng': emp.bank_name || '',
             'Chi nhánh': emp.bank_branch || '',
-            ...(emp.raw_data || {})
+            ...raw,
+            'Mã đơn vị công tác': cleanDeptId || emp.department_id || '',
+            'Đơn vị công tác': cleanDeptName || raw['Đơn vị công tác'] || '',
+            'Mã vị trí công việc': emp.position_id || raw['Mã vị trí công việc'] || '',
+            'Vị trí công việc': emp.position_name || raw['Vị trí công việc'] || ''
           });
         }
       });
@@ -920,10 +1049,26 @@ export async function onRequest(context) {
         const cont = contracts.filter(c => c.employee_id === empId);
         const acc = accounts.find(a => a.employee_id === empId) || {};
         const master = masterList.find(m => (m.employee_id === empId || m['Mã nhân viên'] === empId)) || null;
+        if (master) {
+          const rawDept = master['Mã đơn vị công tác'] || master.department_id || master['Đơn vị công tác'] || emp.department_id;
+          if (rawDept) {
+            const cleanDeptId = normalizeDepartmentCode(rawDept);
+            if (cleanDeptId) {
+              master['Mã đơn vị công tác'] = cleanDeptId;
+              master.department_id = cleanDeptId;
+            }
+            const cleanDeptName = normalizeDepartmentName(master['Đơn vị công tác'] || rawDept);
+            if (cleanDeptName) {
+              master['Đơn vị công tác'] = cleanDeptName;
+              master.department_name = cleanDeptName;
+            }
+          }
+        }
 
         const enrichedEmployee = {
           ...emp,
-          department_name: emp.department_name || dept.department_name || emp.department_id,
+          department_id: normalizeDepartmentCode(emp.department_id) || emp.department_id,
+          department_name: emp.department_name || dept.department_name || normalizeDepartmentName(emp.department_id),
           position_name: emp.position_name || pos.position_name || emp.job_title || emp.position_id
         };
 
