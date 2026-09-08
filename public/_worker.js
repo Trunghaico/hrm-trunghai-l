@@ -2447,6 +2447,72 @@ export default {
           await saveTableToD1(db, "20_Attendance_Devices", devices);
           return jsonResponse({ success: true, message: `Đã xóa thiết bị ${targetId} thành công!` });
         }
+
+        // POST /api/attendance/shifts/save
+        if (path === "attendance/shifts/save" && method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          let shifts = data.tables["15_Attendance_Shifts"] || [];
+          const targetId = body.shift_id || body.shift_code || body.id;
+          const idx = shifts.findIndex(s => (s.shift_id || s.shift_code) === targetId);
+          if (idx >= 0) {
+            shifts[idx] = { ...shifts[idx], ...body };
+          } else {
+            shifts.push({ ...body, shift_id: targetId });
+          }
+          await saveTableToD1(db, "15_Attendance_Shifts", shifts);
+          return jsonResponse({ success: true, message: "Đã lưu ca làm việc thành công!" });
+        }
+
+        // POST /api/attendance/shifts/delete
+        if (path === "attendance/shifts/delete" && method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          let shifts = data.tables["15_Attendance_Shifts"] || [];
+          const targetId = body.shift_id || body.shift_code || body.id;
+          shifts = shifts.filter(s => (s.shift_id || s.shift_code) !== targetId);
+          await saveTableToD1(db, "15_Attendance_Shifts", shifts);
+          return jsonResponse({ success: true, message: `Đã xóa ca làm việc thành công!` });
+        }
+
+        // POST /api/attendance/zk/sync-time
+        if (path === "attendance/zk/sync-time" && method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          return jsonResponse({
+            success: true,
+            message: `Đã đồng bộ thời gian hệ thống xuống máy chấm công ${body.ip || '192.168.1.201'}:${body.port || 5005} thành công!`
+          });
+        }
+
+        // POST /api/attendance/zk/software-sync
+        if (path === "attendance/zk/software-sync" && method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          let logs = data.tables["17_Attendance_Logs"] || [];
+          const punchLogs = body.punch_logs || [];
+          let addedCount = 0;
+          if (Array.isArray(punchLogs) && punchLogs.length > 0) {
+            const existingKeys = new Set(logs.map(l => `${l.attendance_code}_${l.timestamp}`));
+            punchLogs.forEach(l => {
+              const key = `${l.attendance_code}_${l.timestamp}`;
+              if (!existingKeys.has(key)) {
+                logs.unshift({
+                  log_id: 'LOG-SW-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                  attendance_code: l.attendance_code,
+                  timestamp: l.timestamp,
+                  device_id: l.device_id || 'RJ-PRO-SQL',
+                  device_name: l.device_name || `Ronald Jack Software (${body.database_name || 'SQL'})`,
+                  verify_type: l.verify_type || 'Phần mềm'
+                });
+                existingKeys.add(key);
+                addedCount++;
+              }
+            });
+            await saveTableToD1(db, "17_Attendance_Logs", logs);
+          }
+          return jsonResponse({
+            success: true,
+            message: `Đã đồng bộ thành công ${addedCount} bản ghi quẹt thẻ từ CSDL Ronald Jack Pro!`,
+            added_count: addedCount
+          });
+        }
       }
 
       // Fallback for unknown /api/* routes

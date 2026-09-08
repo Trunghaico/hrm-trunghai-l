@@ -35,7 +35,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <!-- Core App Stylesheet -->
-  <link rel="stylesheet" href="css/main.css?v=3.7.5">
+  <link rel="stylesheet" href="css/main.css?v=3.8.5">
 
   <script>
     // Kiểm tra phiên đăng nhập tức thì trước khi render để chống nháy màn hình Dashboard
@@ -95,6 +95,11 @@
         <i class="fa-solid fa-clock"></i>
         <span>Chấm công</span>
         <span class="badge-count" id="sidebar-attendance-count" style="display: none; background: #047857;">0</span>
+      </button>
+      <button class="nav-item" data-view="zk-devices" data-title="Máy Chấm Công & Kết Nối" title="Máy Chấm Công & Kết Nối">
+        <i class="fa-solid fa-fingerprint"></i>
+        <span>Máy chấm công</span>
+        <span class="badge-count" id="sidebar-zk-devices-count" style="display: none; background: #2563EB;">0</span>
       </button>
 
       <div class="nav-section-title"><i class="fa-solid fa-sitemap"></i> Tổ chức</div>
@@ -1473,7 +1478,7 @@
           </div>
         </div>
 
-        <!-- Attendance Sub-tabs Navigation (5 Distinct Tabs) -->
+        <!-- Attendance Sub-tabs Navigation (4 Focused Tabs) -->
         <div class="att-subnav-bar" style="display: flex; gap: 8px; border-bottom: 2px solid #E2E8F0; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;">
           <button class="btn btn-secondary att-nav-tab active" data-tab="dashboard" onclick="appAttendance.switchSubTab('dashboard')">
             <i class="fa-solid fa-chart-line"></i> Dashboard Bảng Công
@@ -1483,9 +1488,6 @@
           </button>
           <button class="btn btn-secondary att-nav-tab" data-tab="requests" onclick="appAttendance.switchSubTab('requests')">
             <i class="fa-solid fa-file-signature"></i> Đơn Từ & Phê Duyệt
-          </button>
-          <button class="btn btn-secondary att-nav-tab" data-tab="devices" onclick="appAttendance.switchSubTab('devices')">
-            <i class="fa-solid fa-fingerprint"></i> Máy Chấm Công Ronald Jack
           </button>
           <button class="btn btn-secondary att-nav-tab" data-tab="portal" onclick="appAttendance.switchSubTab('portal')">
             <i class="fa-solid fa-user-clock"></i> Cổng Chấm Công Cá Nhân
@@ -1611,7 +1613,7 @@
               <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Danh Mục Ca Làm Việc Cấu Hình Chuẩn</h3>
               <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-secondary);">Thiết lập giờ bắt đầu, kết thúc, thời gian cho phép đi muộn/về sớm và hệ số tính công</p>
             </div>
-            <button class="btn btn-primary btn-sm" onclick="utils.showToast('Hệ thống cấu hình 5 ca chuẩn: Hành chính, Ca Sáng, Ca Chiều, Ca Gãy, Ca Đêm', 'info')">
+            <button class="btn btn-primary btn-sm" onclick="appAttendance.openAddShiftModal()">
               <i class="fa-solid fa-plus"></i> Thêm Ca Mới
             </button>
           </div>
@@ -1628,7 +1630,7 @@
                   <th>Nghỉ Giữa Ca</th>
                   <th style="text-align: center;">Du Di Đi Muộn</th>
                   <th style="text-align: center;">Định Mức Công</th>
-                  <th style="width: 70px; text-align: center;">Chi Tiết</th>
+                  <th style="width: 100px; text-align: center;">Thao Tác</th>
                 </tr>
               </thead>
               <tbody id="att-shifts-tbody">
@@ -1671,61 +1673,7 @@
           </div>
         </div>
 
-        <!-- SUBTAB 4: RONALD JACK 009 DEVICES (THÊM THỦ CÔNG & QUẢN LÝ) -->
-        <div class="att-tab-content" id="att-tab-devices">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-            <div>
-              <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: #1E293B;">
-                <i class="fa-solid fa-fingerprint" style="color: #2563EB;"></i> Hệ Thống Máy Chấm Công Ronald Jack 009
-              </h3>
-              <p style="margin: 0; font-size: 12.5px; color: var(--text-secondary);">
-                Thêm thủ công các máy chấm công thực tế theo IP & Port (5005, 5006, 5007...). Quản lý kết nối, đồng bộ và xem bản ghi thô.
-              </p>
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-primary btn-sm" onclick="appAttendance.openAddDeviceModal()" title="Thêm máy chấm công thực tế mới">
-                <i class="fa-solid fa-plus"></i> Thêm Máy Chấm Công Mới
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="appAttendance.syncFromRonaldJack()" title="Kéo dữ liệu từ tất cả máy chấm công">
-                <i class="fa-solid fa-rotate"></i> Đồng Bộ Tất Cả Máy
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()" title="Tạo dữ liệu kiểm thử quẹt thẻ">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng Log
-              </button>
-            </div>
-          </div>
-
-          <!-- Devices cards grid -->
-          <div id="att-devices-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px;">
-            <!-- Rendered by attendance.js -->
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: #1E293B;">
-              <i class="fa-solid fa-list-ol"></i> Bản Ghi Quẹt Thẻ Gốc Mới Nhất (Raw Punch Logs)
-            </h4>
-          </div>
-
-          <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-            <table class="table" style="width: 100%; font-size: 12px;">
-              <thead>
-                <tr>
-                  <th style="width: 50px; text-align: center;">STT</th>
-                  <th style="width: 130px;">Mã Chấm Công</th>
-                  <th>Nhân Viên</th>
-                  <th style="width: 160px;">Thời Gian Quẹt</th>
-                  <th>Thiết Bị (IP:Port)</th>
-                  <th style="width: 110px;">Phương Thức</th>
-                </tr>
-              </thead>
-              <tbody id="att-raw-logs-tbody">
-                <!-- Populated by attendance.js -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- SUBTAB 6: EMPLOYEE PORTAL -->
+        <!-- SUBTAB 4: EMPLOYEE PORTAL -->
         <div class="att-tab-content" id="att-tab-portal">
           <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
@@ -1812,6 +1760,288 @@
           </div>
         </div>
 
+      </section>
+
+      <!-- ==========================================================================
+           VIEW 11: DEDICATED MÁY CHẤM CÔNG & KẾT NỐI RONALD JACK CHUYÊN NGHIỆP
+           ========================================================================== -->
+      <section class="view-panel" id="view-zk-devices">
+        <div class="panel-header" style="margin-bottom: 16px;">
+          <div>
+            <h2 class="panel-title">
+              <i class="fa-solid fa-fingerprint" style="color: #2563EB;"></i> Quản Lý Máy Chấm Công & Kết Nối Ronald Jack
+            </h2>
+            <p class="panel-subtitle">
+              Quản lý thiết bị phần cứng IP/Port (5005-5007), kết nối trực tiếp CSDL phần mềm Ronald Jack Pro / Wise Eye và theo dõi dữ liệu quẹt thẻ
+            </p>
+          </div>
+        </div>
+
+        <!-- ZK Devices Sub-navigation Tabs -->
+        <div class="att-subnav-bar" style="display: flex; gap: 8px; border-bottom: 2px solid #E2E8F0; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;">
+          <button class="btn btn-secondary zk-nav-tab active" data-tab="zk-hardware" onclick="appAttendance.switchZkSubTab('zk-hardware')">
+            <i class="fa-solid fa-microchip"></i> Máy Chấm Công Thực Tế
+          </button>
+          <button class="btn btn-secondary zk-nav-tab" data-tab="zk-software" onclick="appAttendance.switchZkSubTab('zk-software')">
+            <i class="fa-solid fa-network-wired"></i> Liên Kết Phần Mềm Ronald Jack Pro
+          </button>
+          <button class="btn btn-secondary zk-nav-tab" data-tab="zk-rawlogs" onclick="appAttendance.switchZkSubTab('zk-rawlogs')">
+            <i class="fa-solid fa-list-check"></i> Nhật Ký Quẹt Thẻ Gốc (Raw Punch Logs)
+          </button>
+        </div>
+
+        <!-- SUBTAB 1: HARDWARE DEVICES (THIẾT BỊ PHẦN CỨNG) -->
+        <div class="zk-tab-content active" id="zk-tab-hardware">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: #1E293B;">
+                <i class="fa-solid fa-server" style="color: #2563EB;"></i> Danh Sách Máy Chấm Công Ronald Jack 009
+              </h3>
+              <p style="margin: 0; font-size: 12.5px; color: var(--text-secondary);">
+                Thêm máy thủ công theo IP tĩnh nội bộ và Port (5005, 5006, 5007...). Kiểm tra Ping, đồng bộ giờ và kéo dữ liệu tức thì.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary btn-sm" onclick="appAttendance.openAddDeviceModal()" title="Thêm máy chấm công mới vào hệ thống">
+                <i class="fa-solid fa-plus"></i> Thêm Máy Mới
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.syncFromRonaldJack()" title="Kéo dữ liệu từ tất cả thiết bị">
+                <i class="fa-solid fa-rotate"></i> Kéo Dữ Liệu Tất Cả
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.syncDeviceTimeAll()" title="Đồng bộ giờ hệ thống xuống thiết bị">
+                <i class="fa-solid fa-clock-rotate-left"></i> Đồng Bộ Giờ
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()" title="Tạo dữ liệu kiểm thử quẹt thẻ">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng Quẹt Thẻ
+              </button>
+            </div>
+          </div>
+
+          <!-- Status Summary Cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+            <div class="card" style="padding: 14px; border-left: 4px solid #2563EB; display: flex; align-items: center; gap: 14px;">
+              <div style="width: 44px; height: 44px; border-radius: 50%; background: #EFF6FF; display: flex; align-items: center; justify-content: center; color: #2563EB; font-size: 18px;">
+                <i class="fa-solid fa-fingerprint"></i>
+              </div>
+              <div>
+                <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tổng Máy Chấm Công</div>
+                <div id="zk-stat-total-dev" style="font-size: 22px; font-weight: 800; color: #1E293B;">3 Thiết bị</div>
+              </div>
+            </div>
+            <div class="card" style="padding: 14px; border-left: 4px solid #10B981; display: flex; align-items: center; gap: 14px;">
+              <div style="width: 44px; height: 44px; border-radius: 50%; background: #ECFDF5; display: flex; align-items: center; justify-content: center; color: #10B981; font-size: 18px;">
+                <i class="fa-solid fa-signal"></i>
+              </div>
+              <div>
+                <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Trạng Thái Trực Tuyến</div>
+                <div id="zk-stat-online-dev" style="font-size: 22px; font-weight: 800; color: #047857;">Sẵn sàng kết nối</div>
+              </div>
+            </div>
+            <div class="card" style="padding: 14px; border-left: 4px solid #F59E0B; display: flex; align-items: center; gap: 14px;">
+              <div style="width: 44px; height: 44px; border-radius: 50%; background: #FFFBEB; display: flex; align-items: center; justify-content: center; color: #F59E0B; font-size: 18px;">
+                <i class="fa-solid fa-database"></i>
+              </div>
+              <div>
+                <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tổng Bản Ghi Quẹt</div>
+                <div id="zk-stat-total-punches" style="font-size: 22px; font-weight: 800; color: #D97706;">...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hardware Devices Grid Container -->
+          <div id="zk-devices-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            <!-- Populated by attendance.js renderDevices() -->
+          </div>
+
+          <!-- Technical Specs & Guide Info Box -->
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-md); padding: 18px; margin-top: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; font-weight: 700; color: #1E293B;">
+              <i class="fa-solid fa-circle-info" style="color: #2563EB;"></i> Hướng Dẫn Cấu Hình Thiết Bị Ronald Jack 009 Thực Tế:
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; font-size: 12px; color: #475569;">
+              <div>
+                <strong>1. Cài đặt IP trên máy Ronald Jack:</strong>
+                <p style="margin: 3px 0 0 0;">Vào Menu máy &rarr; Thiết lập liên kết &rarr; Mạng Ethernet &rarr; Đặt IP tĩnh (Ví dụ: <code>192.168.1.201</code>), Netmask: <code>255.255.255.0</code>, Gateway: <code>192.168.1.1</code>.</p>
+              </div>
+              <div>
+                <strong>2. Cổng giao tiếp & Mật mã kết nối:</strong>
+                <p style="margin: 3px 0 0 0;">Port mặc định của ZKProtocol: <code>5005</code> (hoặc 5006, 5007). Mục <em>Comm Key</em> đặt bằng <code>0</code> (mặc định không đổi mật khẩu).</p>
+              </div>
+              <div>
+                <strong>3. Đăng ký vân tay & Mã nhân viên:</strong>
+                <p style="margin: 3px 0 0 0;">Mã ID nhân viên đăng ký trên máy Ronald Jack (ví dụ: <code>1001</code>) phải trùng khớp với cột <strong>Mã chấm công (attendance_code)</strong> trong Hồ Sơ Nhân Sự.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBTAB 2: RONALD JACK SOFTWARE LINK (LIÊN KẾT PHẦN MỀM CHUYÊN NGHIỆP) -->
+        <div class="zk-tab-content" id="zk-tab-software" style="display: none;">
+          <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; margin-bottom: 24px;">
+            <!-- Left: Direct Database Connection -->
+            <div class="card" style="padding: 20px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #EFF6FF; display: flex; align-items: center; justify-content: center; color: #2563EB;">
+                  <i class="fa-solid fa-database"></i>
+                </div>
+                <div>
+                  <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Kết Nối Trực Tiếp CSDL Phần Mềm Ronald Jack Pro</h3>
+                  <p style="margin: 0; font-size: 11.5px; color: var(--text-secondary);">Tự động trích xuất bảng CheckInOut từ Microsoft SQL Server hoặc MS Access</p>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                  <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Phần mềm chấm công:</label>
+                  <select id="zk-sw-type" class="form-control" style="font-weight: 600;">
+                    <option value="ronald_jack_pro">Ronald Jack Pro Official</option>
+                    <option value="ronald_jack_plus">Ronald Jack Plus / Software</option>
+                    <option value="wise_eye_39">Wise Eye On 39 / Wise Eye V5.1</option>
+                    <option value="zktime_net">ZKTime Net / ZKTeco</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Loại Cơ Sở Dữ Liệu:</label>
+                  <select id="zk-sw-db-type" class="form-control" style="font-weight: 600;">
+                    <option value="sql_server">Microsoft SQL Server (Khuyên dùng)</option>
+                    <option value="ms_access">Microsoft Access (.mdb / .accdb)</option>
+                    <option value="mysql">MySQL Server</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                  <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Địa chỉ Máy chủ (Host / IP):</label>
+                  <input type="text" id="zk-sw-host" class="form-control" value="127.0.0.1" placeholder="127.0.0.1 hoặc 192.168.1.100\SQLEXPRESS" style="font-family: monospace; font-weight: 600;">
+                </div>
+                <div>
+                  <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Port CSDL:</label>
+                  <input type="number" id="zk-sw-port" class="form-control" value="1433" placeholder="1433" style="font-family: monospace; font-weight: 600;">
+                </div>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Tên CSDL hoặc Đường dẫn file Access:</label>
+                <input type="text" id="zk-sw-dbname" class="form-control" value="RonaldJackPro" placeholder="Ví dụ: RonaldJackPro hoặc C:\att2000.mdb" style="font-family: monospace; font-weight: 600;">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div>
+                  <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Tài khoản (Username):</label>
+                  <input type="text" id="zk-sw-user" class="form-control" value="sa" placeholder="sa">
+                </div>
+                <div>
+                  <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Mật khẩu (Password):</label>
+                  <input type="password" id="zk-sw-password" class="form-control" value="123456" placeholder="******">
+                </div>
+              </div>
+
+              <div id="zk-sw-status-box" style="display: none; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 12px;"></div>
+
+              <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary btn-sm" onclick="appAttendance.testSoftwareDbConnection()">
+                  <i class="fa-solid fa-plug"></i> Kiểm Tra Kết Nối CSDL
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="appAttendance.syncFromSoftwareDb()">
+                  <i class="fa-solid fa-cloud-arrow-down"></i> Đồng Bộ Dữ Liệu Ngay
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Excel / CSV / DAT File Import from Ronald Jack Software -->
+            <div class="card" style="padding: 20px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #ECFDF5; display: flex; align-items: center; justify-content: center; color: #047857;">
+                  <i class="fa-solid fa-file-excel"></i>
+                </div>
+                <div>
+                  <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Nhập Báo Cáo Quẹt Thẻ Xuất Từ Phần Mềm</h3>
+                  <p style="margin: 0; font-size: 11.5px; color: var(--text-secondary);">Hỗ trợ file Excel, CSV, TXT, DAT xuất từ Ronald Jack Pro hoặc USB</p>
+                </div>
+              </div>
+
+              <div style="border: 2px dashed #CBD5E1; border-radius: var(--radius-md); padding: 24px; text-align: center; background: #F8FAFC; cursor: pointer; transition: all 0.2s ease; margin-bottom: 14px;" id="zk-file-dropzone" onclick="document.getElementById('zk-file-input').click()">
+                <input type="file" id="zk-file-input" accept=".xlsx, .xls, .csv, .txt, .dat" style="display: none;" onchange="appAttendance.handleSoftwarePunchFile(event)">
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 36px; color: #3B82F6; margin-bottom: 10px; display: block;"></i>
+                <div style="font-size: 13.5px; font-weight: 700; color: #1E293B; margin-bottom: 4px;">Kéo thả file báo cáo vào đây, hoặc click để chọn</div>
+                <div style="font-size: 11.5px; color: var(--text-secondary);">Chấp nhận .xlsx, .xls (Báo cáo vào ra thô từ Ronald Jack Pro), .csv, .dat từ USB máy</div>
+              </div>
+
+              <div id="zk-file-preview" style="display: none; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px; font-size: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <strong id="zk-preview-filename" style="color: #1E40AF;"><i class="fa-solid fa-file-lines"></i> file_cham_cong.xlsx</strong>
+                  <span id="zk-preview-count" class="badge" style="background: #2563EB; color: #fff;">0 dòng</span>
+                </div>
+                <p id="zk-preview-details" style="margin: 0; color: #3B82F6; font-size: 11.5px;">Phát hiện các cột: Mã chấm công, Thời gian quẹt, Tên máy</p>
+              </div>
+
+              <button class="btn btn-primary btn-sm" id="zk-btn-process-file" style="width: 100%; display: none;" onclick="appAttendance.confirmImportSoftwarePunchFile()">
+                <i class="fa-solid fa-check"></i> Xác Nhận Nhập Bản Ghi Vào Hệ Thống
+              </button>
+
+              <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius-sm); padding: 12px; margin-top: 14px; font-size: 11.5px; color: #92400E;">
+                <i class="fa-solid fa-lightbulb"></i> <strong>Mẹo chuyên nghiệp:</strong> Trong phần mềm Ronald Jack Pro, vào mục <em>Báo biểu &rarr; Báo cáo chi tiết giờ vào ra &rarr; Xuất Excel</em>, sau đó nạp file trực tiếp vào đây để tự động đối soát và tính bảng công!
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: Automated Background Worker / Agent Script Guide -->
+          <div class="card" style="padding: 18px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #1E293B;">
+              <i class="fa-solid fa-robot" style="color: #2563EB;"></i> Tự Động Hóa Đồng Bộ Định Kỳ (Background Auto-Sync Agent)
+            </h4>
+            <p style="margin: 0 0 12px 0; font-size: 12.5px; color: var(--text-secondary);">
+              Nếu doanh nghiệp cài Ronald Jack Pro trên máy tính Windows văn phòng, có thể lên lịch Windows Task Scheduler chạy ngầm script sau mỗi 10 phút để tự động đẩy dữ liệu sang Trung Hải HRM:
+            </p>
+            <div style="background: #0F172A; color: #38BDF8; font-family: monospace; font-size: 12px; padding: 12px 16px; border-radius: var(--radius-sm); overflow-x: auto; line-height: 1.5;">
+              # PowerShell script đồng bộ dữ liệu quẹt thẻ Ronald Jack Pro sang Trung Hải HRM API<br>
+              $res = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json" -Body (@{ db_type="sql_server"; server_host="127.0.0.1"; database_name="RonaldJackPro" } | ConvertTo-Json)<br>
+              Write-Host "Đồng bộ thành công: $($res.message)"
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBTAB 3: RAW PUNCH LOGS (NHẬT KÝ QUẸT THẺ GỐC) -->
+        <div class="zk-tab-content" id="zk-tab-rawlogs" style="display: none;">
+          <div class="filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; background: #F8FAFC; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label for="zk-log-device-select" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0;">Thiết bị:</label>
+              <select id="zk-log-device-select" class="filter-select" style="height: 34px; min-width: 170px;" onchange="appAttendance.filterRawLogs()">
+                <option value="all">-- Tất cả thiết bị --</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label for="zk-log-date-picker" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0;">Ngày quẹt:</label>
+              <input type="date" id="zk-log-date-picker" class="filter-select" style="height: 34px; font-weight: 600;" onchange="appAttendance.filterRawLogs()">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <input type="text" id="zk-log-search-input" class="filter-input" placeholder="Tìm theo mã chấm công hoặc tên nhân viên..." style="height: 34px;" oninput="appAttendance.filterRawLogs()">
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="appAttendance.exportRawLogsToExcel()" title="Xuất toàn bộ nhật ký quẹt thẻ thô">
+              <i class="fa-solid fa-file-excel"></i> Xuất Excel Thô
+            </button>
+          </div>
+
+          <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+            <table class="table" style="width: 100%; font-size: 12px;">
+              <thead>
+                <tr style="background: #F1F5F9;">
+                  <th style="width: 50px; text-align: center;">STT</th>
+                  <th style="width: 130px;">Mã Chấm Công</th>
+                  <th>Tên Nhân Viên</th>
+                  <th>Phòng Ban</th>
+                  <th style="width: 160px;">Thời Gian Quẹt</th>
+                  <th>Thiết Bị / Nguồn Quẹt</th>
+                  <th style="width: 120px; text-align: center;">Phương Thức</th>
+                </tr>
+              </thead>
+              <tbody id="zk-raw-logs-tbody">
+                <!-- Populated by attendance.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
     </div>
@@ -3797,14 +4027,18 @@
         <input type="text" id="att-dev-name" class="form-control" placeholder="Ví dụ: Ronald Jack 009 - Cửa Bảo Vệ" style="font-weight: 600;">
       </div>
 
-      <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-bottom: 14px;">
+      <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
         <div>
-          <label for="att-dev-ip" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Địa chỉ IP mạng nội bộ:</label>
+          <label for="att-dev-ip" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Địa chỉ IP mạng LAN:</label>
           <input type="text" id="att-dev-ip" class="form-control" placeholder="192.168.1.201" style="font-family: monospace; font-weight: 600;">
         </div>
         <div>
-          <label for="att-dev-port" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Cổng Port (UDP/TCP):</label>
+          <label for="att-dev-port" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Cổng Port:</label>
           <input type="number" id="att-dev-port" class="form-control" value="5005" placeholder="5005" style="font-family: monospace; font-weight: 600;">
+        </div>
+        <div>
+          <label for="att-dev-comm-key" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Mật mã Comm Key:</label>
+          <input type="number" id="att-dev-comm-key" class="form-control" value="0" placeholder="0" style="font-family: monospace; font-weight: 600;">
         </div>
       </div>
 
@@ -3834,8 +4068,115 @@
   </div>
 </div>
 
+<!-- ==========================================================================
+     MODAL: ATTENDANCE SHIFT EDIT (THÊM / SỬA CA LÀM VIỆC)
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-att-shift-edit">
+  <div class="modal-container" style="max-width: 580px;">
+    <div class="modal-header" style="background: var(--primary-navy); color: #fff; padding: 14px 18px;">
+      <div class="modal-title" style="font-size: 15px; font-weight: 700; color: #fff;">
+        <i class="fa-solid fa-business-time"></i> <span id="att-shift-modal-title">Thêm Ca Làm Việc Mới</span>
+      </div>
+      <button class="modal-close" style="color: #fff;" onclick="appAttendance.closeShiftModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px 18px; max-height: 75vh; overflow-y: auto;">
+      <input type="hidden" id="att-shift-id">
+
+      <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px; margin-bottom: 14px;">
+        <div>
+          <label for="att-shift-code" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Mã ca làm việc <span style="color: red;">*</span>:</label>
+          <input type="text" id="att-shift-code" class="form-control" placeholder="CA_HC, CA_SANG..." style="font-family: monospace; font-weight: 700; text-transform: uppercase;">
+        </div>
+        <div>
+          <label for="att-shift-name" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Tên ca làm việc <span style="color: red;">*</span>:</label>
+          <input type="text" id="att-shift-name" class="form-control" placeholder="Ca Hành Chính, Ca Sáng...">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; margin-bottom: 14px;">
+        <div>
+          <label for="att-shift-type" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Loại ca:</label>
+          <select id="att-shift-type" class="form-control" style="font-weight: 600;">
+            <option value="standard">Hành chính (Tiêu chuẩn)</option>
+            <option value="split">Ca Gãy / 2 Đoạn</option>
+            <option value="night">Ca Đêm (Xuyên đêm)</option>
+            <option value="weekend">Ca Cuối Tuần / Linh Hoạt</option>
+          </select>
+        </div>
+        <div>
+          <label for="att-shift-color" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Màu nhận diện:</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="color" id="att-shift-color" value="#2563EB" style="width: 44px; height: 36px; border: 1px solid #CBD5E1; border-radius: 4px; cursor: pointer; padding: 2px;">
+            <span style="font-size: 11px; color: var(--text-muted);">Hiển thị bảng công</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+        <div style="font-size: 12px; font-weight: 700; color: #1E293B; margin-bottom: 8px;">
+          <i class="fa-solid fa-clock"></i> Khung Giờ Ca Làm Việc:
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label for="att-shift-start" style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Giờ bắt đầu ca (Check-in):</label>
+            <input type="time" id="att-shift-start" class="form-control" value="08:00" style="font-weight: 700;">
+          </div>
+          <div>
+            <label for="att-shift-end" style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Giờ kết thúc ca (Check-out):</label>
+            <input type="time" id="att-shift-end" class="form-control" value="17:30" style="font-weight: 700;">
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+        <div style="font-size: 12px; font-weight: 700; color: #1E293B; margin-bottom: 8px;">
+          <i class="fa-solid fa-utensils"></i> Thời Gian Nghỉ Giữa Ca (Nghỉ Trưa):
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label for="att-shift-break-start" style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Bắt đầu nghỉ:</label>
+            <input type="time" id="att-shift-break-start" class="form-control" value="12:00">
+          </div>
+          <div>
+            <label for="att-shift-break-end" style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Kết thúc nghỉ:</label>
+            <input type="time" id="att-shift-break-end" class="form-control" value="13:30">
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+        <div>
+          <label for="att-shift-grace-late" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Du di đi muộn (phút):</label>
+          <input type="number" id="att-shift-grace-late" class="form-control" value="15" min="0" max="120" style="font-weight: 600;">
+        </div>
+        <div>
+          <label for="att-shift-grace-early" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Du di về sớm (phút):</label>
+          <input type="number" id="att-shift-grace-early" class="form-control" value="15" min="0" max="120" style="font-weight: 600;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label for="att-shift-workunits" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Định mức công (công):</label>
+          <input type="number" id="att-shift-workunits" class="form-control" value="1.0" step="0.25" min="0.25" max="3" style="font-weight: 700; color: #047857;">
+        </div>
+        <div>
+          <label for="att-shift-standard-hours" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Số giờ chuẩn tính công (giờ):</label>
+          <input type="number" id="att-shift-standard-hours" class="form-control" value="8.0" step="0.5" min="1" max="24" style="font-weight: 700; color: #2563EB;">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 12px 18px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn btn-secondary btn-sm" onclick="appAttendance.closeShiftModal()">Hủy Bỏ</button>
+      <button class="btn btn-primary btn-sm" onclick="appAttendance.saveShift()">
+        <i class="fa-solid fa-floppy-disk"></i> Lưu Ca Làm Việc
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- JavaScript Application Modules -->
-<script src="js/data.js?v=3.7.5"></script>
+<script src="js/data.js?v=3.8.5"></script>
 <script src="js/auth.js?v=3.1.2"></script>
 <script src="js/company.js?v=3.1.2"></script>
 <script src="js/dashboard.js?v=3.7.5"></script>
@@ -3849,12 +4190,12 @@
 <script src="js/organization.js?v=3.1.3"></script>
 <script src="js/org-import.js?v=3.1.3"></script>
 <script src="js/reports.js?v=3.7.5"></script>
-<script src="js/attendance.js?v=3.8.0"></script>
+<script src="js/attendance.js?v=3.8.5"></script>
 <script src="js/accounts.js?v=3.1.3"></script>
 <script src="js/logs.js?v=3.1.3"></script>
 <script src="js/trash.js?v=3.1.3"></script>
-<script src="js/app.js?v=3.7.5"></script>
-<script src="js/pwa.js?v=3.7.5"></script>
+<script src="js/app.js?v=3.8.5"></script>
+<script src="js/pwa.js?v=3.8.5"></script>
 
 </body>
 </html>

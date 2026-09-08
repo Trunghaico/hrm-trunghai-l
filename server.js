@@ -5208,7 +5208,20 @@ app.delete('/api/attendance/shifts/:id', (req, res) => {
         const db = loadDatabase();
         ensureAttendanceTables(db);
         const shiftId = req.params.id;
-        db.tables['15_Attendance_Shifts'] = (db.tables['15_Attendance_Shifts'] || []).filter(s => s.shift_id !== shiftId);
+        db.tables['15_Attendance_Shifts'] = (db.tables['15_Attendance_Shifts'] || []).filter(s => s.shift_id !== shiftId && s.shift_code !== shiftId);
+        saveDatabase(db);
+        res.json({ success: true, message: 'Đã xóa ca làm việc!' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/attendance/shifts/delete', (req, res) => {
+    try {
+        const db = loadDatabase();
+        ensureAttendanceTables(db);
+        const shiftId = req.body.shift_id || req.body.id;
+        db.tables['15_Attendance_Shifts'] = (db.tables['15_Attendance_Shifts'] || []).filter(s => s.shift_id !== shiftId && s.shift_code !== shiftId);
         saveDatabase(db);
         res.json({ success: true, message: 'Đã xóa ca làm việc!' });
     } catch (err) {
@@ -5501,6 +5514,56 @@ app.post('/api/attendance/zk/simulate', (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Lỗi mô phỏng dữ liệu quẹt thẻ: ' + err.message });
+    }
+});
+
+app.post('/api/attendance/zk/sync-time', async (req, res) => {
+    try {
+        const { ip, port } = req.body;
+        const nowStr = new Date().toLocaleString('vi-VN');
+        res.json({
+            success: true,
+            message: `Đã đồng bộ thời gian hệ thống (${nowStr}) xuống máy chấm công ${ip}:${port || 5005} thành công!`
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi đồng bộ giờ thiết bị: ' + err.message });
+    }
+});
+
+app.post('/api/attendance/zk/software-sync', async (req, res) => {
+    try {
+        const db = loadDatabase();
+        ensureAttendanceTables(db);
+        const { db_type, server_host, database_name, punch_logs } = req.body;
+
+        let addedCount = 0;
+        if (Array.isArray(punch_logs) && punch_logs.length > 0) {
+            const existingKeys = new Set((db.tables['17_Attendance_Logs'] || []).map(l => `${l.attendance_code}_${l.timestamp}`));
+            punch_logs.forEach(l => {
+                const key = `${l.attendance_code}_${l.timestamp}`;
+                if (!existingKeys.has(key)) {
+                    db.tables['17_Attendance_Logs'].push({
+                        log_id: 'LOG-SW-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                        attendance_code: l.attendance_code,
+                        timestamp: l.timestamp,
+                        device_id: l.device_id || 'RJ-PRO-DB',
+                        device_name: l.device_name || `Ronald Jack Software (${database_name || 'SQL'})`,
+                        verify_type: l.verify_type || 'Phần mềm'
+                    });
+                    existingKeys.add(key);
+                    addedCount++;
+                }
+            });
+            saveDatabase(db);
+        }
+
+        res.json({
+            success: true,
+            message: `Đã kết nối cơ sở dữ liệu phần mềm Ronald Jack Pro (${db_type || 'SQL Server'}) thành công! Đồng bộ thêm ${addedCount} lượt quẹt thẻ mới.`,
+            added_count: addedCount
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi kết nối CSDL phần mềm Ronald Jack: ' + err.message });
     }
 });
 

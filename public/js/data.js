@@ -78,6 +78,24 @@ const appData = {
         this.timesheets = json.tables['19_Attendance_Timesheets'] || [];
         this.attendanceDevices = json.tables['20_Attendance_Devices'] || [];
 
+        // Hỗ trợ lưu trữ offline / fallback cho ca làm việc và máy chấm công
+        try {
+          const localDevs = localStorage.getItem('hrm_attendance_devices');
+          if (localDevs) {
+            const parsedDevs = JSON.parse(localDevs);
+            if (Array.isArray(parsedDevs) && parsedDevs.length > 0) {
+              this.attendanceDevices = parsedDevs;
+            }
+          }
+          const localShifts = localStorage.getItem('hrm_attendance_shifts');
+          if (localShifts) {
+            const parsedShifts = JSON.parse(localShifts);
+            if (Array.isArray(parsedShifts) && parsedShifts.length > 0) {
+              this.shifts = parsedShifts;
+            }
+          }
+        } catch (e) {}
+
         // Tự động đồng bộ / tự chữa lành (auto-heal) danh bạ liên hệ nếu thiếu
         if ((this.contacts || []).length < (this.employees || []).length) {
           const contactMap = new Map((this.contacts || []).map(c => [c.employee_id, c]));

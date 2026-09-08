@@ -56,6 +56,12 @@ const app = {
         sideContractCount.style.background = '#F59E0B';
       }
     }
+    const sideZkCount = document.getElementById('sidebar-zk-devices-count');
+    if (sideZkCount) {
+      const devCount = (appData.attendanceDevices || []).length;
+      sideZkCount.textContent = devCount;
+      sideZkCount.style.display = devCount > 0 ? 'inline-block' : 'none';
+    }
 
     // 5. Navigation setup
     this.setupNavigation();
@@ -162,6 +168,8 @@ const app = {
       if (window.appAttendance) {
         if (typeof appAttendance.closeManualEditModal === 'function') appAttendance.closeManualEditModal();
         if (typeof appAttendance.closeCreateRequestModal === 'function') appAttendance.closeCreateRequestModal();
+        if (typeof appAttendance.closeDeviceModal === 'function') appAttendance.closeDeviceModal();
+        if (typeof appAttendance.closeShiftModal === 'function') appAttendance.closeShiftModal();
       }
       if (window.appPWA && typeof appPWA.closeIosModal === 'function') {
         appPWA.closeIosModal();
@@ -238,6 +246,7 @@ const app = {
       'org-chart': '<i class="fa-solid fa-sitemap"></i> <span>Sơ Đồ Cơ Cấu Tổ Chức</span>',
       'contracts': '<i class="fa-solid fa-file-contract"></i> <span>Hợp Đồng & Cảnh Báo</span>',
       'attendance': '<i class="fa-solid fa-clock"></i> <span>Quản Lý Chấm Công</span>',
+      'zk-devices': '<i class="fa-solid fa-fingerprint"></i> <span>Máy Chấm Công & Kết Nối Ronald Jack</span>',
       'resigned': '<i class="fa-solid fa-user-xmark"></i> <span>Quản Lý Nhân Sự Nghỉ Việc</span>',
       'reports': '<i class="fa-solid fa-chart-line"></i> <span>Báo Cáo Biến Động Nhân Sự</span>',
       'accounts': '<i class="fa-solid fa-user-shield"></i> <span>Tài Khoản & Phân Quyền</span>',
@@ -291,6 +300,10 @@ const app = {
         } else if (viewId === 'attendance') {
           if (window.appAttendance) {
             appAttendance.render();
+          }
+        } else if (viewId === 'zk-devices') {
+          if (window.appAttendance) {
+            appAttendance.renderZkDevicesView();
           }
         } else if (viewId === 'accounts') {
           appAccounts.init();
