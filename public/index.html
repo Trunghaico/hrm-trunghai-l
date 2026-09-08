@@ -1483,13 +1483,16 @@
           </div>
         </div>
 
-        <!-- Attendance Sub-tabs Navigation (4 Focused Tabs) -->
+        <!-- Attendance Sub-tabs Navigation (5 Focused Tabs) -->
         <div class="att-subnav-bar" style="display: flex; gap: 8px; border-bottom: 2px solid #E2E8F0; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;">
           <button class="btn btn-secondary att-nav-tab active" data-tab="dashboard" onclick="appAttendance.switchSubTab('dashboard')">
             <i class="fa-solid fa-chart-line"></i> Dashboard Bảng Công
           </button>
           <button class="btn btn-secondary att-nav-tab" data-tab="shifts" onclick="appAttendance.switchSubTab('shifts')">
             <i class="fa-solid fa-business-time"></i> Ca Làm Việc & Phân Lịch
+          </button>
+          <button class="btn btn-secondary att-nav-tab" data-tab="auto-attendance" onclick="appAttendance.switchSubTab('auto-attendance')">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Đặc Cách & Tự Động Đủ Công
           </button>
           <button class="btn btn-secondary att-nav-tab" data-tab="requests" onclick="appAttendance.switchSubTab('requests')">
             <i class="fa-solid fa-file-signature"></i> Đơn Từ & Phê Duyệt
@@ -1743,6 +1746,107 @@
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <!-- SUBTAB 3: ĐẶC CÁCH & TỰ ĐỘNG ĐỦ CÔNG -->
+        <div class="att-tab-content" id="att-tab-auto-attendance">
+          <!-- Policy Explanatory Card -->
+          <div style="background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); border: 1px solid #86EFAC; border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: #15803D; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(22,101,52,0.25);">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </div>
+                <div>
+                  <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #14532D;">Chế Độ Đặc Cách Tự Động Tính Đủ Công (Miễn Quẹt Thẻ Máy)</h3>
+                  <p style="margin: 4px 0 0 0; font-size: 12.5px; color: #166534; line-height: 1.45;">
+                    Nhân viên trong danh sách này sẽ <strong>luôn được hệ thống tự động ghi nhận 1.0 công / 8.0 giờ chuẩn</strong> mà không cần quẹt thẻ tại máy chấm công. Thích hợp cho <strong>Ban Giám Đốc, Quản lý cấp cao, Nhân viên kinh doanh thị trường, Lái xe công tác xa...</strong>
+                  </p>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-primary btn-sm" onclick="appAttendance.openAddAutoDeptModal()" style="background: #15803D; border-color: #15803D;">
+                  <i class="fa-solid fa-layer-group"></i> Thêm Theo Phòng Ban
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="appAttendance.openAddAutoEmpModal()" style="background: #fff; border: 1px solid #86EFAC; color: #15803D; font-weight: 700;">
+                  <i class="fa-solid fa-user-plus"></i> Thêm Từng Nhân Viên
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="appAttendance.recalculateTimesheets()" title="Tính toán lại toàn bộ bảng công">
+                  <i class="fa-solid fa-calculator"></i> Tính Lại Bảng Công
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI summary cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+            <div class="card" style="border-left: 4px solid #16A34A; padding: 14px 16px;">
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Tổng Nhân Sự Đặc Cách</div>
+              <div id="att-auto-kpi-total" style="font-size: 26px; font-weight: 800; color: #15803D; margin-top: 4px;">0</div>
+              <div style="font-size: 11px; color: #16A34A; margin-top: 2px;">Tự động hưởng 1.0 công / ngày</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #2563EB; padding: 14px 16px;">
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Phòng Ban Áp Dụng</div>
+              <div id="att-auto-kpi-depts" style="font-size: 26px; font-weight: 800; color: #1E40AF; margin-top: 4px;">0</div>
+              <div style="font-size: 11px; color: #2563EB; margin-top: 2px;">Đang áp dụng đặc cách</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #D97706; padding: 14px 16px;">
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Định Mức Tiêu Chuẩn</div>
+              <div style="font-size: 26px; font-weight: 800; color: #B45309; margin-top: 4px;">1.0 Công / 8.0h</div>
+              <div style="font-size: 11px; color: #D97706; margin-top: 2px;">Khung giờ 08:00 - 17:30</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #7C3AED; padding: 14px 16px;">
+              <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Trạng Thái Áp Dụng</div>
+              <div style="font-size: 20px; font-weight: 800; color: #7C3AED; margin-top: 6px;">
+                <span class="badge" style="background:#F5F3FF; color:#7C3AED; border:1px solid #DDD6FE; font-size:12px; padding: 4px 10px;">
+                  <i class="fa-solid fa-circle-check"></i> Đang Kích Hoạt
+                </span>
+              </div>
+              <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Tự động tính khi chạy bảng công</div>
+            </div>
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div class="filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; background: #F8FAFC; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label for="att-auto-dept-filter" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Phòng ban:</label>
+              <select id="att-auto-dept-filter" class="filter-select" style="height: 34px; font-weight: 600;" onchange="appAttendance.onAutoFilterChange()">
+                <option value="ALL">-- Tất cả phòng ban --</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 200px;">
+              <label for="att-auto-search" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Tìm kiếm:</label>
+              <input type="text" id="att-auto-search" class="filter-input" placeholder="Tìm tên, mã NV, chức vụ hoặc lý do..." style="height: 34px;" oninput="appAttendance.onAutoFilterChange()">
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.clearAllAutoAttendance()" style="color: #DC2626; border-color: #FECACA;" title="Xóa tất cả danh sách đặc cách">
+                <i class="fa-solid fa-trash-can"></i> Xóa Hết
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+            <table class="table" style="width: 100%; font-size: 12.5px;">
+              <thead>
+                <tr>
+                  <th style="width: 50px; text-align: center;">STT</th>
+                  <th style="width: 110px;">Mã NV</th>
+                  <th style="width: 100px; text-align: center;">Mã CC</th>
+                  <th>Họ Và Tên</th>
+                  <th>Phòng Ban</th>
+                  <th>Chức Vụ</th>
+                  <th>Lý Do Đặc Cách</th>
+                  <th style="text-align: center;">Chế Độ Tính Công</th>
+                  <th style="width: 130px; text-align: center;">Ngày Kích Hoạt</th>
+                  <th style="width: 90px; text-align: center;">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="att-auto-attendance-tbody">
+                <!-- Populated dynamically by attendance.js -->
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -4593,31 +4697,126 @@
     <div class="modal-footer" style="padding: 12px 22px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center;">
       <span style="font-size: 11.5px; color: #64748B;"><i class="fa-solid fa-database"></i> Dữ liệu tự động lưu trữ vĩnh viễn</span>
       <button class="btn btn-secondary btn-sm" onclick="appAttendance.closeSyncModal()" style="padding: 6px 16px;">Đóng</button>
+<!-- Modal Thêm Nhân Sự Đặc Cách Theo Phòng Ban -->
+<div class="modal-backdrop" id="modal-att-add-auto-dept">
+  <div class="modal-dialog" style="max-width: 550px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+    <div class="modal-header" style="background: linear-gradient(135deg, #15803D 0%, #16A34A 100%); color: #fff; padding: 16px 20px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-layer-group" style="font-size: 20px;"></i>
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">Đặc Cách Tính Đủ Công Theo Phòng Ban</h3>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: #DCFCE7;">Thêm tất cả nhân sự thuộc phòng ban vào danh sách tự động đủ công</p>
+        </div>
+      </div>
+      <button class="modal-close" style="color: #fff;" onclick="appAttendance.closeAddAutoDeptModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px;">
+      <div style="margin-bottom: 16px;">
+        <label for="att-auto-dept-select" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Chọn phòng ban áp dụng:</label>
+        <select id="att-auto-dept-select" class="form-control" style="font-weight: 600; height: 38px;">
+          <!-- Populated dynamically -->
+        </select>
+        <div style="font-size: 11.5px; color: #64748B; margin-top: 4px;">
+          <i class="fa-solid fa-users"></i> Tất cả nhân sự trong phòng ban này sẽ được tự động tính đủ công hàng ngày.
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label for="att-auto-dept-reason" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Lý do / Căn cứ đặc cách:</label>
+        <select id="att-auto-dept-reason" class="form-control" style="height: 38px; font-weight: 500;">
+          <option value="Ban Giám Đốc điều hành công ty">Ban Giám Đốc điều hành công ty</option>
+          <option value="Cán bộ Quản lý cấp cao / Trưởng phòng">Cán bộ Quản lý cấp cao / Trưởng phòng</option>
+          <option value="Nhân viên Kinh doanh thị trường / Sales ngoài">Nhân viên Kinh doanh thị trường / Sales ngoài</option>
+          <option value="Lái xe / Nhân viên giao hàng công tác xa">Lái xe / Nhân viên giao hàng công tác xa</option>
+          <option value="Đặc cách theo Quyết định Ban Lãnh Đạo">Đặc cách theo Quyết định Ban Lãnh Đạo</option>
+        </select>
+      </div>
+
+      <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+        <div style="font-size: 12px; color: #166534; line-height: 1.4;">
+          <i class="fa-solid fa-circle-check" style="color: #16A34A;"></i> <strong>Định mức áp dụng:</strong> 1.0 công / 8.0 giờ chuẩn mỗi ngày, trạng thái <code>Hợp lệ</code>, tự động điền giờ <code>08:00 - 17:30</code>.
+        </div>
+      </div>
+
+      <div style="margin-bottom: 6px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #1E293B; cursor: pointer;">
+          <input type="checkbox" id="att-auto-dept-recalc" checked style="accent-color: #16A34A; width: 16px; height: 16px;">
+          <span>Tự động tính lại toàn bộ bảng công ngay sau khi áp dụng</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 8px;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="appAttendance.closeAddAutoDeptModal()">Hủy Bỏ</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="appAttendance.saveAutoDeptAssignment()" style="background: #15803D; border-color: #15803D;">
+        <i class="fa-solid fa-check"></i> Xác Nhận Thêm Toàn Bộ Phòng
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Thêm Từng Nhân Viên Đặc Cách -->
+<div class="modal-backdrop" id="modal-att-add-auto-single">
+  <div class="modal-dialog" style="max-width: 550px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+    <div class="modal-header" style="background: linear-gradient(135deg, #15803D 0%, #16A34A 100%); color: #fff; padding: 16px 20px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-user-plus" style="font-size: 20px;"></i>
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">Thêm Nhân Viên Đặc Cách Tự Động Đủ Công</h3>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: #DCFCE7;">Chọn cá nhân nhân sự để miễn quẹt thẻ máy và tự động hưởng đủ công</p>
+        </div>
+      </div>
+      <button class="modal-close" style="color: #fff;" onclick="appAttendance.closeAddAutoEmpModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px;">
+      <div style="margin-bottom: 16px;">
+        <label for="att-auto-single-emp-select" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Chọn nhân viên:</label>
+        <select id="att-auto-single-emp-select" class="form-control" style="font-weight: 600; height: 38px;">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label for="att-auto-single-reason" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Lý do / Căn cứ đặc cách:</label>
+        <input type="text" id="att-auto-single-reason" class="form-control" placeholder="VD: Lãnh đạo cấp cao, Sales công tác thị trường..." value="Đặc cách tự động đủ công (Miễn quẹt thẻ)">
+      </div>
+
+      <div style="margin-bottom: 6px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #1E293B; cursor: pointer;">
+          <input type="checkbox" id="att-auto-single-recalc" checked style="accent-color: #16A34A; width: 16px; height: 16px;">
+          <span>Tự động tính lại bảng công của nhân sự này ngay sau khi lưu</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 8px;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="appAttendance.closeAddAutoEmpModal()">Hủy Bỏ</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="appAttendance.saveAutoEmpAssignment()" style="background: #15803D; border-color: #15803D;">
+        <i class="fa-solid fa-floppy-disk"></i> Lưu Đặc Cách
+      </button>
     </div>
   </div>
 </div>
 
 <!-- JavaScript Application Modules -->
-<script src="js/data.js?v=3.9.17"></script>
-<script src="js/auth.js?v=3.9.17"></script>
-<script src="js/company.js?v=3.9.17"></script>
-<script src="js/dashboard.js?v=3.9.17"></script>
-<script src="js/profile-fields.js?v=3.9.17"></script>
-<script src="js/employees.js?v=3.9.17"></script>
-<script src="js/import.js?v=3.9.17"></script>
-<script src="js/resigned.js?v=3.9.17"></script>
-<script src="js/template-trunghai.js?v=3.9.17"></script>
-<script src="js/contract-merge.js?v=3.9.17"></script>
-<script src="js/contracts.js?v=3.9.17"></script>
-<script src="js/organization.js?v=3.9.17"></script>
-<script src="js/org-import.js?v=3.9.17"></script>
-<script src="js/reports.js?v=3.9.17"></script>
-<script src="js/attendance.js?v=3.9.17"></script>
-<script src="js/accounts.js?v=3.9.17"></script>
-<script src="js/logs.js?v=3.9.17"></script>
-<script src="js/trash.js?v=3.9.17"></script>
-<script src="js/app.js?v=3.9.17"></script>
-<script src="js/pwa.js?v=3.9.17"></script>
+<script src="js/data.js?v=3.9.18"></script>
+<script src="js/auth.js?v=3.9.18"></script>
+<script src="js/company.js?v=3.9.18"></script>
+<script src="js/dashboard.js?v=3.9.18"></script>
+<script src="js/profile-fields.js?v=3.9.18"></script>
+<script src="js/employees.js?v=3.9.18"></script>
+<script src="js/import.js?v=3.9.18"></script>
+<script src="js/resigned.js?v=3.9.18"></script>
+<script src="js/template-trunghai.js?v=3.9.18"></script>
+<script src="js/contract-merge.js?v=3.9.18"></script>
+<script src="js/contracts.js?v=3.9.18"></script>
+<script src="js/organization.js?v=3.9.18"></script>
+<script src="js/org-import.js?v=3.9.18"></script>
+<script src="js/reports.js?v=3.9.18"></script>
+<script src="js/attendance.js?v=3.9.18"></script>
+<script src="js/accounts.js?v=3.9.18"></script>
+<script src="js/logs.js?v=3.9.18"></script>
+<script src="js/trash.js?v=3.9.18"></script>
+<script src="js/app.js?v=3.9.18"></script>
+<script src="js/pwa.js?v=3.9.18"></script>
 
 </body>
 </html>

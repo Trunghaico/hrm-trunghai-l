@@ -58,6 +58,9 @@ const appAttendance = {
   ],
 
   currentZkSubTab: 'zk-hardware',
+  autoAttendanceEmployees: [],
+  autoFilterDept: 'ALL',
+  autoFilterSearch: '',
 
   init() {
     console.log('Initializing Time & Attendance Module...');
@@ -94,6 +97,40 @@ const appAttendance = {
         const parsed = JSON.parse(savedShifts);
         if (Array.isArray(parsed) && parsed.length > 0) {
           appData.shifts = parsed;
+        }
+      }
+
+      // Load auto-attendance employees from localStorage or defaults
+      const savedAuto = localStorage.getItem('hrm_auto_attendance_employees');
+      if (savedAuto) {
+        const parsed = JSON.parse(savedAuto);
+        if (Array.isArray(parsed)) {
+          this.autoAttendanceEmployees = parsed;
+          if (window.appData) appData.autoAttendanceEmployees = parsed;
+        }
+      } else if (window.appData && Array.isArray(appData.autoAttendanceEmployees)) {
+        this.autoAttendanceEmployees = appData.autoAttendanceEmployees;
+      } else {
+        // Sensible default: Auto-grant for BAN GIÁM ĐỐC if found
+        const bgdEmployees = (window.appData && appData.employees || []).filter(e => {
+          const dept = (e.department_name || e.department_id || '').toUpperCase();
+          const pos = (e.position_name || e.position || '').toUpperCase();
+          return dept.includes('GIÁM ĐỐC') || dept.includes('HỘI ĐỒNG') || pos.includes('TỔNG GIÁM ĐỐC') || pos.includes('PHÓ TỔNG');
+        });
+        if (bgdEmployees.length > 0) {
+          this.autoAttendanceEmployees = bgdEmployees.map(e => ({
+            employee_id: e.employee_id,
+            attendance_code: e.attendance_code || e.time_attendance_code || '',
+            full_name: e.full_name,
+            department_name: e.department_name || e.department_id || '',
+            position_name: e.position_name || e.position || 'Lãnh đạo',
+            reason: 'Ban Giám Đốc điều hành công ty',
+            work_units: 1.0,
+            standard_hours: 8.0,
+            enabled: true,
+            created_at: new Date().toLocaleDateString('vi-VN')
+          }));
+          this.saveAutoAttendanceState();
         }
       }
     } catch (e) {
@@ -362,6 +399,9 @@ const appAttendance = {
       case 'shifts':
         this.renderShifts();
         break;
+      case 'auto-attendance':
+        this.renderAutoAttendance();
+        break;
       case 'requests':
         this.renderRequests();
         break;
@@ -498,7 +538,9 @@ const appAttendance = {
 
     tbody.innerHTML = list.map((item, idx) => {
       let statusBadge = '';
-      if (item.status === 'VALID' || item.status === 'HỢP LỆ' || item.status === 'ĐỦ CÔNG') {
+      if (item.note && item.note.includes('Đặc cách')) {
+        statusBadge = '<span class="badge" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0;" title="' + (item.note || 'Đặc cách tự động đủ công') + '"><i class="fa-solid fa-wand-magic-sparkles"></i> Đặc cách</span>';
+      } else if (item.status === 'VALID' || item.status === 'HỢP LỆ' || item.status === 'ĐỦ CÔNG') {
         statusBadge = '<span class="badge badge-active"><i class="fa-solid fa-check"></i> Hợp lệ</span>';
       } else if (item.status === 'LATE' || item.status === 'ĐI MUỘN') {
         statusBadge = '<span class="badge" style="background:#FEF3C7; color:#D97706; border:1px solid #FCD34D;"><i class="fa-solid fa-clock"></i> Đi muộn</span>';
@@ -1194,6 +1236,315 @@ const appAttendance = {
 
     utils.showToast(`Đã xóa ca làm việc "${name}"!`, 'success');
     this.renderShifts();
+  },
+
+  // ========================================================================
+  // 3B. AUTO ATTENDANCE & EXEMPTION MANAGEMENT (ĐẶC CÁCH & TỰ ĐỘNG ĐỦ CÔNG)
+  // ========================================================================
+  saveAutoAttendanceState() {
+    try {
+      localStorage.setItem('hrm_auto_attendance_employees', JSON.stringify(this.autoAttendanceEmployees));
+      if (window.appData) {
+        appData.autoAttendanceEmployees = this.autoAttendanceEmployees;
+      }
+    } catch (e) {}
+  },
+
+  isAutoAttendanceEmployee(empId) {
+    if (!empId) return null;
+    return (this.autoAttendanceEmployees || []).find(a => (a.employee_id === empId || a.id === empId) && a.enabled !== false) || null;
+  },
+
+  onAutoFilterChange() {
+    const deptEl = document.getElementById('att-auto-dept-filter');
+    if (deptEl) this.autoFilterDept = deptEl.value;
+    const searchEl = document.getElementById('att-auto-search');
+    if (searchEl) this.autoFilterSearch = searchEl.value.toLowerCase().trim();
+    this.renderAutoAttendance();
+  },
+
+  renderAutoAttendance() {
+    // 1. Populate Department Filter if needed
+    const deptFilterSelect = document.getElementById('att-auto-dept-filter');
+    if (deptFilterSelect && deptFilterSelect.options.length <= 1) {
+      const allDepts = this.getAllDepartmentNames();
+      deptFilterSelect.innerHTML = '<option value="ALL">-- Tất cả phòng ban (' + allDepts.length + ') --</option>' +
+        allDepts.map(d => `<option value="${d.replace(/"/g, '&quot;')}">${d}</option>`).join('');
+    }
+
+    // 2. Filter list
+    let list = this.autoAttendanceEmployees || [];
+    if (this.autoFilterDept && this.autoFilterDept !== 'ALL') {
+      list = list.filter(a => {
+        const d = this.getCanonicalDeptName(a.department_name).toLowerCase();
+        return d === this.autoFilterDept.toLowerCase();
+      });
+    }
+
+    if (this.autoFilterSearch) {
+      const q = this.autoFilterSearch;
+      list = list.filter(a =>
+        (a.full_name && a.full_name.toLowerCase().includes(q)) ||
+        (a.employee_id && a.employee_id.toLowerCase().includes(q)) ||
+        (a.position_name && a.position_name.toLowerCase().includes(q)) ||
+        (a.reason && a.reason.toLowerCase().includes(q))
+      );
+    }
+
+    // 3. Update KPIs
+    const totalCount = (this.autoAttendanceEmployees || []).length;
+    const totalEl = document.getElementById('att-auto-kpi-total');
+    if (totalEl) totalEl.textContent = `${totalCount} nhân sự`;
+
+    const uniqueDepts = new Set((this.autoAttendanceEmployees || []).map(a => this.getCanonicalDeptName(a.department_name)).filter(Boolean));
+    const deptsEl = document.getElementById('att-auto-kpi-depts');
+    if (deptsEl) deptsEl.textContent = `${uniqueDepts.size} phòng ban`;
+
+    // 4. Render Table
+    const tbody = document.getElementById('att-auto-attendance-tbody');
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
+            <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 32px; margin-bottom: 12px; display: block; color: #86EFAC;"></i>
+            <div style="font-weight: 700; font-size: 14px; color: #1E293B; margin-bottom: 4px;">Chưa có nhân sự nào trong danh sách đặc cách tự động đủ công</div>
+            <div style="font-size: 12.5px; color: #64748B; margin-bottom: 14px;">Bấm nút <strong>"Thêm Theo Phòng Ban"</strong> hoặc <strong>"Thêm Từng Nhân Viên"</strong> ở trên để thêm nhân sự được miễn quẹt thẻ máy.</div>
+            <div style="display: flex; gap: 8px; justify-content: center;">
+              <button class="btn btn-primary btn-sm" onclick="appAttendance.openAddAutoDeptModal()" style="background: #15803D; border-color: #15803D;">
+                <i class="fa-solid fa-layer-group"></i> Thêm Theo Phòng Ban
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.openAddAutoEmpModal()">
+                <i class="fa-solid fa-user-plus"></i> Thêm Nhân Viên
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = list.map((item, idx) => {
+      const emp = (appData.employees || []).find(e => e.employee_id === item.employee_id) || {};
+      const master = (appData.masterProfiles || []).find(m => m.employee_id === item.employee_id) || {};
+      const code = item.attendance_code || emp.time_attendance_code || emp['Mã chấm công'] || master['Mã chấm công'] || master.time_attendance_code || '-';
+      const pos = item.position_name || emp.position_name || emp.position || '-';
+      const dept = this.getCanonicalDeptName(item.department_name || emp.department_name);
+
+      return `
+        <tr>
+          <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
+          <td style="font-weight: 700; color: #1E40AF; font-family: monospace;">${item.employee_id}</td>
+          <td style="text-align: center;">
+            <strong style="color: #B45309; font-family: monospace; background: #FFFBEB; padding: 2px 6px; border-radius: 4px; border: 1px solid #FDE68A; font-size: 11.5px;">${code}</strong>
+          </td>
+          <td>
+            <strong style="color: #0F172A; font-size: 13px;">${item.full_name || emp.full_name}</strong>
+          </td>
+          <td><span class="badge badge-navy" title="${dept}">${dept}</span></td>
+          <td style="font-size: 12px; color: #334155; font-weight: 500;">${pos}</td>
+          <td>
+            <span style="display: inline-block; font-size: 12px; color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 3px 8px; border-radius: 6px; font-weight: 600;">
+              <i class="fa-solid fa-shield-check" style="margin-right: 4px;"></i> ${item.reason || 'Đặc cách tự động đủ công'}
+            </span>
+          </td>
+          <td style="text-align: center;">
+            <span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 700; font-size: 11.5px; padding: 4px 8px;">
+              <i class="fa-solid fa-bolt" style="color: #10B981; margin-right: 4px;"></i> 1.0 Công (8.0h)
+            </span>
+          </td>
+          <td style="text-align: center; font-size: 11.5px; color: #64748B; font-family: monospace;">${item.created_at || 'Mặc định'}</td>
+          <td style="text-align: center;">
+            <button class="btn btn-danger btn-sm" onclick="appAttendance.removeAutoAttendance('${item.employee_id}')" style="padding: 4px 8px; font-size: 11.5px;" title="Hủy đặc cách nhân sự này">
+              <i class="fa-solid fa-user-minus"></i> Hủy
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  openAddAutoDeptModal() {
+    const modal = document.getElementById('modal-att-add-auto-dept');
+    if (!modal) return;
+
+    const select = document.getElementById('att-auto-dept-select');
+    if (select) {
+      const allDepts = this.getAllDepartmentNames();
+      select.innerHTML = allDepts.map(d => `<option value="${d.replace(/"/g, '&quot;')}">${d}</option>`).join('');
+    }
+
+    modal.classList.add('active');
+  },
+
+  closeAddAutoDeptModal() {
+    const modal = document.getElementById('modal-att-add-auto-dept');
+    if (modal) modal.classList.remove('active');
+  },
+
+  saveAutoDeptAssignment() {
+    const deptSelect = document.getElementById('att-auto-dept-select');
+    const reasonSelect = document.getElementById('att-auto-dept-reason');
+    const recalcCheck = document.getElementById('att-auto-dept-recalc');
+
+    const selectedDept = deptSelect ? deptSelect.value : '';
+    const reason = reasonSelect ? reasonSelect.value : 'Đặc cách tự động đủ công';
+    const doRecalc = recalcCheck ? recalcCheck.checked : true;
+
+    if (!selectedDept) {
+      utils.showToast('Vui lòng chọn phòng ban áp dụng!', 'warning');
+      return;
+    }
+
+    const deptCanonical = this.getCanonicalDeptName(selectedDept).toLowerCase();
+    const empsInDept = (appData.employees || []).filter(e => {
+      if (e.employment_status === 'Đã nghỉ việc') return false;
+      const d = this.getCanonicalDeptName(e.department_name || e.department_id).toLowerCase();
+      return d === deptCanonical;
+    });
+
+    if (empsInDept.length === 0) {
+      utils.showToast(`Không tìm thấy nhân viên đang làm việc trong phòng "${selectedDept}"`, 'warning');
+      return;
+    }
+
+    let addedCount = 0;
+    const nowStr = new Date().toLocaleDateString('vi-VN');
+
+    empsInDept.forEach(e => {
+      const existingIdx = (this.autoAttendanceEmployees || []).findIndex(a => a.employee_id === e.employee_id);
+      const record = {
+        employee_id: e.employee_id,
+        attendance_code: e.attendance_code || e.time_attendance_code || '',
+        full_name: e.full_name,
+        department_name: e.department_name || e.department_id || selectedDept,
+        position_name: e.position_name || e.position || '',
+        reason: reason,
+        work_units: 1.0,
+        standard_hours: 8.0,
+        enabled: true,
+        created_at: nowStr
+      };
+
+      if (existingIdx >= 0) {
+        this.autoAttendanceEmployees[existingIdx] = record;
+      } else {
+        this.autoAttendanceEmployees.push(record);
+        addedCount++;
+      }
+    });
+
+    this.saveAutoAttendanceState();
+    this.closeAddAutoDeptModal();
+    utils.showToast(`Đã áp dụng đặc cách tự động đủ công cho toàn bộ ${empsInDept.length} nhân sự phòng "${selectedDept}"!`, 'success');
+
+    this.renderAutoAttendance();
+
+    if (doRecalc) {
+      this.recalculateTimesheets();
+    }
+  },
+
+  openAddAutoEmpModal() {
+    const modal = document.getElementById('modal-att-add-auto-single');
+    if (!modal) return;
+
+    const select = document.getElementById('att-auto-single-emp-select');
+    if (select) {
+      const activeEmps = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+      select.innerHTML = activeEmps.map(e => {
+        const dept = this.getCanonicalDeptName(e.department_name || e.department_id);
+        const isAlready = this.isAutoAttendanceEmployee(e.employee_id);
+        return `<option value="${e.employee_id}">${e.employee_id} - ${e.full_name} (${dept})${isAlready ? ' [Đang đặc cách]' : ''}</option>`;
+      }).join('');
+    }
+
+    modal.classList.add('active');
+  },
+
+  closeAddAutoEmpModal() {
+    const modal = document.getElementById('modal-att-add-auto-single');
+    if (modal) modal.classList.remove('active');
+  },
+
+  saveAutoEmpAssignment() {
+    const empSelect = document.getElementById('att-auto-single-emp-select');
+    const reasonInput = document.getElementById('att-auto-single-reason');
+    const recalcCheck = document.getElementById('att-auto-single-recalc');
+
+    const empId = empSelect ? empSelect.value : '';
+    const reason = (reasonInput ? reasonInput.value.trim() : '') || 'Đặc cách tự động đủ công (Miễn quẹt thẻ)';
+    const doRecalc = recalcCheck ? recalcCheck.checked : true;
+
+    if (!empId) {
+      utils.showToast('Vui lòng chọn nhân viên!', 'warning');
+      return;
+    }
+
+    const emp = (appData.employees || []).find(e => e.employee_id === empId);
+    if (!emp) return;
+
+    const existingIdx = (this.autoAttendanceEmployees || []).findIndex(a => a.employee_id === empId);
+    const nowStr = new Date().toLocaleDateString('vi-VN');
+    const record = {
+      employee_id: emp.employee_id,
+      attendance_code: emp.attendance_code || emp.time_attendance_code || '',
+      full_name: emp.full_name,
+      department_name: emp.department_name || emp.department_id || '',
+      position_name: emp.position_name || emp.position || '',
+      reason: reason,
+      work_units: 1.0,
+      standard_hours: 8.0,
+      enabled: true,
+      created_at: nowStr
+    };
+
+    if (existingIdx >= 0) {
+      this.autoAttendanceEmployees[existingIdx] = record;
+    } else {
+      this.autoAttendanceEmployees.push(record);
+    }
+
+    this.saveAutoAttendanceState();
+    this.closeAddAutoEmpModal();
+    utils.showToast(`Đã lưu đặc cách tự động đủ công cho nhân sự ${emp.full_name} (${emp.employee_id})!`, 'success');
+
+    this.renderAutoAttendance();
+
+    if (doRecalc) {
+      this.recalculateTimesheets();
+    }
+  },
+
+  removeAutoAttendance(empId) {
+    const item = (this.autoAttendanceEmployees || []).find(a => a.employee_id === empId);
+    const name = item ? item.full_name : empId;
+
+    if (!confirm(`Bạn có chắc chắn muốn hủy chế độ đặc cách tự động đủ công đối với nhân sự "${name}"?`)) return;
+
+    this.autoAttendanceEmployees = (this.autoAttendanceEmployees || []).filter(a => a.employee_id !== empId);
+    this.saveAutoAttendanceState();
+    utils.showToast(`Đã hủy đặc cách đối với ${name}!`, 'info');
+
+    this.renderAutoAttendance();
+    this.recalculateTimesheets();
+  },
+
+  clearAllAutoAttendance() {
+    if ((this.autoAttendanceEmployees || []).length === 0) {
+      utils.showToast('Danh sách đặc cách đang trống!', 'info');
+      return;
+    }
+
+    if (!confirm(`Bạn có chắc chắn muốn XÓA TOÀN BỘ ${(this.autoAttendanceEmployees || []).length} nhân sự khỏi danh sách đặc cách?`)) return;
+
+    this.autoAttendanceEmployees = [];
+    this.saveAutoAttendanceState();
+    utils.showToast('Đã xóa toàn bộ danh sách đặc cách!', 'info');
+
+    this.renderAutoAttendance();
+    this.recalculateTimesheets();
   },
 
   // ========================================================================
@@ -2252,6 +2603,78 @@ const appAttendance = {
       employees.forEach(emp => {
         const master = (appData.masterProfiles || []).find(m => m.employee_id === emp.employee_id) || {};
         const empCode = String(emp.attendance_code || emp.time_attendance_code || emp['Mã chấm công'] || master['Mã chấm công'] || master.time_attendance_code || master.attendance_code || '').trim();
+
+        // 1. Kiểm tra nếu nhân viên thuộc danh sách ĐẶC CÁCH TỰ ĐỘNG ĐỦ CÔNG
+        const autoConfig = this.isAutoAttendanceEmployee(emp.employee_id);
+        if (autoConfig) {
+          const deptCanonical = this.getCanonicalDeptName(emp.department_name || emp.department_id).toLowerCase().trim();
+          const deptSchedule = (appData.schedules || []).find(sc => {
+            const d = (sc.department_name || sc.department_id || '').toLowerCase().trim();
+            return d === deptCanonical || d === 'all';
+          });
+          const assignedShiftId = emp.shift_id || (deptSchedule ? deptSchedule.shift_id : 'CA-HC');
+          const shift = (appData.shifts || []).find(s => (s.shift_id || s.shift_code) === assignedShiftId) || {
+            shift_id: 'CA-HC',
+            shift_name: 'Ca Hành Chính',
+            start_time: '08:00',
+            end_time: '17:30',
+            work_units: 1.0,
+            standard_hours: 8.0
+          };
+
+          const stdWorkUnits = parseFloat(autoConfig.work_units) || parseFloat(shift.work_units) || 1.0;
+          const stdHours = parseFloat(autoConfig.standard_hours) || parseFloat(shift.standard_hours) || 8.0;
+
+          let empLogs = [];
+          if (empCode) {
+            const k1 = `${empCode}_${dt}`;
+            empLogs = empLogs.concat(logsByDateAndCode[k1] || []);
+          }
+          if (emp.employee_id) {
+            const k2 = `${emp.employee_id}_${dt}`;
+            if (logsByDateAndCode[k2]) {
+              logsByDateAndCode[k2].forEach(l => {
+                if (!empLogs.includes(l)) empLogs.push(l);
+              });
+            }
+          }
+          empLogs.sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
+
+          let checkIn = shift.start_time || '08:00';
+          let checkOut = shift.end_time || '17:30';
+          if (empLogs.length > 0) {
+            checkIn = empLogs[0].timestamp.substring(11, 16);
+            if (empLogs.length > 1) {
+              const last = empLogs[empLogs.length - 1].timestamp.substring(11, 16);
+              if (last !== checkIn) checkOut = last;
+            }
+          }
+
+          computedTimesheets.push({
+            timesheet_id: `TS_${emp.employee_id}_${dt}`,
+            employee_id: emp.employee_id,
+            attendance_code: empCode || 'AUTO',
+            full_name: emp.full_name,
+            department_name: emp.department_name,
+            date: dt,
+            day_name: dName,
+            shift_id: shift.shift_id || assignedShiftId,
+            shift_name: shift.shift_name || 'Ca Hành Chính',
+            check_in: checkIn,
+            check_out: checkOut,
+            late_minutes: 0,
+            early_minutes: 0,
+            work_units: stdWorkUnits,
+            total_work_hours: stdHours,
+            ot_hours: 0,
+            total_all_hours: stdHours,
+            status: 'VALID',
+            is_locked: false,
+            is_manual_edited: false,
+            note: autoConfig.reason ? `Đặc cách: ${autoConfig.reason}` : 'Đặc cách tự động đủ công (Miễn quẹt thẻ)'
+          });
+          return;
+        }
 
         // Nếu nhân viên không có mã chấm công -> Không áp dụng chấm công máy
         if (!empCode) {
