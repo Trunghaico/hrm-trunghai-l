@@ -1880,6 +1880,7 @@ const appAttendance = {
     });
 
     appData.timesheets = computedTimesheets;
+    this.saveLocalAttendanceState();
     utils.showToast(`Đã tính toán thành công ${computedTimesheets.length} bản ghi công thực tế!`, 'success');
     this.renderTimesheets();
     this.renderDashboard();
@@ -1980,6 +1981,7 @@ const appAttendance = {
 
       // Recalculate timesheets & render UI
       await this.recalculateTimesheets();
+      this.saveLocalAttendanceState();
       this.renderDevices();
       this.renderRawLogs();
 
@@ -2075,6 +2077,7 @@ const appAttendance = {
 
       // 5. Recalculate timesheets
       await this.recalculateTimesheets();
+      this.saveLocalAttendanceState();
       this.renderDevices();
       this.renderRawLogs();
 
@@ -2256,6 +2259,7 @@ const appAttendance = {
     if (idx >= 0) {
       appData.timesheets[idx] = { ...appData.timesheets[idx], check_in: checkIn, check_out: checkOut, work_units: workUnits, ot_hours: otHours, status, note, is_manual_edited: true };
     }
+    this.saveLocalAttendanceState();
     utils.showToast('Cập nhật bảng công thủ công thành công!', 'success');
     this.closeManualEditModal();
     this.renderTimesheets();
@@ -2297,6 +2301,7 @@ const appAttendance = {
         : '<i class="fa-solid fa-lock"></i> Khóa Sổ / Chốt Công';
     }
     utils.showToast(newLockState ? `Đã khóa sổ chốt công tháng ${this.currentMonth} thành công!` : `Đã mở khóa sổ tháng ${this.currentMonth}!`, 'success');
+    this.saveLocalAttendanceState();
     this.renderTimesheets();
   },
 
@@ -2700,6 +2705,28 @@ const appAttendance = {
       document.body.removeChild(a2);
       utils.showToast('Đã tải xuống bộ cài đặt Agent tự động (install_agent_task.bat & ronald_jack_agent.ps1)!', 'success');
     }, 400);
+  },
+
+  saveLocalAttendanceState() {
+    try {
+      if (appData.attendanceLogs && Array.isArray(appData.attendanceLogs)) {
+        localStorage.setItem('hrm_attendance_logs', JSON.stringify(appData.attendanceLogs));
+      }
+      if (appData.timesheets && Array.isArray(appData.timesheets)) {
+        localStorage.setItem('hrm_attendance_timesheets', JSON.stringify(appData.timesheets));
+      }
+      if (this.devices && Array.isArray(this.devices)) {
+        localStorage.setItem('hrm_attendance_devices', JSON.stringify(this.devices));
+      }
+      if (appData.attendanceRequests && Array.isArray(appData.attendanceRequests)) {
+        localStorage.setItem('hrm_attendance_requests', JSON.stringify(appData.attendanceRequests));
+      }
+      if (appData.shifts && Array.isArray(appData.shifts)) {
+        localStorage.setItem('hrm_attendance_shifts', JSON.stringify(appData.shifts));
+      }
+    } catch (err) {
+      console.warn('Lỗi lưu trữ dữ liệu chấm công vào LocalStorage/Database:', err);
+    }
   }
 };
 

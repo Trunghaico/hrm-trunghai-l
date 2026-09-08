@@ -78,8 +78,45 @@ const appData = {
         this.timesheets = json.tables['19_Attendance_Timesheets'] || [];
         this.attendanceDevices = json.tables['20_Attendance_Devices'] || [];
 
-        // Hỗ trợ lưu trữ offline / fallback cho ca làm việc và máy chấm công
+        // Hỗ trợ lưu trữ bền vững (Persistence Storage) cho chấm công, bảng công, ca & máy chấm công
         try {
+          const localLogs = localStorage.getItem('hrm_attendance_logs');
+          if (localLogs) {
+            const parsedLogs = JSON.parse(localLogs);
+            if (Array.isArray(parsedLogs) && parsedLogs.length > 0) {
+              const existingKeys = new Set((this.attendanceLogs || []).map(l => `${l.attendance_code}_${l.timestamp}`));
+              parsedLogs.forEach(p => {
+                const k = `${p.attendance_code}_${p.timestamp}`;
+                if (!existingKeys.has(k)) {
+                  this.attendanceLogs.push(p);
+                  existingKeys.add(k);
+                }
+              });
+            }
+          }
+
+          const localTs = localStorage.getItem('hrm_attendance_timesheets');
+          if (localTs) {
+            const parsedTs = JSON.parse(localTs);
+            if (Array.isArray(parsedTs) && parsedTs.length > 0) {
+              this.timesheets = parsedTs;
+            }
+          }
+
+          const localReqs = localStorage.getItem('hrm_attendance_requests');
+          if (localReqs) {
+            const parsedReqs = JSON.parse(localReqs);
+            if (Array.isArray(parsedReqs) && parsedReqs.length > 0) {
+              const existingIds = new Set((this.attendanceRequests || []).map(r => r.request_id));
+              parsedReqs.forEach(r => {
+                if (!existingIds.has(r.request_id)) {
+                  this.attendanceRequests.unshift(r);
+                  existingIds.add(r.request_id);
+                }
+              });
+            }
+          }
+
           const localDevs = localStorage.getItem('hrm_attendance_devices');
           if (localDevs) {
             const parsedDevs = JSON.parse(localDevs);
@@ -87,6 +124,7 @@ const appData = {
               this.attendanceDevices = parsedDevs;
             }
           }
+
           const localShifts = localStorage.getItem('hrm_attendance_shifts');
           if (localShifts) {
             const parsedShifts = JSON.parse(localShifts);
@@ -94,7 +132,9 @@ const appData = {
               this.shifts = parsedShifts;
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('Cannot read local attendance storage:', e);
+        }
 
         // Tự động đồng bộ / tự chữa lành (auto-heal) danh bạ liên hệ nếu thiếu
         if ((this.contacts || []).length < (this.employees || []).length) {

@@ -4265,102 +4265,137 @@
 
 <!-- Modal Đồng Bộ Máy Chấm Công & Ronald Jack Pro -->
 <div class="modal-backdrop" id="modal-att-sync-options">
-  <div class="modal-dialog" style="max-width: 580px;">
-    <div class="modal-header" style="background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); color: #fff; border-radius: var(--radius-md) var(--radius-md) 0 0; padding: 16px 20px;">
-      <div>
-        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;"><i class="fa-solid fa-rotate"></i> Đồng Bộ Máy Chấm Công Ronald Jack Pro</h3>
-        <p style="margin: 2px 0 0 0; font-size: 12px; color: #DBEAFE;">Liên kết trực tiếp thiết bị quẹt thẻ & CSDL SQL Server phần mềm Ronald Jack</p>
+  <div class="modal-dialog" style="max-width: 600px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+    <div class="modal-header" style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #2563EB 100%); color: #fff; padding: 18px 22px; position: relative;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #60A5FA;">
+          <i class="fa-solid fa-arrows-rotate fa-spin-pulse"></i>
+        </div>
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">Trung Tâm Đồng Bộ Ronald Jack Pro</h3>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: #93C5FD;">Liên kết dữ liệu chấm công máy & CSDL SQL Server Mitaco Pro 2026</p>
+        </div>
       </div>
-      <button class="modal-close" onclick="appAttendance.closeSyncModal()" style="color: #fff; opacity: 0.85;">&times;</button>
+      <button class="modal-close" onclick="appAttendance.closeSyncModal()" style="color: #fff; opacity: 0.85; font-size: 20px; cursor: pointer; border: none; background: transparent;">&times;</button>
     </div>
-    <div class="modal-body" style="padding: 20px;">
-      <!-- Connection Status Card -->
-      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px;">
-        <div style="font-size: 12px; font-weight: 700; color: #1E293B; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-          <span><i class="fa-solid fa-server" style="color: #2563EB;"></i> Nguồn Dữ Liệu Đã Liên Kết:</span>
-          <span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0;"><i class="fa-solid fa-circle" style="font-size: 7px;"></i> Sẵn Sàng Kết Nối</span>
+
+    <div class="modal-body" style="padding: 22px; background: #FAF5FF; background: #F8FAFC;">
+      <!-- Anti-Conflict Guarantee Banner -->
+      <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+        <div style="width: 28px; height: 28px; border-radius: 50%; background: #DCFCE7; color: #16A34A; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px;">
+          <i class="fa-solid fa-shield-halved"></i>
         </div>
-        <div style="font-size: 12.5px; color: #334155; line-height: 1.8;">
-          <div style="display: flex; justify-content: space-between;">
-            <span><i class="fa-solid fa-database" style="width: 18px; color: #D97706;"></i> CSDL SQL Ronald Jack Pro:</span>
-            <strong style="font-family: monospace; color: #1E40AF;">113.161.53.133 (mitaco)</strong>
+        <div style="font-size: 12px; color: #166534; line-height: 1.4;">
+          <strong>Cơ chế Khử Trùng Lặp (Deduplication):</strong> Dùng đồng thời cả 2 cách đồng bộ (SQL CSDL & IP Máy) <strong>hoàn toàn không xung đột</strong>. Mỗi lượt quẹt được kiểm tra duy nhất theo <code>Mã CC + Thời gian</code>.
+        </div>
+      </div>
+
+      <!-- Live Connection Status Card -->
+      <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #F1F5F9; padding-bottom: 6px;">
+          <span style="text-transform: uppercase; letter-spacing: 0.5px; font-size: 11px; color: #64748B;"><i class="fa-solid fa-server" style="color: #2563EB;"></i> Trạng Thái Kết Nối Trực Tiếp</span>
+          <span class="badge" style="background: #DCFCE7; color: #15803D; border: 1px solid #86EFAC; font-size: 11px; padding: 2px 8px;"><i class="fa-solid fa-circle" style="font-size: 6px; margin-right: 4px;"></i> Trực Tuyến 24/7</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+          <div style="background: #F8FAFC; padding: 8px 10px; border-radius: 6px; border: 1px solid #F1F5F9;">
+            <div style="color: #64748B; font-size: 11px;"><i class="fa-solid fa-database" style="color: #D97706;"></i> CSDL SQL Server:</div>
+            <strong style="color: #1E40AF; font-family: monospace; font-size: 12.5px;">113.161.53.133 / mitaco</strong>
           </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span><i class="fa-solid fa-microchip" style="width: 18px; color: #2563EB;"></i> Thiết bị phần cứng:</span>
-            <strong>3 Máy (Port 5005 - 5007)</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span><i class="fa-solid fa-fingerprint" style="width: 18px; color: #059669;"></i> Log quẹt thẻ hiện có:</span>
-            <strong id="att-sync-modal-log-count">535 lượt quẹt</strong>
+          <div style="background: #F8FAFC; padding: 8px 10px; border-radius: 6px; border: 1px solid #F1F5F9;">
+            <div style="color: #64748B; font-size: 11px;"><i class="fa-solid fa-microchip" style="color: #2563EB;"></i> Máy chấm công IP:</div>
+            <strong style="color: #047857; font-size: 12.5px;">3 Máy (Port 5005-5007)</strong>
           </div>
         </div>
       </div>
 
-      <!-- Sync Actions -->
+      <!-- Sync Options Buttons -->
       <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
-        <button class="btn btn-primary" onclick="appAttendance.executeFullRonaldJackSync()" style="padding: 12px 16px; justify-content: flex-start; text-align: left; font-size: 13px; font-weight: 600;">
-          <i class="fa-solid fa-bolt" style="font-size: 16px; margin-right: 10px; color: #FCD34D;"></i>
-          <div>
-            <div>Đồng Bộ Nhanh Từ CSDL Ronald Jack Pro & Tính Công Ngay</div>
-            <div style="font-size: 11px; font-weight: 400; opacity: 0.85;">Kéo toàn bộ log chấm công mới nhất, đối soát mã chấm công và tính lại bảng công tức thì</div>
+        <!-- Option 1: Full SQL Sync -->
+        <button type="button" class="btn" onclick="appAttendance.executeFullRonaldJackSync()" style="background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%); color: #fff; padding: 14px 18px; border: none; border-radius: 8px; cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 4px 12px rgba(37,99,235,0.25);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(37,99,235,0.35)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(37,99,235,0.25)'">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #FEF08A;">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+              <div style="font-size: 13.5px; font-weight: 700; color: #fff;">1. Đồng Bộ Nhanh Từ CSDL Ronald Jack Pro</div>
+              <div style="font-size: 11.5px; color: #DBEAFE; font-weight: 400; margin-top: 2px;">Kéo toàn bộ log chấm công mới nhất, lưu trữ database và tự động tính bảng công</div>
+            </div>
           </div>
+          <span style="background: rgba(255,255,255,0.2); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap;">Khuyên Dùng</span>
         </button>
 
-        <button class="btn btn-secondary" onclick="appAttendance.pingAllDevicesAndSync()" style="padding: 10px 16px; justify-content: flex-start; text-align: left; font-size: 12.5px;">
-          <i class="fa-solid fa-network-wired" style="font-size: 15px; margin-right: 10px; color: #2563EB;"></i>
-          <div>
-            <div style="font-weight: 600;">Kéo Trực Tiếp Từ 3 Máy Chấm Công IP (Port 5005-5007)</div>
-            <div style="font-size: 11px; color: #64748B;">Kết nối tới máy Tầng Trệt, Lầu 2, Lầu 3 qua giao thức ZK / IP</div>
+        <!-- Option 2: Direct IP Ping & Pull -->
+        <button type="button" class="btn btn-secondary" onclick="appAttendance.pingAllDevicesAndSync()" style="background: #fff; border: 1px solid #CBD5E1; padding: 12px 18px; border-radius: 8px; cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: background 0.15s;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#fff'">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 38px; height: 38px; border-radius: 8px; background: #EFF6FF; color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+              <i class="fa-solid fa-network-wired"></i>
+            </div>
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: #1E293B;">2. Kéo Trực Tiếp Từ 3 Máy Chấm Công IP (5005 - 5007)</div>
+              <div style="font-size: 11.5px; color: #64748B; margin-top: 1px;">Gửi lệnh kết nối TCP socket tới máy Tầng Trệt, Lầu 2, Lầu 3 tại xưởng</div>
+            </div>
           </div>
+          <i class="fa-solid fa-chevron-right" style="color: #94A3B8; font-size: 12px;"></i>
         </button>
 
-        <button class="btn btn-secondary" onclick="appAttendance.goToZkSoftwareTab()" style="padding: 10px 16px; justify-content: flex-start; text-align: left; font-size: 12.5px;">
-          <i class="fa-solid fa-sliders" style="font-size: 15px; margin-right: 10px; color: #7C3AED;"></i>
-          <div>
-            <div style="font-weight: 600;">Mở Cấu Hình Máy Chấm Công & Phần Mềm Ronald Jack Pro</div>
-            <div style="font-size: 11px; color: #64748B;">Đổi IP máy, cấu hình SQL Server hoặc cài Agent đồng bộ tự động</div>
+        <!-- Option 3: Config & Agent -->
+        <button type="button" class="btn btn-secondary" onclick="appAttendance.goToZkSoftwareTab()" style="background: #fff; border: 1px solid #CBD5E1; padding: 10px 18px; border-radius: 8px; cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 12px;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#fff'">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 38px; height: 38px; border-radius: 8px; background: #FAF5FF; color: #7C3AED; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+              <i class="fa-solid fa-sliders"></i>
+            </div>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: #1E293B;">3. Cấu Hình Máy Chấm Công & Agent Tự Động</div>
+              <div style="font-size: 11.5px; color: #64748B;">Đổi IP máy, thiết lập chu kỳ đồng bộ nền hoặc chạy file agent</div>
+            </div>
           </div>
+          <i class="fa-solid fa-chevron-right" style="color: #94A3B8; font-size: 12px;"></i>
         </button>
       </div>
 
       <!-- Sync Progress Box -->
-      <div id="att-sync-progress-box" style="display: none; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: #1E40AF;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-          <i class="fa-solid fa-spinner fa-spin" style="font-size: 14px;"></i>
-          <span id="att-sync-progress-text" style="font-weight: 600;">Đang kết nối CSDL SQL Ronald Jack Pro...</span>
+      <div id="att-sync-progress-box" style="display: none; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 14px 16px; font-size: 12px; color: #1E40AF;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 15px; color: #2563EB;"></i>
+            <span id="att-sync-progress-text" style="font-weight: 600;">Đang kết nối CSDL SQL Ronald Jack Pro...</span>
+          </div>
+          <span id="att-sync-progress-pct" style="font-weight: 700; color: #2563EB;">35%</span>
         </div>
         <div style="width: 100%; height: 6px; background: #DBEAFE; border-radius: 3px; overflow: hidden;">
-          <div id="att-sync-progress-bar" style="width: 30%; height: 100%; background: #2563EB; transition: width 0.3s ease;"></div>
+          <div id="att-sync-progress-bar" style="width: 35%; height: 100%; background: #2563EB; transition: width 0.3s ease;"></div>
         </div>
       </div>
     </div>
-    <div class="modal-footer" style="padding: 10px 18px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
-      <button class="btn btn-secondary btn-sm" onclick="appAttendance.closeSyncModal()">Đóng</button>
+
+    <div class="modal-footer" style="padding: 12px 22px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 11.5px; color: #64748B;"><i class="fa-solid fa-database"></i> Dữ liệu tự động lưu trữ vĩnh viễn</span>
+      <button class="btn btn-secondary btn-sm" onclick="appAttendance.closeSyncModal()" style="padding: 6px 16px;">Đóng</button>
     </div>
   </div>
 </div>
 
 <!-- JavaScript Application Modules -->
-<script src="js/data.js?v=3.9.6"></script>
-<script src="js/auth.js?v=3.9.6"></script>
-<script src="js/company.js?v=3.9.6"></script>
-<script src="js/dashboard.js?v=3.9.6"></script>
-<script src="js/profile-fields.js?v=3.9.6"></script>
-<script src="js/employees.js?v=3.9.6"></script>
-<script src="js/import.js?v=3.9.6"></script>
-<script src="js/resigned.js?v=3.9.6"></script>
-<script src="js/template-trunghai.js?v=3.9.6"></script>
-<script src="js/contract-merge.js?v=3.9.6"></script>
-<script src="js/contracts.js?v=3.9.6"></script>
-<script src="js/organization.js?v=3.9.6"></script>
-<script src="js/org-import.js?v=3.9.6"></script>
-<script src="js/reports.js?v=3.9.6"></script>
-<script src="js/attendance.js?v=3.9.6"></script>
-<script src="js/accounts.js?v=3.9.6"></script>
-<script src="js/logs.js?v=3.9.6"></script>
-<script src="js/trash.js?v=3.9.6"></script>
-<script src="js/app.js?v=3.9.6"></script>
-<script src="js/pwa.js?v=3.9.6"></script>
+<script src="js/data.js?v=3.9.7"></script>
+<script src="js/auth.js?v=3.9.7"></script>
+<script src="js/company.js?v=3.9.7"></script>
+<script src="js/dashboard.js?v=3.9.7"></script>
+<script src="js/profile-fields.js?v=3.9.7"></script>
+<script src="js/employees.js?v=3.9.7"></script>
+<script src="js/import.js?v=3.9.7"></script>
+<script src="js/resigned.js?v=3.9.7"></script>
+<script src="js/template-trunghai.js?v=3.9.7"></script>
+<script src="js/contract-merge.js?v=3.9.7"></script>
+<script src="js/contracts.js?v=3.9.7"></script>
+<script src="js/organization.js?v=3.9.7"></script>
+<script src="js/org-import.js?v=3.9.7"></script>
+<script src="js/reports.js?v=3.9.7"></script>
+<script src="js/attendance.js?v=3.9.7"></script>
+<script src="js/accounts.js?v=3.9.7"></script>
+<script src="js/logs.js?v=3.9.7"></script>
+<script src="js/trash.js?v=3.9.7"></script>
+<script src="js/app.js?v=3.9.7"></script>
+<script src="js/pwa.js?v=3.9.7"></script>
 
 </body>
 </html>
