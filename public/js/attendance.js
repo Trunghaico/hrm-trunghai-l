@@ -1906,8 +1906,8 @@ const appAttendance = {
           }
         }
 
-        // Sắp xếp tăng dần theo timestamp
-        empLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        // Sắp xếp tăng dần theo timestamp (chuẩn xác 100% không bị lỗi NaN)
+        empLogs.sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
 
         let checkIn = '';
         let checkOut = '';
