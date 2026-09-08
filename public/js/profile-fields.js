@@ -673,6 +673,9 @@ function fillFormModalData(masterData = {}, isEdit = false) {
     } else if (f.key === 'Mã đơn vị công tác') {
       if (typeof appData !== 'undefined' && appData.getDepartmentId) {
         val = appData.getDepartmentId(val || masterData.department_id || masterData['Đơn vị công tác'] || masterData.department_name);
+      } else if (!val && masterData.department_id) {
+        val = masterData.department_id;
+      }
     } else if (f.key === 'Mã chấm công') {
       val = (val !== undefined && val !== null && val !== '') ? val : (masterData.time_attendance_code || masterData.attendance_code || '');
     }
