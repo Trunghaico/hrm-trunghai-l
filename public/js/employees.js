@@ -10,8 +10,6 @@ const appEmployees = {
   selectedEmployee: null,
   selectionMode: false,
   selectedEmpIds: new Set(),
-  selectedDeptIds: new Set(),
-  allDeptIds: new Set(),
   exportSelectedKeys: null,
 
   init() {
@@ -33,7 +31,74 @@ const appEmployees = {
   },
 
   populateFilterDropdowns() {
-    this.renderDeptMultiSelect();
+    // 1. Department filter (Clean deduplicated departments with checkmark symbol)
+    const deptSelect = document.getElementById('emp-filter-dept');
+    if (deptSelect) {
+      const companies = appData.companies || [];
+      const departments = (appData.departments || []).filter(d => {
+        if (!d || !d.department_id) return false;
+        // Strictly exclude dummy departments
+        if (d.department_id === 'TN' || d.department_id === 'THG' || d.department_id === 'CTY') return false;
+        return true;
+      });
+
+      let html = `<option value="">-- Tất cả Công ty / Phòng ban --</option>`;
+
+      companies.forEach(comp => {
+        const cId = comp.company_id;
+        const compName = comp.company_name;
+
+        // Real child departments (strictly exclude any item identical to company name or company id)
+        const childDepts = departments.filter(d => {
+          if (d.department_id === cId) return false;
+          if (d.department_name && d.department_name.trim().toLowerCase() === compName.trim().toLowerCase()) return false;
+          if (d.company_id === cId) return true;
+          if (d.department_id && (d.department_id.endsWith('.' + cId) || d.department_id.startsWith(cId + '_') || d.department_id.startsWith(cId + '-'))) return true;
+          return false;
+        });
+
+        const compEmpCount = (appData.employees || []).filter(e => {
+          if (e.company_id === cId) return true;
+          const ed = e.department_id || '';
+          if (childDepts.some(d => d.department_id === ed)) return true;
+          if (ed.endsWith('.' + cId) || ed.startsWith(cId + '_') || ed.startsWith(cId + '-')) return true;
+          return false;
+        }).length;
+
+        html += `<optgroup label="🏢 ${compName} (${cId})">`;
+        html += `<option value="COMP:${cId}">🏢 Toàn bộ ${compName} (${compEmpCount} nhân sự)</option>`;
+
+        childDepts.forEach(d => {
+          const deptEmpCount = (appData.employees || []).filter(e => e.department_id === d.department_id).length;
+          const countLabel = deptEmpCount > 0 ? ` (${deptEmpCount})` : '';
+          html += `<option value="${d.department_id}">☑ ${d.department_name}${countLabel}</option>`;
+        });
+
+        html += `</optgroup>`;
+      });
+
+      // Any unassigned departments (if any)
+      const assignedDeptIds = new Set();
+      companies.forEach(comp => {
+        departments.forEach(d => {
+          if (d.company_id === comp.company_id || (d.department_id && d.department_id.endsWith('.' + comp.company_id))) {
+            assignedDeptIds.add(d.department_id);
+          }
+        });
+      });
+      const unassigned = departments.filter(d => !assignedDeptIds.has(d.department_id));
+      if (unassigned.length > 0) {
+        html += `<optgroup label="📁 Đơn vị / Phòng ban khác">`;
+        unassigned.forEach(d => {
+          const count = (appData.employees || []).filter(e => e.department_id === d.department_id).length;
+          const countLabel = count > 0 ? ` (${count})` : '';
+          html += `<option value="${d.department_id}">☑ ${d.department_name}${countLabel}</option>`;
+        });
+        html += `</optgroup>`;
+      }
+
+      deptSelect.innerHTML = html;
+    }
 
     // Direct manager dropdown for form
     const formMgrSelect = document.getElementById('form-direct-mgr');
@@ -47,255 +112,11 @@ const appEmployees = {
     this.populateCompanyDeptPosDropdowns();
   },
 
-  toggleDeptDropdown(forceOpen) {
-    const dd = document.getElementById('dept-multiselect-dropdown');
-    if (!dd) return;
-    if (typeof forceOpen === 'boolean') {
-      if (forceOpen) dd.classList.add('show');
-      else dd.classList.remove('show');
-    } else {
-      dd.classList.toggle('show');
-    }
-  },
-
-  renderDeptMultiSelect() {
-    const listEl = document.getElementById('dept-multiselect-list');
-    if (!listEl) return;
-
-    const companies = appData.companies || [];
-    const departments = (appData.departments || []).filter(d => {
-      if (!d || !d.department_id) return false;
-      // STRICT DEDUPLICATION: Exclude any department that matches company name or company id
-      if (d.department_id === 'TN' || d.department_id === 'THG' || d.department_id === 'CTY') return false;
-      const comp = companies.find(c => c.company_id === d.company_id);
-      if (comp && d.department_name && d.department_name.trim().toLowerCase() === comp.company_name.trim().toLowerCase()) return false;
-      return true;
-    });
-
-    this.allDeptIds.clear();
-    let html = '';
-
-    companies.forEach(comp => {
-      const cId = comp.company_id;
-      const compName = comp.company_name;
-
-      // Real departments belonging to this company (excluding company duplicates)
-      const childDepts = departments.filter(d => {
-        if (d.department_id === cId || d.department_id === 'CTY') return false;
-        if (d.department_name && d.department_name.trim().toLowerCase() === compName.trim().toLowerCase()) return false;
-        if (d.company_id === cId) return true;
-        if (d.department_id && (d.department_id.endsWith('.' + cId) || d.department_id.startsWith(cId + '_') || d.department_id.startsWith(cId + '-'))) return true;
-        return false;
-      });
-
-      // Count total employees belonging to this company
-      const compEmpCount = (appData.employees || []).filter(e => {
-        if (e.company_id === cId) return true;
-        const ed = e.department_id || '';
-        if (childDepts.some(d => d.department_id === ed)) return true;
-        if (ed.endsWith('.' + cId) || ed.startsWith(cId + '_') || ed.startsWith(cId + '-')) return true;
-        return false;
-      }).length;
-
-      html += `<div class="dept-company-group" data-comp-id="${cId}">`;
-      html += `  <div class="dept-company-header" onclick="appEmployees.handleCompHeaderClick(event, '${cId}')">`;
-      html += `    <input type="checkbox" class="dept-comp-cb" id="dept-comp-cb-${cId}" data-comp-id="${cId}" onchange="appEmployees.toggleCompanySelection('${cId}', this.checked)">`;
-      html += `    <span class="dept-item-name" style="font-weight: 700;">🏢 ${compName} (${cId})</span>`;
-      html += `    <span class="dept-item-count">${compEmpCount}</span>`;
-      html += `  </div>`;
-
-      childDepts.forEach(d => {
-        this.allDeptIds.add(d.department_id);
-        const deptEmpCount = (appData.employees || []).filter(e => e.department_id === d.department_id).length;
-        html += `  <label class="dept-checkbox-item" data-dept-id="${d.department_id}" data-dept-name="${d.department_name.toLowerCase()}">`;
-        html += `    <input type="checkbox" class="dept-item-cb" data-dept-id="${d.department_id}" data-comp-id="${cId}" onchange="appEmployees.toggleDeptSelection('${d.department_id}', this.checked)">`;
-        html += `    <span class="dept-item-name">${d.department_name}</span>`;
-        html += `    <span class="dept-item-count">${deptEmpCount}</span>`;
-        html += `  </label>`;
-      });
-
-      html += `</div>`;
-    });
-
-    listEl.innerHTML = html;
-
-    // By default, select all departments
-    this.selectAllDepts(false);
-  },
-
-  handleCompHeaderClick(event, compId) {
-    if (event.target.tagName === 'INPUT') return;
-    const cb = document.getElementById(`dept-comp-cb-${compId}`);
-    if (cb) {
-      cb.checked = !cb.checked;
-      this.toggleCompanySelection(compId, cb.checked);
-    }
-  },
-
-  toggleDeptSelection(deptId, isChecked) {
-    if (isChecked) {
-      this.selectedDeptIds.add(deptId);
-    } else {
-      this.selectedDeptIds.delete(deptId);
-    }
-    const itemCb = document.querySelector(`.dept-item-cb[data-dept-id="${deptId}"]`);
-    if (itemCb) {
-      const compId = itemCb.getAttribute('data-comp-id');
-      this.updateCompanyCheckboxState(compId);
-    }
-    this.updateDeptFilterTriggerLabel();
-    this.currentPage = 1;
-    this.applyFilters();
-  },
-
-  toggleCompanySelection(compId, isChecked) {
-    const compGroup = document.querySelector(`.dept-company-group[data-comp-id="${compId}"]`);
-    if (!compGroup) return;
-    const cbs = compGroup.querySelectorAll('.dept-item-cb');
-    cbs.forEach(cb => {
-      cb.checked = isChecked;
-      const dId = cb.getAttribute('data-dept-id');
-      if (isChecked) {
-        this.selectedDeptIds.add(dId);
-      } else {
-        this.selectedDeptIds.delete(dId);
-      }
-    });
-    this.updateCompanyCheckboxState(compId);
-    this.updateDeptFilterTriggerLabel();
-    this.currentPage = 1;
-    this.applyFilters();
-  },
-
-  updateCompanyCheckboxState(compId) {
-    const compCb = document.getElementById(`dept-comp-cb-${compId}`);
-    const compGroup = document.querySelector(`.dept-company-group[data-comp-id="${compId}"]`);
-    if (!compCb || !compGroup) return;
-    const cbs = Array.from(compGroup.querySelectorAll('.dept-item-cb'));
-    if (cbs.length === 0) return;
-    const checkedCount = cbs.filter(cb => cb.checked).length;
-    if (checkedCount === 0) {
-      compCb.checked = false;
-      compCb.indeterminate = false;
-    } else if (checkedCount === cbs.length) {
-      compCb.checked = true;
-      compCb.indeterminate = false;
-    } else {
-      compCb.checked = false;
-      compCb.indeterminate = true;
-    }
-  },
-
-  selectAllDepts(shouldApply = true) {
-    this.selectedDeptIds = new Set(this.allDeptIds);
-    document.querySelectorAll('.dept-item-cb').forEach(cb => cb.checked = true);
-    document.querySelectorAll('.dept-comp-cb').forEach(cb => {
-      cb.checked = true;
-      cb.indeterminate = false;
-    });
-    this.updateDeptFilterTriggerLabel();
-    if (shouldApply) {
-      this.currentPage = 1;
-      this.applyFilters();
-    }
-  },
-
-  deselectAllDepts() {
-    this.selectedDeptIds.clear();
-    document.querySelectorAll('.dept-item-cb').forEach(cb => cb.checked = false);
-    document.querySelectorAll('.dept-comp-cb').forEach(cb => {
-      cb.checked = false;
-      cb.indeterminate = false;
-    });
-    this.updateDeptFilterTriggerLabel();
-    this.currentPage = 1;
-    this.applyFilters();
-  },
-
-  filterDeptListBySearch(query) {
-    const q = (query || '').toLowerCase().trim();
-    document.querySelectorAll('.dept-company-group').forEach(group => {
-      let anyMatch = false;
-      group.querySelectorAll('.dept-checkbox-item').forEach(item => {
-        const dName = item.getAttribute('data-dept-name') || '';
-        const dId = (item.getAttribute('data-dept-id') || '').toLowerCase();
-        if (!q || dName.includes(q) || dId.includes(q)) {
-          item.style.display = 'flex';
-          anyMatch = true;
-        } else {
-          item.style.display = 'none';
-        }
-      });
-      group.style.display = (anyMatch || !q) ? 'block' : 'none';
-    });
-  },
-
-  updateDeptFilterTriggerLabel() {
-    const label = document.getElementById('dept-filter-label');
-    const badge = document.getElementById('dept-filter-badge');
-    const countLabel = document.getElementById('dept-selected-count-label');
-    const hiddenInput = document.getElementById('emp-filter-dept');
-
-    const total = this.allDeptIds.size;
-    const selected = this.selectedDeptIds.size;
-
-    if (countLabel) {
-      if (selected === total) {
-        countLabel.textContent = `Đang hiện: Tất cả phòng ban (${total})`;
-      } else if (selected === 0) {
-        countLabel.textContent = 'Chưa chọn phòng ban nào';
-      } else {
-        countLabel.textContent = `Đã chọn: ${selected} / ${total} phòng ban`;
-      }
-    }
-
-    if (hiddenInput) {
-      hiddenInput.value = selected === total ? '' : Array.from(this.selectedDeptIds).join(',');
-    }
-
-    if (!label) return;
-
-    if (selected === total || (total === 0 && selected === 0)) {
-      label.textContent = 'Phòng ban: Tất cả';
-      if (badge) badge.style.display = 'none';
-    } else if (selected === 0) {
-      label.textContent = 'Phòng ban: Chưa chọn';
-      if (badge) {
-        badge.textContent = '0';
-        badge.style.display = 'inline-block';
-        badge.style.background = '#EF4444';
-      }
-    } else if (selected === 1) {
-      const dId = Array.from(this.selectedDeptIds)[0];
-      const dName = appData.getDepartmentName ? appData.getDepartmentName(dId) : dId;
-      const shortName = dName.length > 20 ? dName.substring(0, 18) + '...' : dName;
-      label.textContent = shortName;
-      if (badge) badge.style.display = 'none';
-    } else {
-      label.textContent = 'Phòng ban: Đã chọn';
-      if (badge) {
-        badge.textContent = selected;
-        badge.style.display = 'inline-block';
-        badge.style.background = '#2563EB';
-      }
-    }
-  },
-
   setDepartmentFilter(deptId) {
-    if (!deptId) {
-      this.selectAllDepts();
-      return;
+    const deptSelect = document.getElementById('emp-filter-dept');
+    if (deptSelect) {
+      deptSelect.value = deptId || '';
     }
-    this.selectedDeptIds.clear();
-    const cleanId = appData.getDepartmentId ? appData.getDepartmentId(deptId) : deptId;
-    this.selectedDeptIds.add(cleanId);
-    document.querySelectorAll('.dept-item-cb').forEach(cb => {
-      const dId = cb.getAttribute('data-dept-id');
-      cb.checked = (dId === cleanId || dId === deptId);
-    });
-    const companies = appData.companies || [];
-    companies.forEach(c => this.updateCompanyCheckboxState(c.company_id));
-    this.updateDeptFilterTriggerLabel();
     this.currentPage = 1;
     this.applyFilters();
   },
@@ -391,8 +212,8 @@ const appEmployees = {
       });
     }
 
-    // Filters
-    ['emp-filter-status', 'emp-filter-nature'].forEach(id => {
+    // Filters (department, status, labor nature)
+    ['emp-filter-dept', 'emp-filter-status', 'emp-filter-nature'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener('change', () => {
@@ -408,11 +229,12 @@ const appEmployees = {
       resetBtn.addEventListener('click', () => {
         const sInput = document.getElementById('emp-search-input');
         if (sInput) sInput.value = '';
+        const deptSelect = document.getElementById('emp-filter-dept');
+        if (deptSelect) deptSelect.value = '';
         const st = document.getElementById('emp-filter-status');
         if (st) st.value = '';
         const na = document.getElementById('emp-filter-nature');
         if (na) na.value = '';
-        this.selectAllDepts(false);
         this.currentPage = 1;
         this.applyFilters();
       });
@@ -645,7 +467,6 @@ const appEmployees = {
   applyFilters() {
     const searchVal = (document.getElementById('emp-search-input')?.value || '').toLowerCase().trim();
     const deptVal = document.getElementById('emp-filter-dept')?.value || '';
-    const posVal = document.getElementById('emp-filter-pos')?.value || '';
     const statusVal = document.getElementById('emp-filter-status')?.value || '';
     const natureVal = document.getElementById('emp-filter-nature')?.value || '';
 
@@ -655,17 +476,36 @@ const appEmployees = {
     (appData.identity || []).forEach(i => idMap[i.employee_id] = i);
 
     this.filteredList = (appData.employees || []).filter(e => {
-      // 1. Multi-select Department Filter
-      if (this.selectedDeptIds) {
-        if (this.selectedDeptIds.size === 0) {
-          return false;
-        }
-        if (this.allDeptIds && this.allDeptIds.size > 0 && this.selectedDeptIds.size < this.allDeptIds.size) {
-          const empDept = e.department_id || '';
-          const normDept = appData.getDepartmentId ? appData.getDepartmentId(empDept) : empDept;
-          if (!this.selectedDeptIds.has(empDept) && !this.selectedDeptIds.has(normDept)) {
-            return false;
-          }
+      // 1. Department / Company filter
+      if (deptVal) {
+        if (deptVal.startsWith('COMP:')) {
+          const targetCompId = deptVal.replace('COMP:', '').trim();
+          const deptObj = (appData.departments || []).find(d => d.department_id === e.department_id);
+          const isCompMatch = (
+            e.company_id === targetCompId ||
+            (deptObj && deptObj.company_id === targetCompId) ||
+            (e.department_id && (
+              e.department_id.endsWith('.' + targetCompId) ||
+              e.department_id.startsWith(targetCompId + '_') ||
+              e.department_id.startsWith(targetCompId + '-') ||
+              e.department_id === targetCompId
+            )) ||
+            (targetCompId === 'THG' && (e.department_id === 'CTY' || e.department_id === 'THG')) ||
+            (targetCompId === 'PM' && (e.department_id === 'BDHDA.PM' || e.department_id === 'BGD.PM'))
+          );
+          if (!isCompMatch) return false;
+        } else {
+          const targetDeptObj = (appData.departments || []).find(d => d.department_id === deptVal);
+          const targetDeptName = (targetDeptObj?.department_name || (appData.deptMap && appData.deptMap[deptVal]) || '').toLowerCase().trim();
+          const empDeptName = ((appData.deptMap && appData.deptMap[e.department_id]) || e.department_name || '').toLowerCase().trim();
+          const normEmpDeptId = appData.getDepartmentId ? appData.getDepartmentId(e.department_id) : e.department_id;
+
+          const isDeptMatch = (
+            e.department_id === deptVal ||
+            normEmpDeptId === deptVal ||
+            (targetDeptName && empDeptName && targetDeptName === empDeptName)
+          );
+          if (!isDeptMatch) return false;
         }
       }
 

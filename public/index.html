@@ -363,55 +363,9 @@
                   <input type="text" id="emp-search-input" class="form-control" style="padding-left: 28px; width: 100%; font-size: 11px;" placeholder="Tìm tên, mã, SĐT, CCCD...">
                 </div>
 
-                <!-- Multi-select Department Filter -->
-                <div class="dept-multiselect-wrapper" style="position: relative; flex-shrink: 0;">
-                  <button type="button" class="btn btn-secondary btn-sm dept-filter-trigger" id="btn-emp-dept-filter" onclick="appEmployees.toggleDeptDropdown()" title="Tích chọn cụ thể các phòng ban muốn hiển thị" style="height: 32px; padding: 0 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-sm); font-weight: 500; white-space: nowrap; max-width: 260px;">
-                    <i class="fa-solid fa-sitemap" style="color: #2563EB; font-size: 11px;"></i>
-                    <span id="dept-filter-label" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Phòng ban: Tất cả</span>
-                    <span class="badge" id="dept-filter-badge" style="display: none; background: #2563EB; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 10px; font-weight: 700;"></span>
-                    <i class="fa-solid fa-chevron-down" style="font-size: 9px; color: #64748B; margin-left: 2px;"></i>
-                  </button>
-
-                  <div class="dept-multiselect-dropdown" id="dept-multiselect-dropdown">
-                    <!-- Dropdown Header -->
-                    <div class="dept-ms-header">
-                      <div class="dept-ms-title">
-                        <i class="fa-solid fa-filter" style="color: #2563EB;"></i>
-                        <span>TÍCH CHỌN PHÒNG BAN</span>
-                      </div>
-                      <div class="dept-ms-actions">
-                        <button type="button" class="btn-dept-action" onclick="appEmployees.selectAllDepts()">
-                          <i class="fa-solid fa-check-double"></i> Tất cả
-                        </button>
-                        <button type="button" class="btn-dept-action secondary" onclick="appEmployees.deselectAllDepts()">
-                          <i class="fa-regular fa-square"></i> Bỏ chọn
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Search within dropdown -->
-                    <div class="dept-ms-search-wrap">
-                      <i class="fa-solid fa-search"></i>
-                      <input type="text" id="dept-search-filter" class="form-control" placeholder="Tìm tên hoặc mã phòng ban..." oninput="appEmployees.filterDeptListBySearch(this.value)">
-                    </div>
-
-                    <!-- Scrollable list of companies & departments with checkboxes -->
-                    <div class="dept-ms-list" id="dept-multiselect-list">
-                      <!-- Dynamic -->
-                    </div>
-
-                    <!-- Dropdown Footer -->
-                    <div class="dept-ms-footer">
-                      <span id="dept-selected-count-label">Đang hiện: Tất cả phòng ban</span>
-                      <button type="button" class="btn btn-primary btn-sm btn-dept-close" onclick="appEmployees.toggleDeptDropdown(false)">
-                        Đóng
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Hidden input for backwards compatibility -->
-                  <input type="hidden" id="emp-filter-dept" value="">
-                </div>
+                <select id="emp-filter-dept" class="filter-select" style="min-width: 220px; max-width: 280px; flex-shrink: 0; font-size: 11px; padding: 0 4px 0 6px;">
+                  <option value="">-- Tất cả Công ty / Phòng ban --</option>
+                </select>
 
                 <select id="emp-filter-status" class="filter-select" style="width: 145px; flex-shrink: 0; font-size: 11px; padding: 0 4px 0 6px;">
                   <option value="">-- Trạng thái làm việc --</option>
