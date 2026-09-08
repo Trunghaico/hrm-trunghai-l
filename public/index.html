@@ -1538,14 +1538,33 @@
           <!-- Timesheet Filter Toolbar & Action Buttons -->
           <div class="filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; background: #F8FAFC; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); align-items: center;">
             <div style="display: flex; align-items: center; gap: 6px;">
-              <label for="att-month-picker" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0;">Tháng:</label>
-              <input type="month" id="att-month-picker" class="filter-select" style="height: 34px; font-weight: 600;">
+              <label for="att-from-date-picker" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Từ ngày:</label>
+              <input type="date" id="att-from-date-picker" class="filter-select" style="height: 34px; font-weight: 600;">
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
-              <label for="att-dept-select" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0;">Phòng ban:</label>
-              <select id="att-dept-select" class="filter-select" style="height: 34px; min-width: 170px;">
-                <option value="all">-- Tất cả phòng ban --</option>
-              </select>
+              <label for="att-to-date-picker" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Đến ngày:</label>
+              <input type="date" id="att-to-date-picker" class="filter-select" style="height: 34px; font-weight: 600;">
+            </div>
+            <div class="custom-multiselect" id="att-dept-multiselect-container" style="position: relative; display: flex; align-items: center; gap: 6px;">
+              <label style="font-size: 12px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Phòng ban:</label>
+              <div style="position: relative;">
+                <button type="button" id="att-dept-btn-toggle" class="filter-select" onclick="appAttendance.toggleDeptDropdown(event)" style="height: 34px; min-width: 220px; max-width: 320px; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; background: #fff; white-space: nowrap; overflow: hidden; padding: 0 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                  <span id="att-dept-selected-label" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #1E293B;">-- Tất cả phòng ban --</span>
+                  <i class="fa-solid fa-chevron-down" style="font-size: 10px; color: #64748B;"></i>
+                </button>
+                <div id="att-dept-dropdown-panel" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 330px; background: #fff; border: 1px solid #CBD5E1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1050; padding: 10px;">
+                  <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
+                    <input type="text" id="att-dept-search" placeholder="🔍 Tìm kiếm phòng ban..." oninput="appAttendance.filterDeptList(this.value)" style="width: 100%; height: 30px; font-size: 12px; padding: 4px 8px; border: 1px solid #CBD5E1; border-radius: 4px;">
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 11.5px; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 6px;">
+                    <a href="javascript:void(0)" onclick="appAttendance.selectAllDepts(true)" style="color: #2563EB; font-weight: 600; text-decoration: none;"><i class="fa-solid fa-check-double"></i> Chọn tất cả</a>
+                    <a href="javascript:void(0)" onclick="appAttendance.selectAllDepts(false)" style="color: #EF4444; font-weight: 600; text-decoration: none;"><i class="fa-solid fa-xmark"></i> Bỏ chọn</a>
+                  </div>
+                  <div id="att-dept-checkbox-list" style="overflow-y: auto; max-height: 220px; display: flex; flex-direction: column; gap: 3px;">
+                    <!-- Checkboxes populated dynamically by attendance.js -->
+                  </div>
+                </div>
+              </div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <label for="att-status-select" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0;">Trạng thái:</label>

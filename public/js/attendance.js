@@ -6,8 +6,12 @@
 const appAttendance = {
   currentSubTab: 'dashboard', // dashboard | shifts | requests | devices | portal
   currentMonth: new Date().toISOString().substring(0, 7), // YYYY-MM
+  fromDate: new Date().toISOString().substring(0, 7) + '-01', // YYYY-MM-01
+  toDate: new Date().toISOString().split('T')[0], // Today / YYYY-MM-DD
   selectedDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
   filterDept: 'all',
+  selectedDepts: [], // Array of selected department names (empty = all)
+  deptFilterQuery: '',
   filterStatus: 'ALL',
   filterSearch: '',
   portalEmployeeId: '',
@@ -93,12 +97,22 @@ const appAttendance = {
   },
 
   bindEvents() {
-    // Month picker in timesheet
-    const monthPicker = document.getElementById('att-month-picker');
-    if (monthPicker) {
-      monthPicker.value = this.currentMonth;
-      monthPicker.addEventListener('change', (e) => {
-        this.currentMonth = e.target.value;
+    // From Date picker in timesheet
+    const fromPicker = document.getElementById('att-from-date-picker');
+    if (fromPicker) {
+      fromPicker.value = this.fromDate;
+      fromPicker.addEventListener('change', (e) => {
+        this.fromDate = e.target.value;
+        this.renderTimesheets();
+      });
+    }
+
+    // To Date picker in timesheet
+    const toPicker = document.getElementById('att-to-date-picker');
+    if (toPicker) {
+      toPicker.value = this.toDate;
+      toPicker.addEventListener('change', (e) => {
+        this.toDate = e.target.value;
         this.renderTimesheets();
       });
     }
@@ -112,15 +126,6 @@ const appAttendance = {
       });
     }
 
-    // Department filter
-    const deptSelect = document.getElementById('att-dept-select');
-    if (deptSelect) {
-      deptSelect.addEventListener('change', (e) => {
-        this.filterDept = e.target.value;
-        this.renderTimesheets();
-      });
-    }
-
     // Status filter
     const statusSelect = document.getElementById('att-status-select');
     if (statusSelect) {
@@ -128,6 +133,147 @@ const appAttendance = {
         this.filterStatus = e.target.value;
         this.renderTimesheets();
       });
+    }
+
+    // Close department dropdown on outside click
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('att-dept-multiselect-container');
+      if (container && !container.contains(e.target)) {
+        this.closeDeptDropdown();
+      }
+    });
+  },
+
+  toggleDeptDropdown(e) {
+    if (e) e.stopPropagation();
+    const panel = document.getElementById('att-dept-dropdown-panel');
+    if (!panel) return;
+    const isVisible = panel.style.display === 'block';
+    if (isVisible) {
+      panel.style.display = 'none';
+    } else {
+      this.renderDeptOptions();
+      panel.style.display = 'block';
+      const searchInp = document.getElementById('att-dept-search');
+      if (searchInp) {
+        searchInp.value = '';
+        this.deptFilterQuery = '';
+        setTimeout(() => searchInp.focus(), 50);
+      }
+    }
+  },
+
+  closeDeptDropdown() {
+    const panel = document.getElementById('att-dept-dropdown-panel');
+    if (panel) panel.style.display = 'none';
+  },
+
+  getAllDepartmentNames() {
+    const set = new Set();
+    (appData.departments || []).forEach(d => {
+      const name = (d.department_name || d.department_id || '').trim();
+      if (name) set.add(name);
+    });
+    (appData.employees || []).forEach(e => {
+      const name = (e.department_name || e.department_id || '').trim();
+      if (name) set.add(name);
+    });
+    (appData.timesheets || []).forEach(t => {
+      const name = (t.department_name || '').trim();
+      if (name) set.add(name);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
+  },
+
+  renderDeptOptions() {
+    const listEl = document.getElementById('att-dept-checkbox-list');
+    if (!listEl) return;
+
+    const allDepts = this.getAllDepartmentNames();
+    const query = (this.deptFilterQuery || '').toLowerCase().trim();
+    const filteredDepts = query
+      ? allDepts.filter(d => d.toLowerCase().includes(query))
+      : allDepts;
+
+    if (filteredDepts.length === 0) {
+      listEl.innerHTML = '<div style="padding: 10px; font-size: 12px; color: #94A3B8; text-align: center;">Không tìm thấy phòng ban phù hợp</div>';
+      return;
+    }
+
+    listEl.innerHTML = filteredDepts.map(d => {
+      const isChecked = this.selectedDepts.length === 0 || this.selectedDepts.includes(d);
+      const empCount = (appData.employees || []).filter(e => (e.department_name || e.department_id || '').trim() === d).length;
+
+      return `
+        <label style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: background 0.15s; margin: 0;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='transparent'">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+            <input type="checkbox" value="${d.replace(/"/g, '&quot;')}" ${isChecked ? 'checked' : ''} onchange="appAttendance.onDeptCheckboxChange(this.value, this.checked)" style="width: 15px; height: 15px; cursor: pointer; accent-color: #2563EB;">
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: #334155;" title="${d}">${d}</span>
+          </div>
+          ${empCount > 0 ? `<span style="font-size: 10.5px; color: #64748B; background: #E2E8F0; padding: 1px 6px; border-radius: 10px;">${empCount}</span>` : ''}
+        </label>
+      `;
+    }).join('');
+
+    this.updateDeptButtonLabel();
+  },
+
+  onDeptCheckboxChange(deptName, isChecked) {
+    const allDepts = this.getAllDepartmentNames();
+    if (this.selectedDepts.length === 0) {
+      this.selectedDepts = [...allDepts];
+    }
+
+    if (isChecked) {
+      if (!this.selectedDepts.includes(deptName)) {
+        this.selectedDepts.push(deptName);
+      }
+    } else {
+      this.selectedDepts = this.selectedDepts.filter(d => d !== deptName);
+    }
+
+    if (this.selectedDepts.length === allDepts.length) {
+      this.selectedDepts = [];
+    }
+
+    this.updateDeptButtonLabel();
+    this.renderTimesheets();
+  },
+
+  selectAllDepts(selectAll) {
+    const allDepts = this.getAllDepartmentNames();
+    if (selectAll) {
+      this.selectedDepts = [];
+    } else {
+      this.selectedDepts = ['__NONE__'];
+    }
+    this.renderDeptOptions();
+    this.updateDeptButtonLabel();
+    this.renderTimesheets();
+  },
+
+  filterDeptList(query) {
+    this.deptFilterQuery = query;
+    this.renderDeptOptions();
+  },
+
+  updateDeptButtonLabel() {
+    const labelEl = document.getElementById('att-dept-selected-label');
+    if (!labelEl) return;
+
+    const allDepts = this.getAllDepartmentNames();
+    if (this.selectedDepts.length === 0) {
+      labelEl.textContent = `-- Tất cả phòng ban (${allDepts.length}) --`;
+      labelEl.style.color = '#1E293B';
+    } else if (this.selectedDepts.length === 1 && this.selectedDepts[0] !== '__NONE__') {
+      labelEl.textContent = this.selectedDepts[0];
+      labelEl.style.color = '#2563EB';
+    } else if (this.selectedDepts.includes('__NONE__') && this.selectedDepts.length === 1) {
+      labelEl.textContent = 'Chưa chọn phòng ban nào';
+      labelEl.style.color = '#EF4444';
+    } else {
+      labelEl.textContent = `Đã chọn (${this.selectedDepts.length}) phòng ban`;
+      labelEl.style.color = '#2563EB';
     }
   },
 
@@ -231,23 +377,30 @@ const appAttendance = {
     const tbody = document.getElementById('att-timesheet-tbody');
     if (!tbody) return;
 
-    // Populate department filter options if empty
-    const deptSelect = document.getElementById('att-dept-select');
-    if (deptSelect && deptSelect.options.length <= 1) {
-      const depts = appData.departments || [];
-      depts.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.department_name || d.department_id;
-        opt.textContent = d.department_name || d.department_id;
-        deptSelect.appendChild(opt);
-      });
-    }
+    // Set date pickers default if not set
+    const fromPicker = document.getElementById('att-from-date-picker');
+    if (fromPicker && !fromPicker.value) fromPicker.value = this.fromDate;
+    const toPicker = document.getElementById('att-to-date-picker');
+    if (toPicker && !toPicker.value) toPicker.value = this.toDate;
 
-    // Filter timesheet entries
-    let list = (appData.timesheets || []).filter(t => (t.date || '').startsWith(this.currentMonth));
+    this.updateDeptButtonLabel();
 
-    if (this.filterDept && this.filterDept !== 'all') {
-      list = list.filter(t => (t.department_name || '').toLowerCase() === this.filterDept.toLowerCase());
+    // Filter timesheet entries by date range
+    let list = (appData.timesheets || []).filter(t => {
+      if (!t.date) return false;
+      if (this.fromDate && t.date < this.fromDate) return false;
+      if (this.toDate && t.date > this.toDate) return false;
+      return true;
+    });
+
+    // Filter by multi-selected departments
+    if (this.selectedDepts && this.selectedDepts.length > 0) {
+      if (this.selectedDepts.includes('__NONE__')) {
+        list = [];
+      } else {
+        const selectedSet = new Set(this.selectedDepts.map(d => d.toLowerCase().trim()));
+        list = list.filter(t => selectedSet.has((t.department_name || '').toLowerCase().trim()));
+      }
     }
 
     if (this.filterStatus && this.filterStatus !== 'ALL') {
@@ -267,11 +420,12 @@ const appAttendance = {
     list.sort((a, b) => b.date.localeCompare(a.date) || a.employee_id.localeCompare(b.employee_id));
 
     if (list.length === 0) {
+      const dateRangeStr = (this.fromDate && this.toDate) ? `từ ${this.fromDate} đến ${this.toDate}` : `khoảng thời gian đã chọn`;
       tbody.innerHTML = `
         <tr>
           <td colspan="18" style="text-align: center; color: var(--text-muted); padding: 36px 16px;">
             <i class="fa-solid fa-calendar-xmark" style="font-size: 28px; margin-bottom: 10px; display: block; color: #94A3B8;"></i>
-            Không có dữ liệu bảng công cho tháng ${this.currentMonth}. Hãy nhấn "Tính Lại Công" hoặc "Đồng bộ từ máy Ronald Jack".
+            Không có dữ liệu bảng công cho ${dateRangeStr} theo bộ lọc đã chọn. Hãy nhấn "Tính Lại" hoặc "Đồng Bộ Máy".
           </td>
         </tr>
       `;
@@ -2326,38 +2480,38 @@ const appAttendance = {
   // EXPORT TIMESHEETS TO EXCEL / CSV (XUẤT FILE CHUẨN TÍNH LƯƠNG)
   // ========================================================================
   exportTimesheetToExcel() {
-    // 1. Đồng bộ tháng hiện tại từ bộ lọc giao diện nếu có
-    const monthPicker = document.getElementById('att-month-picker');
-    if (monthPicker && monthPicker.value) {
-      this.currentMonth = monthPicker.value;
-    }
-    if (!this.currentMonth) {
-      this.currentMonth = new Date().toISOString().substring(0, 7);
-    }
+    // 1. Đồng bộ khoảng ngày từ giao diện nếu có
+    const fromPicker = document.getElementById('att-from-date-picker');
+    if (fromPicker && fromPicker.value) this.fromDate = fromPicker.value;
+    const toPicker = document.getElementById('att-to-date-picker');
+    if (toPicker && toPicker.value) this.toDate = toPicker.value;
 
-    // 2. Tìm danh sách công theo tháng
-    let list = (appData.timesheets || []).filter(t => (t.date || '').startsWith(this.currentMonth));
+    // 2. Tìm danh sách công theo khoảng ngày
+    let list = (appData.timesheets || []).filter(t => {
+      if (!t.date) return false;
+      if (this.fromDate && t.date < this.fromDate) return false;
+      if (this.toDate && t.date > this.toDate) return false;
+      return true;
+    });
 
-    // Nếu rỗng, thử tự động tính toán từ lịch sử quẹt thẻ gốc
-    if (list.length === 0) {
-      list = this.ensureTimesheetsForMonth(this.currentMonth);
-    }
-
-    // Nếu vẫn rỗng nhưng có timesheets ở các tháng khác, lấy toàn bộ
+    // Nếu rỗng nhưng có timesheets, thử lấy toàn bộ
     if (list.length === 0) {
       if ((appData.timesheets || []).length > 0) {
         list = appData.timesheets;
-        utils.showToast(`Tháng ${this.currentMonth} chưa có dữ liệu, chuyển sang xuất toàn bộ ${list.length} bản ghi chấm công!`, 'info');
+        utils.showToast(`Khoảng ngày đã chọn chưa có dữ liệu, xuất toàn bộ ${list.length} bản ghi chấm công!`, 'info');
       } else {
         utils.showToast(`Không có dữ liệu chấm công để xuất. Vui lòng bấm "Đồng Bộ Máy" hoặc "Mô Phỏng" trước!`, 'warning');
         return;
       }
     }
 
-    // 3. Áp dụng bộ lọc đang chọn trên giao diện (nếu có)
+    // 3. Áp dụng bộ lọc phòng ban đa chọn
     let filteredList = [...list];
-    if (this.filterDept && this.filterDept !== 'all') {
-      filteredList = filteredList.filter(t => (t.department_name || '').toLowerCase() === this.filterDept.toLowerCase());
+    if (this.selectedDepts && this.selectedDepts.length > 0) {
+      if (!this.selectedDepts.includes('__NONE__')) {
+        const set = new Set(this.selectedDepts.map(d => d.toLowerCase().trim()));
+        filteredList = filteredList.filter(t => set.has((t.department_name || '').toLowerCase().trim()));
+      }
     }
     if (this.filterStatus && this.filterStatus !== 'ALL') {
       filteredList = filteredList.filter(t => t.status === this.filterStatus);
