@@ -185,6 +185,10 @@ const appAttendance = {
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
   },
 
+  allDeptsSelected: true,
+  selectedDepts: [], // Array of selected department names when allDeptsSelected is false
+  deptFilterQuery: '',
+
   renderDeptOptions() {
     const listEl = document.getElementById('att-dept-checkbox-list');
     if (!listEl) return;
@@ -201,39 +205,55 @@ const appAttendance = {
     }
 
     listEl.innerHTML = filteredDepts.map(d => {
-      const isChecked = this.selectedDepts.length === 0 || this.selectedDepts.includes(d);
+      const isChecked = this.allDeptsSelected || this.selectedDepts.includes(d);
       const empCount = (appData.employees || []).filter(e => (e.department_name || e.department_id || '').trim() === d).length;
+      const safeDept = d.replace(/"/g, '&quot;').replace(/'/g, "\\'");
 
       return `
-        <label style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: background 0.15s; margin: 0;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='transparent'">
-          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 4px; font-size: 12px; transition: background 0.15s; margin: 0;" onmouseover="this.style.background='#F1F5F9'; const btn=this.querySelector('.only-btn'); if(btn) btn.style.display='inline';" onmouseout="this.style.background='transparent'; const btn=this.querySelector('.only-btn'); if(btn) btn.style.display='none';">
+          <label style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; cursor: pointer; margin: 0;">
             <input type="checkbox" value="${d.replace(/"/g, '&quot;')}" ${isChecked ? 'checked' : ''} onchange="appAttendance.onDeptCheckboxChange(this.value, this.checked)" style="width: 15px; height: 15px; cursor: pointer; accent-color: #2563EB;">
             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: #334155;" title="${d}">${d}</span>
+          </label>
+          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <button type="button" class="only-btn" onclick="appAttendance.selectOnlyDept('${safeDept}')" style="display: none; padding: 1px 6px; font-size: 11px; color: #2563EB; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 4px; cursor: pointer; font-weight: 600;" title="Chỉ xem một phòng ban này">Chỉ chọn</button>
+            ${empCount > 0 ? `<span style="font-size: 10.5px; color: #64748B; background: #E2E8F0; padding: 1px 6px; border-radius: 10px;">${empCount}</span>` : ''}
           </div>
-          ${empCount > 0 ? `<span style="font-size: 10.5px; color: #64748B; background: #E2E8F0; padding: 1px 6px; border-radius: 10px;">${empCount}</span>` : ''}
-        </label>
+        </div>
       `;
     }).join('');
 
     this.updateDeptButtonLabel();
   },
 
+  selectOnlyDept(deptName) {
+    this.allDeptsSelected = false;
+    this.selectedDepts = [deptName];
+    this.renderDeptOptions();
+    this.updateDeptButtonLabel();
+    this.closeDeptDropdown();
+    this.renderTimesheets();
+  },
+
   onDeptCheckboxChange(deptName, isChecked) {
     const allDepts = this.getAllDepartmentNames();
-    if (this.selectedDepts.length === 0) {
-      this.selectedDepts = [...allDepts];
-    }
-
-    if (isChecked) {
-      if (!this.selectedDepts.includes(deptName)) {
-        this.selectedDepts.push(deptName);
+    if (this.allDeptsSelected) {
+      if (!isChecked) {
+        this.allDeptsSelected = false;
+        this.selectedDepts = allDepts.filter(d => d !== deptName);
       }
     } else {
-      this.selectedDepts = this.selectedDepts.filter(d => d !== deptName);
-    }
-
-    if (this.selectedDepts.length === allDepts.length) {
-      this.selectedDepts = [];
+      if (isChecked) {
+        if (!this.selectedDepts.includes(deptName)) {
+          this.selectedDepts.push(deptName);
+        }
+        if (this.selectedDepts.length === allDepts.length) {
+          this.allDeptsSelected = true;
+          this.selectedDepts = [];
+        }
+      } else {
+        this.selectedDepts = this.selectedDepts.filter(d => d !== deptName);
+      }
     }
 
     this.updateDeptButtonLabel();
@@ -241,11 +261,12 @@ const appAttendance = {
   },
 
   selectAllDepts(selectAll) {
-    const allDepts = this.getAllDepartmentNames();
     if (selectAll) {
+      this.allDeptsSelected = true;
       this.selectedDepts = [];
     } else {
-      this.selectedDepts = ['__NONE__'];
+      this.allDeptsSelected = false;
+      this.selectedDepts = [];
     }
     this.renderDeptOptions();
     this.updateDeptButtonLabel();
@@ -262,14 +283,14 @@ const appAttendance = {
     if (!labelEl) return;
 
     const allDepts = this.getAllDepartmentNames();
-    if (this.selectedDepts.length === 0) {
+    if (this.allDeptsSelected) {
       labelEl.textContent = `-- Tất cả phòng ban (${allDepts.length}) --`;
       labelEl.style.color = '#1E293B';
-    } else if (this.selectedDepts.length === 1 && this.selectedDepts[0] !== '__NONE__') {
+    } else if (this.selectedDepts.length === 1) {
       labelEl.textContent = this.selectedDepts[0];
       labelEl.style.color = '#2563EB';
-    } else if (this.selectedDepts.includes('__NONE__') && this.selectedDepts.length === 1) {
-      labelEl.textContent = 'Chưa chọn phòng ban nào';
+    } else if (this.selectedDepts.length === 0) {
+      labelEl.textContent = 'Chưa chọn phòng ban nào (0)';
       labelEl.style.color = '#EF4444';
     } else {
       labelEl.textContent = `Đã chọn (${this.selectedDepts.length}) phòng ban`;
@@ -394,12 +415,17 @@ const appAttendance = {
     });
 
     // Filter by multi-selected departments
-    if (this.selectedDepts && this.selectedDepts.length > 0) {
-      if (this.selectedDepts.includes('__NONE__')) {
+    if (!this.allDeptsSelected) {
+      if (this.selectedDepts.length === 0) {
         list = [];
       } else {
         const selectedSet = new Set(this.selectedDepts.map(d => d.toLowerCase().trim()));
-        list = list.filter(t => selectedSet.has((t.department_name || '').toLowerCase().trim()));
+        const empMap = new Map((appData.employees || []).map(e => [e.employee_id, e]));
+        list = list.filter(t => {
+          const emp = empMap.get(t.employee_id);
+          const dept = (t.department_name || (emp ? (emp.department_name || emp.department_id) : '') || '').toLowerCase().trim();
+          return selectedSet.has(dept);
+        });
       }
     }
 
@@ -2507,10 +2533,17 @@ const appAttendance = {
 
     // 3. Áp dụng bộ lọc phòng ban đa chọn
     let filteredList = [...list];
-    if (this.selectedDepts && this.selectedDepts.length > 0) {
-      if (!this.selectedDepts.includes('__NONE__')) {
+    if (!this.allDeptsSelected) {
+      if (this.selectedDepts.length === 0) {
+        filteredList = [];
+      } else {
         const set = new Set(this.selectedDepts.map(d => d.toLowerCase().trim()));
-        filteredList = filteredList.filter(t => set.has((t.department_name || '').toLowerCase().trim()));
+        const empMap = new Map((appData.employees || []).map(e => [e.employee_id, e]));
+        filteredList = filteredList.filter(t => {
+          const emp = empMap.get(t.employee_id);
+          const dept = (t.department_name || (emp ? (emp.department_name || emp.department_id) : '') || '').toLowerCase().trim();
+          return set.has(dept);
+        });
       }
     }
     if (this.filterStatus && this.filterStatus !== 'ALL') {
