@@ -62,6 +62,22 @@ const appAttendance = {
   init() {
     console.log('Initializing Time & Attendance Module...');
 
+    // Auto-align default date range to available timesheet data
+    try {
+      const allTsDates = ((window.appData && appData.timesheets) || []).map(t => t.date).filter(Boolean).sort();
+      if (allTsDates.length > 0) {
+        const minAvailable = allTsDates[0];
+        const maxAvailable = allTsDates[allTsDates.length - 1];
+        const hasRecords = (appData.timesheets || []).some(t => t.date && t.date >= this.fromDate && t.date <= this.toDate);
+        if (!hasRecords) {
+          this.fromDate = minAvailable;
+          this.toDate = maxAvailable;
+          this.selectedDate = maxAvailable;
+          this.currentMonth = maxAvailable.substring(0, 7);
+        }
+      }
+    } catch (e) {}
+
     // Load devices and shifts from localStorage (offline fallback) or appData
     try {
       const savedDevs = localStorage.getItem('hrm_attendance_devices');
@@ -2101,20 +2117,27 @@ const appAttendance = {
       if (progressText) progressText.textContent = 'Đang truy vấn CSDL Ronald Jack Pro (113.161.53.133:1433 / mitaco)...';
     }
 
+    console.log('[Attendance] Bắt đầu đồng bộ dữ liệu từ CSDL Ronald Jack Pro...');
     utils.showToast('Đang đồng bộ dữ liệu quẹt thẻ từ phần mềm Ronald Jack Pro & CSDL SQL...', 'info');
 
     try {
       // 1. Fetch mitaco punches cache or call backend
       let newPunches = [];
       try {
-        const cacheRes = await fetch('/mitaco_punches_cache.json?t=' + Date.now());
-        if (cacheRes.ok) {
+        const cacheRes = await fetch('mitaco_punches_cache.json?t=' + Date.now()).catch(() => fetch('/mitaco_punches_cache.json?t=' + Date.now()));
+        if (cacheRes && cacheRes.ok) {
           const cacheData = await cacheRes.json();
           if (cacheData && Array.isArray(cacheData.punches)) {
             newPunches = cacheData.punches;
           }
         }
       } catch (e) {}
+
+      if (newPunches.length === 0 && window.appData && Array.isArray(appData.attendanceLogs) && appData.attendanceLogs.length > 0) {
+        newPunches = appData.attendanceLogs;
+      }
+
+      console.log(`[Attendance] Đã nạp thành công ${newPunches.length} lượt quẹt thẻ.`);
 
       if (progressBar) progressBar.style.width = '65%';
       if (progressText) progressText.textContent = `Đã kéo ${newPunches.length || 'toàn bộ'} log. Đang đối soát mã chấm công với hồ sơ nhân sự...`;
@@ -2178,9 +2201,32 @@ const appAttendance = {
 
       // 5. Recalculate timesheets
       await this.recalculateTimesheets();
+
+      // Auto-align date range
+      const allTsDates = (appData.timesheets || []).map(t => t.date).filter(Boolean).sort();
+      if (allTsDates.length > 0) {
+        const minAvailable = allTsDates[0];
+        const maxAvailable = allTsDates[allTsDates.length - 1];
+        const hasOverlap = (appData.timesheets || []).some(t => t.date && t.date >= this.fromDate && t.date <= this.toDate);
+        if (!hasOverlap) {
+          this.fromDate = minAvailable;
+          this.toDate = maxAvailable;
+          this.selectedDate = maxAvailable;
+          this.currentMonth = maxAvailable.substring(0, 7);
+          const fromPicker = document.getElementById('att-from-date-picker');
+          if (fromPicker) fromPicker.value = this.fromDate;
+          const toPicker = document.getElementById('att-to-date-picker');
+          if (toPicker) toPicker.value = this.toDate;
+        }
+      }
+
       this.saveLocalAttendanceState();
       this.renderDevices();
       this.renderRawLogs();
+      this.renderTimesheets();
+      this.renderDashboard();
+
+      console.log(`[Attendance] Đồng bộ hoàn tất! Đã cập nhật ${(appData.timesheets || []).length} bản ghi công.`);
 
       if (progressBar) progressBar.style.width = '100%';
       if (progressText) progressText.textContent = 'Hoàn tất đồng bộ!';
