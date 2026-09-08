@@ -2504,6 +2504,7 @@ export default {
               newTimesheets.push({
                 timesheet_id: `TS_${emp.employee_id}_${dt}`,
                 employee_id: emp.employee_id,
+                attendance_code: emp.attendance_code || emp.time_attendance_code || (emp.employee_id ? emp.employee_id.replace('TH-', '') : ''),
                 full_name: emp.full_name,
                 department_name: emp.department_name,
                 date: dt,

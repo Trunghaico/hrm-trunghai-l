@@ -258,6 +258,7 @@ const appAttendance = {
       list = list.filter(t =>
         (t.full_name || '').toLowerCase().includes(this.filterSearch) ||
         (t.employee_id || '').toLowerCase().includes(this.filterSearch) ||
+        (t.attendance_code || '').toLowerCase().includes(this.filterSearch) ||
         (t.department_name || '').toLowerCase().includes(this.filterSearch)
       );
     }
@@ -268,7 +269,7 @@ const appAttendance = {
     if (list.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="17" style="text-align: center; color: var(--text-muted); padding: 36px 16px;">
+          <td colspan="18" style="text-align: center; color: var(--text-muted); padding: 36px 16px;">
             <i class="fa-solid fa-calendar-xmark" style="font-size: 28px; margin-bottom: 10px; display: block; color: #94A3B8;"></i>
             Không có dữ liệu bảng công cho tháng ${this.currentMonth}. Hãy nhấn "Tính Lại Công" hoặc "Đồng bộ từ máy Ronald Jack".
           </td>
@@ -325,10 +326,13 @@ const appAttendance = {
         ? `<i class="fa-solid fa-pen" style="font-size: 10px; color: #D97706; margin-left: 4px;" title="Đã hiệu chỉnh thủ công bởi HR"></i>`
         : '';
 
+      const attCodeDisplay = item.attendance_code || (item.employee_id ? item.employee_id.replace('TH-', '') : '-');
+
       return `
         <tr style="${item.day_name === 'Chủ nhật' ? 'background: #FFFBEB;' : ''}">
           <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
           <td style="font-weight: 700; color: #1E40AF; font-family: monospace;">${item.employee_id}</td>
+          <td style="font-weight: 700; color: #B45309; font-family: monospace; text-align: center; background: #FFFBEB;">${attCodeDisplay}</td>
           <td>
             <strong>${item.full_name}</strong>
             ${manualEditedIndicator}
@@ -1631,6 +1635,7 @@ const appAttendance = {
         computedTimesheets.push({
           timesheet_id: `TS_${emp.employee_id}_${dt}`,
           employee_id: emp.employee_id,
+          attendance_code: emp.attendance_code || emp.time_attendance_code || (emp.employee_id ? emp.employee_id.replace('TH-', '') : ''),
           full_name: emp.full_name,
           department_name: emp.department_name,
           date: dt,
@@ -2088,6 +2093,7 @@ const appAttendance = {
     const headers = [
       'STT',
       'Mã Nhân Viên',
+      'Mã Chấm Công',
       'Tên Nhân viên',
       'Phòng ban',
       'Ngày',
@@ -2108,6 +2114,7 @@ const appAttendance = {
     const rows = list.map((item, idx) => [
       idx + 1,
       item.employee_id || '',
+      item.attendance_code || (item.employee_id ? item.employee_id.replace('TH-', '') : ''),
       item.full_name || '',
       item.department_name || '',
       item.date || '',
