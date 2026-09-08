@@ -2424,29 +2424,72 @@ tr.row-selected {
 }
 
 /* ==========================================================================
-   MEDIA QUERY: TABLETS & MOBILE SCREENS (<= 768px)
+   MULTI-DEVICE RESPONSIVE SYSTEM & MOBILE APP TYPOGRAPHY (PHÒNG CHỮ CHUẨN APP)
    ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. TABLETS & MOBILE SCREENS (<= 768px)
+   -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
+  /* Prevent iOS font size auto-scaling quirks */
+  html, body {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Prevent iOS Safari from auto-zooming when focusing input fields */
+  input[type="text"]:focus,
+  input[type="password"]:focus,
+  input[type="email"]:focus,
+  input[type="number"]:focus,
+  input[type="tel"]:focus,
+  input[type="date"]:focus,
+  select:focus,
+  textarea:focus {
+    font-size: 16px !important;
+  }
+
+  /* Backdrop overlay */
   .sidebar-backdrop {
     display: block;
   }
 
+  /* Close button on Mobile Drawer */
   .btn-close-sidebar-mobile {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: #FFFFFF;
+    font-size: 17px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all var(--transition-fast);
   }
 
-  /* Off-canvas Drawer Sidebar (Always expanded content on mobile) */
+  .btn-close-sidebar-mobile:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* ========================================================================
+     MOBILE SIDEBAR DRAWER & CATEGORY TYPOGRAPHY (CHUẨN APP DI ĐỘNG)
+     ======================================================================== */
   .sidebar,
   .sidebar.collapsed {
     position: fixed !important;
     top: 0 !important;
     bottom: 0 !important;
     left: 0 !important;
-    width: 270px !important;
+    width: min(84vw, 300px) !important;
     transform: translateX(-100%) !important;
     transition: transform 0.28s cubic-bezier(0.33, 1, 0.68, 1) !important;
     z-index: 1100 !important;
-    box-shadow: 6px 0 25px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: 8px 0 30px rgba(0, 0, 0, 0.4) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: linear-gradient(180deg, #0E1A42 0%, #07102C 100%) !important;
   }
 
   .sidebar.mobile-open,
@@ -2454,26 +2497,137 @@ tr.row-selected {
     transform: translateX(0) !important;
   }
 
-  /* Force display text labels, titles, brand info on mobile drawer */
+  /* Drawer Header */
+  .sidebar-header {
+    height: calc(56px + var(--safe-top)) !important;
+    padding-top: var(--safe-top) !important;
+    padding-left: 16px !important;
+    padding-right: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .sidebar .brand-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .sidebar .brand-logo-img {
+    height: 34px !important;
+    width: auto !important;
+    border-radius: 6px !important;
+    background: #FFFFFF !important;
+    padding: 2px !important;
+  }
+
   .sidebar .brand-info,
   .sidebar.collapsed .brand-info {
     display: flex !important;
+    flex-direction: column !important;
     opacity: 1 !important;
+  }
+
+  .sidebar .brand-title {
+    font-size: 15.5px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    color: #FFFFFF !important;
+    line-height: 1.15 !important;
+  }
+
+  .sidebar .brand-subtitle {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  /* Category Section Headers (Tiêu đề nhóm danh mục) */
+  .sidebar-nav {
+    padding: 10px 0 !important;
   }
 
   .sidebar .nav-section-title,
   .sidebar.collapsed .nav-section-title {
     display: block !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    color: rgba(255, 255, 255, 0.45) !important;
+    padding: 14px 18px 4px 18px !important;
+  }
+
+  /* Navigation Items (Các danh mục chức năng trên app) */
+  .sidebar .nav-item,
+  .sidebar.collapsed .nav-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    min-height: 46px !important;
+    padding: 11px 18px !important;
+    margin: 2px 8px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    gap: 12px !important;
+    transition: all 0.15s ease !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .sidebar .nav-item:hover,
+  .sidebar .nav-item:active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #FFFFFF !important;
+  }
+
+  .sidebar .nav-item.active {
+    background: var(--accent-red) !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px rgba(229, 33, 37, 0.35) !important;
+  }
+
+  .sidebar .nav-item i {
+    font-size: 17px !important;
+    width: 22px !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
   }
 
   .sidebar .nav-item span,
   .sidebar.collapsed .nav-item span {
     display: inline-block !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    flex: 1 !important;
+    white-space: nowrap !important;
+  }
+
+  .sidebar .nav-item.active span {
+    font-weight: 600 !important;
   }
 
   .sidebar .nav-item .badge-count,
   .sidebar.collapsed .nav-item .badge-count {
     display: inline-block !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 2px 8px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #FFFFFF !important;
+  }
+
+  /* User Info Footer in Drawer */
+  .sidebar-footer {
+    padding: 12px 16px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(0, 0, 0, 0.25) !important;
   }
 
   .sidebar .user-info,
@@ -2481,99 +2635,173 @@ tr.row-selected {
     display: block !important;
   }
 
-  .sidebar .nav-item,
-  .sidebar.collapsed .nav-item {
-    justify-content: flex-start !important;
-    padding: 10px 14px !important;
-    gap: 10px !important;
+  .sidebar .user-avatar {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
   }
 
-  /* Reset main wrapper for mobile */
+  .sidebar .user-name {
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    color: #FFFFFF !important;
+  }
+
+  .sidebar .user-role {
+    font-size: 11px !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+
+  /* ========================================================================
+     APP TOPBAR & HEADER TYPOGRAPHY
+     ======================================================================== */
   .main-wrapper {
     margin-left: 0 !important;
-    width: 100vw;
-    height: 100vh;
+    width: 100vw !important;
+    height: 100vh !important;
   }
 
   .sidebar.collapsed ~ .main-wrapper {
     margin-left: 0 !important;
   }
 
-  /* Topbar Compact layout */
   .topbar {
-    padding: 0 10px;
-    gap: 8px;
+    height: calc(54px + var(--safe-top)) !important;
+    padding-top: var(--safe-top) !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    gap: 8px !important;
+  }
+
+  .topbar-left {
+    gap: 8px !important;
+  }
+
+  #sidebar-toggle-btn {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 17px !important;
+    border-radius: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .page-heading {
-    font-size: 14px;
+    font-size: 15.5px !important;
+    font-weight: 700 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .page-heading i {
+    font-size: 16px !important;
   }
 
   .page-heading span {
-    max-width: 140px;
+    max-width: 160px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     display: inline-block;
-    vertical-align: middle;
   }
 
   .topbar-right {
-    gap: 6px;
+    gap: 6px !important;
   }
 
   .topbar-search {
-    display: none;
+    display: none !important;
   }
 
   .topbar-user-badge {
-    display: none;
+    display: none !important;
   }
 
   #btn-quick-export span,
   #btn-topbar-logout span {
-    display: none;
+    display: none !important;
   }
 
   #btn-quick-export,
   #btn-topbar-logout,
   #btn-open-add-modal {
-    padding: 6px 9px;
+    height: 34px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    padding: 0 10px !important;
   }
 
-  /* Content area scroll & bottom spacing */
+  /* Content area scroll & safe padding */
   .content-body {
-    padding: 8px 6px calc(var(--bottom-nav-height) + var(--safe-bottom) + 16px) 6px !important;
+    padding: 10px 8px calc(var(--bottom-nav-height) + var(--safe-bottom) + 16px) 8px !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
   }
 
-  /* KPI Grid */
+  /* ========================================================================
+     DASHBOARD & KPI CARDS SIZING & TYPOGRAPHY
+     ======================================================================== */
   .kpi-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px;
-    margin-bottom: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-bottom: 12px !important;
   }
 
   .kpi-card {
-    padding: 10px 12px;
+    padding: 12px 14px !important;
+    border-radius: 8px !important;
+  }
+
+  .kpi-label {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #64748B !important;
+    line-height: 1.2 !important;
   }
 
   .kpi-value {
-    font-size: 18px;
+    font-size: 21px !important;
+    font-weight: 800 !important;
+    color: #0F172A !important;
+    margin: 4px 0 !important;
   }
 
-  /* Charts */
+  .kpi-subtext {
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+  }
+
+  .kpi-icon-box {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 16px !important;
+    border-radius: 8px !important;
+  }
+
   .charts-grid {
     grid-template-columns: 1fr !important;
-    gap: 10px;
+    gap: 12px !important;
+  }
+
+  .chart-title-main {
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+  }
+
+  .chart-subtitle {
+    font-size: 12px !important;
+    color: #64748B !important;
   }
 
   .donut-layout {
-    flex-direction: column;
-    text-align: center;
-    gap: 8px;
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 10px !important;
   }
 
   /* ========================================================================
@@ -2581,11 +2809,11 @@ tr.row-selected {
      ======================================================================== */
   .card {
     margin-bottom: 10px !important;
-    border-radius: 4px !important;
+    border-radius: 6px !important;
   }
 
   .card-body {
-    padding: 6px 4px !important;
+    padding: 8px 6px !important;
     overflow-x: visible !important;
   }
 
@@ -2598,14 +2826,14 @@ tr.row-selected {
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-x pan-y !important;
     border: 1px solid var(--border-color) !important;
-    border-radius: 4px !important;
+    border-radius: 6px !important;
     background: #FFFFFF !important;
     margin-bottom: 8px !important;
     display: block !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
   }
 
-  /* UNSTICK all sticky table columns on mobile so tables glide horizontally */
+  /* UNSTICK all horizontal sticky columns on mobile so tables glide smoothly */
   .col-sticky-stt,
   .col-sticky-id,
   .col-sticky-name,
@@ -2644,11 +2872,22 @@ tr.row-selected {
     table-layout: auto !important;
   }
 
-  .data-table th,
+  .data-table th {
+    white-space: nowrap !important;
+    padding: 10px 12px !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    color: #475569 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
+  }
+
   .data-table td {
     white-space: nowrap !important;
-    padding: 8px 10px !important;
-    font-size: 12px !important;
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    color: #1E293B !important;
+    vertical-align: middle !important;
   }
 
   /* Full Name Column: Uncapped width so full names are never chopped */
@@ -2665,6 +2904,9 @@ tr.row-selected {
     white-space: nowrap !important;
     overflow: visible !important;
     text-overflow: clip !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    color: #0F172A !important;
   }
 
   /* Action Column: Placed naturally at the end of the table on mobile */
@@ -2672,30 +2914,50 @@ tr.row-selected {
   .data-table th.col-sticky-action,
   .data-table td.col-sticky-action {
     width: auto !important;
-    min-width: 110px !important;
+    min-width: 120px !important;
     max-width: none !important;
     white-space: nowrap !important;
     text-align: center !important;
   }
 
-  /* Mobile table swipe hint */
+  .col-sticky-action .btn,
+  .data-table td .btn {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 2px !important;
+  }
+
+  /* Badges inside tables */
+  .badge {
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+  }
+
+  /* Mobile table swipe hint banner */
   .mobile-table-swipe-hint {
     display: flex !important;
     align-items: center;
     gap: 8px;
-    font-size: 11.5px;
+    font-size: 12px;
     color: var(--primary-navy);
     background: #EEF2FF;
     border: 1px solid #C7D2FE;
-    border-radius: 4px;
-    padding: 7px 10px;
+    border-radius: 6px;
+    padding: 8px 12px;
     margin-bottom: 8px;
     font-weight: 500;
   }
 
   .mobile-table-swipe-hint i {
     color: var(--accent-red);
-    font-size: 13px;
+    font-size: 14px;
     animation: swipeHintAnim 2s ease-in-out infinite;
   }
 
@@ -2704,18 +2966,25 @@ tr.row-selected {
     50% { transform: translateX(4px); }
   }
 
-  /* Filter Controls on Mobile */
+  /* ========================================================================
+     FILTER TOOLBAR & FORM CONTROLS ON MOBILE
+     ======================================================================== */
   .table-controls {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 8px !important;
+    gap: 10px !important;
     overflow-x: visible !important;
   }
 
   .search-filter-group {
     flex-wrap: wrap !important;
     width: 100% !important;
-    gap: 6px !important;
+    gap: 8px !important;
+  }
+
+  .search-filter-group > div:first-child {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
   }
 
   .search-filter-group > div,
@@ -2723,109 +2992,337 @@ tr.row-selected {
     flex: 1 1 calc(50% - 6px) !important;
     min-width: 130px !important;
     max-width: 100% !important;
+    height: 38px !important;
+    font-size: 13.5px !important;
+    border-radius: 6px !important;
   }
 
-  /* Filter Toolbar & Actions */
+  .search-filter-group input {
+    height: 38px !important;
+    font-size: 13.5px !important;
+    border-radius: 6px !important;
+  }
+
   .filter-bar,
   .action-bar,
   .section-toolbar {
-    flex-direction: column;
+    flex-direction: column !important;
     align-items: stretch !important;
-    gap: 8px;
+    gap: 8px !important;
   }
 
   .filter-group {
-    flex-wrap: wrap;
-    width: 100%;
+    flex-wrap: wrap !important;
+    width: 100% !important;
   }
 
   .filter-group input,
   .filter-group select {
-    flex: 1;
-    min-width: 120px;
+    flex: 1 !important;
+    min-width: 120px !important;
+    height: 38px !important;
+    font-size: 13.5px !important;
+    border-radius: 6px !important;
   }
 
-  /* Modals on Mobile */
+  /* Table Pagination */
+  .pagination-wrapper,
+  .table-pagination {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 12px 10px !important;
+    text-align: center !important;
+  }
+
+  .pagination-wrapper span,
+  .table-pagination span {
+    font-size: 12.5px !important;
+  }
+
+  .pagination-controls,
+  .pagination-pages {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 4px !important;
+  }
+
+  .pagination-pages .btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+  }
+
+  /* ========================================================================
+     MODALS & POPUPS (CHUẨN FORM NHẬP LIỆU APP DI ĐỘNG)
+     ======================================================================== */
   .modal-container {
     width: 95vw !important;
     max-width: 95vw !important;
     max-height: 90vh !important;
-    margin: 10px auto;
+    margin: 10px auto !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .modal-header {
+    padding: 14px 18px !important;
+    background: var(--primary-navy) !important;
+  }
+
+  .modal-title {
+    font-size: 15.5px !important;
+    font-weight: 700 !important;
+  }
+
+  .modal-close {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 20px !important;
+    border-radius: 6px !important;
+  }
+
+  .modal-tabs {
+    padding: 0 8px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .modal-tab-btn,
+  .form-tab-btn {
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
   }
 
   .modal-body {
-    max-height: calc(90vh - 120px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    padding: 14px 16px !important;
+    font-size: 13.5px !important;
+    max-height: calc(90vh - 120px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
-  /* Mobile Bottom Navigation */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .form-group label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    margin-bottom: 5px !important;
+    display: block !important;
+  }
+
+  .form-control,
+  .filter-select {
+    height: 40px !important;
+    font-size: 14px !important;
+    border-radius: 6px !important;
+    padding: 0 12px !important;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .info-item {
+    padding: 10px 12px !important;
+    border-radius: 6px !important;
+  }
+
+  .info-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #64748B !important;
+  }
+
+  .info-value {
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    color: #0F172A !important;
+  }
+
+  .modal-footer {
+    padding: 12px 16px !important;
+    background: #F8FAFC !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .modal-footer .btn {
+    height: 40px !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    padding: 0 18px !important;
+  }
+
+  /* ========================================================================
+     CONTRACTS & ORGANIZATION MODULES ON MOBILE
+     ======================================================================== */
+  .contract-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .contract-kpi-card {
+    padding: 12px 14px !important;
+    border-radius: 8px !important;
+  }
+
+  .contract-kpi-card .card-value {
+    font-size: 18px !important;
+  }
+
+  .contract-tabs-nav {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+    gap: 4px !important;
+  }
+
+  .contract-tab-btn {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+
+  .org-preview-tab-btn {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+
+  /* ========================================================================
+     MOBILE BOTTOM NAVIGATION BAR (THANH ĐIỀU HƯỚNG DƯỚI ĐÁY APP)
+     ======================================================================== */
   .mobile-bottom-nav {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: calc(var(--bottom-nav-height) + var(--safe-bottom));
-    padding-bottom: var(--safe-bottom);
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid var(--border-color);
-    z-index: 1020;
-    justify-content: space-around;
-    align-items: center;
-    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08);
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: calc(var(--bottom-nav-height) + var(--safe-bottom)) !important;
+    padding-bottom: var(--safe-bottom) !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid var(--border-color) !important;
+    z-index: 1020 !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08) !important;
   }
 
   .bottom-nav-btn {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    background: transparent;
-    border: none;
-    color: #64748B;
-    font-size: 10.5px;
-    font-weight: 500;
-    gap: 3px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    padding: 4px 0;
-    -webkit-tap-highlight-color: transparent;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    color: #64748B !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    gap: 3px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    padding: 4px 0 !important;
+    -webkit-tap-highlight-color: transparent !important;
   }
 
   .bottom-nav-btn i {
-    font-size: 17px;
-    transition: transform 0.15s ease, color 0.15s ease;
+    font-size: 19px !important;
+    transition: transform 0.15s ease, color 0.15s ease !important;
   }
 
   .bottom-nav-btn.active {
-    color: var(--primary-navy);
-    font-weight: 700;
+    color: var(--primary-navy) !important;
+    font-weight: 700 !important;
   }
 
   .bottom-nav-btn.active i {
-    color: var(--accent-red);
-    transform: translateY(-2px);
+    color: var(--accent-red) !important;
+    transform: translateY(-2px) !important;
   }
 }
 
-/* Extra small mobile screens (<= 480px) */
-@media (max-width: 480px) {
-  .kpi-grid {
-    grid-template-columns: 1fr !important;
+/* --------------------------------------------------------------------------
+   2. EXTRA SMALL PHONES (<= 380px: iPhone SE, Galaxy A series)
+   -------------------------------------------------------------------------- */
+@media (max-width: 380px) {
+  .page-heading span {
+    max-width: 110px !important;
+    font-size: 14px !important;
   }
 
-  .page-heading span {
-    max-width: 100px;
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  .kpi-card {
+    padding: 10px 10px !important;
+  }
+
+  .kpi-value {
+    font-size: 17px !important;
   }
 
   .pwa-install-banner {
-    left: 8px;
-    right: 8px;
+    left: 6px !important;
+    right: 6px !important;
+    padding: 8px 10px !important;
+  }
+
+  .pwa-banner-title {
+    font-size: 12px !important;
+  }
+
+  .pwa-banner-sub {
+    font-size: 10.5px !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   3. TABLETS & FOLDABLES (769px to 1024px: iPad, Surface)
+   -------------------------------------------------------------------------- */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar {
+    width: 210px !important;
+  }
+
+  .main-wrapper {
+    margin-left: 210px !important;
+  }
+
+  .sidebar.collapsed ~ .main-wrapper {
+    margin-left: var(--sidebar-collapsed-width) !important;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+
+  .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
 
