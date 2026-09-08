@@ -173,7 +173,10 @@ const appPWA = {
     const moreBtn = document.getElementById('btn-mobile-more');
 
     const openDrawer = () => {
-      if (sidebar) sidebar.classList.add('mobile-open');
+      if (sidebar) {
+        sidebar.classList.remove('collapsed');
+        sidebar.classList.add('mobile-open');
+      }
       if (backdrop) backdrop.classList.add('active');
       document.body.style.overflow = 'hidden';
     };

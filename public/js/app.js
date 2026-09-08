@@ -78,6 +78,9 @@ const app = {
     const sidebar = document.getElementById('sidebar');
     if (toggleBtn && sidebar) {
       toggleBtn.addEventListener('click', () => {
+        // On mobile screen (<= 768px), sidebar collapse is disabled; drawer is managed by pwa.js
+        if (window.innerWidth <= 768) return;
+
         sidebar.classList.toggle('collapsed');
         setTimeout(() => {
           if (document.getElementById('view-dashboard')?.classList.contains('active')) {
