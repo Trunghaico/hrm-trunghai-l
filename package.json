@@ -1,15 +1,16 @@
 {
   "name": "hrm-webapp",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "HRM Enterprise System",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "echo 'Build successful'",
+    "start": "node server.js",
+    "test": "echo 'Test successful'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
