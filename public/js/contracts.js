@@ -278,9 +278,15 @@ const appContracts = {
   // Đồng bộ và tải lại danh sách hợp đồng
   async fetchContracts() {
     try {
-      const res = await fetch('/api/contracts');
-      const json = await res.json();
-      if (json.success && Array.isArray(json.contracts) && json.contracts.length > 0) {
+      let json = null;
+      if (typeof appData !== 'undefined' && appData.hasServerBackend) {
+        try {
+          const res = await fetch('/api/contracts');
+          if (res.ok) json = await res.json();
+        } catch (e) {}
+      }
+
+      if (json && json.success && Array.isArray(json.contracts) && json.contracts.length > 0) {
         this.contracts = json.contracts;
         if (typeof appData !== 'undefined') {
           appData.contracts = this.contracts;

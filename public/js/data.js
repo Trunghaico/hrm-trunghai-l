@@ -33,23 +33,34 @@ const appData = {
   posMap: {},
   empMap: {},
 
+  hasServerBackend: false,
+
   getApiHeaders() {
     return { 'Content-Type': 'application/json' };
   },
 
-  // Fetch all tables from API
+  // Fetch all tables from API or local fallback database
   async init() {
     try {
       let json = null;
-      try {
-        const res = await fetch('/api/data', { headers: this.getApiHeaders() });
-        if (res.ok) json = await res.json();
-      } catch (e) {}
+      const isLocalDevHost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname) || (window.location.port === '3000' || window.location.port === '8080');
+
+      if (isLocalDevHost) {
+        try {
+          const res = await fetch('/api/data', { headers: this.getApiHeaders() });
+          if (res.ok) {
+            json = await res.json();
+            this.hasServerBackend = true;
+          }
+        } catch (e) {
+          this.hasServerBackend = false;
+        }
+      }
 
       if (!json || !json.tables) {
         try {
-          const fbRes = await fetch('sample_database.json');
-          if (fbRes.ok) json = await fbRes.json();
+          const fbRes = await fetch('sample_database.json?t=' + Date.now()).catch(() => fetch('/sample_database.json?t=' + Date.now()));
+          if (fbRes && fbRes.ok) json = await fbRes.json();
         } catch (e) {}
       }
 

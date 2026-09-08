@@ -751,14 +751,16 @@ const appAttendance = {
       localStorage.setItem('hrm_attendance_shifts', JSON.stringify(appData.shifts));
     } catch (e) {}
 
-    // Call API in background
-    try {
-      fetch('/api/attendance/shifts/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(shiftObj)
-      }).catch(err => console.warn('API save shift fallback:', err));
-    } catch (e) {}
+    // Call API in background if backend server is available
+    if (window.appData && appData.hasServerBackend) {
+      try {
+        fetch('/api/attendance/shifts/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(shiftObj)
+        }).catch(() => {});
+      } catch (e) {}
+    }
 
     this.closeShiftModal();
     utils.showToast(`Đã lưu ca làm việc "${shiftName}" thành công!`, 'success');
@@ -777,13 +779,15 @@ const appAttendance = {
       localStorage.setItem('hrm_attendance_shifts', JSON.stringify(appData.shifts));
     } catch (e) {}
 
-    try {
-      fetch('/api/attendance/shifts/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shift_id: shiftId })
-      }).catch(err => console.warn('API delete shift fallback:', err));
-    } catch (e) {}
+    if (window.appData && appData.hasServerBackend) {
+      try {
+        fetch('/api/attendance/shifts/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shift_id: shiftId })
+        }).catch(() => {});
+      } catch (e) {}
+    }
 
     utils.showToast(`Đã xóa ca làm việc "${name}"!`, 'success');
     this.renderShifts();
@@ -1188,14 +1192,16 @@ const appAttendance = {
       sideZkCount.style.display = this.devices.length > 0 ? 'inline-block' : 'none';
     }
 
-    // Attempt API save in background
-    try {
-      fetch('/api/attendance/devices/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(deviceObj)
-      }).catch(err => console.warn('API save device fallback to local storage:', err));
-    } catch (e) {}
+    // Attempt API save in background if backend server is available
+    if (window.appData && appData.hasServerBackend) {
+      try {
+        fetch('/api/attendance/devices/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(deviceObj)
+        }).catch(() => {});
+      } catch (e) {}
+    }
 
     this.closeDeviceModal();
     utils.showToast(`Đã lưu máy chấm công "${devName}" (${devIp}:${devPort}) thành công!`, 'success');
@@ -1223,13 +1229,15 @@ const appAttendance = {
       sideZkCount.style.display = this.devices.length > 0 ? 'inline-block' : 'none';
     }
 
-    try {
-      fetch('/api/attendance/devices/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device_id: deviceId })
-      }).catch(err => console.warn('API delete device fallback:', err));
-    } catch (e) {}
+    if (window.appData && appData.hasServerBackend) {
+      try {
+        fetch('/api/attendance/devices/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_id: deviceId })
+        }).catch(() => {});
+      } catch (e) {}
+    }
 
     utils.showToast(`Đã xóa thiết bị ${deviceId} thành công!`, 'success');
     this.renderDevices();
@@ -1773,23 +1781,25 @@ const appAttendance = {
   // ========================================================================
   async recalculateTimesheets() {
     let apiSuccess = false;
-    try {
-      const res = await fetch('/api/attendance/calculate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month: this.currentMonth })
-      });
-      const cType = res.headers.get('content-type') || '';
-      if (cType.includes('application/json')) {
-        const data = await res.json().catch(() => ({}));
-        if (data && data.success) {
-          apiSuccess = true;
-          await appData.init();
-          this.renderTimesheets();
-          this.renderDashboard();
+    if (window.appData && appData.hasServerBackend) {
+      try {
+        const res = await fetch('/api/attendance/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ month: this.currentMonth })
+        });
+        const cType = res.headers.get('content-type') || '';
+        if (cType.includes('application/json')) {
+          const data = await res.json().catch(() => ({}));
+          if (data && data.success) {
+            apiSuccess = true;
+            await appData.init();
+            this.renderTimesheets();
+            this.renderDashboard();
+          }
         }
-      }
-    } catch (err) {}
+      } catch (err) {}
+    }
 
     if (!apiSuccess) {
       this.recalculateClientSide();
@@ -2109,21 +2119,23 @@ const appAttendance = {
       if (progressBar) progressBar.style.width = '65%';
       if (progressText) progressText.textContent = `Đã kéo ${newPunches.length || 'toàn bộ'} log. Đang đối soát mã chấm công với hồ sơ nhân sự...`;
 
-      // 2. Call backend sync API if available (safe from non-json responses)
-      try {
-        const res = await fetch('/api/attendance/zk/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ punches: newPunches })
-        });
-        const cType = res.headers.get('content-type') || '';
-        if (cType.includes('application/json')) {
-          const data = await res.json().catch(() => ({}));
-          if (data && data.success) {
-            console.log('Backend sync response:', data.message);
+      // 2. Call backend sync API if backend is available
+      if (window.appData && appData.hasServerBackend) {
+        try {
+          const res = await fetch('/api/attendance/zk/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ punches: newPunches })
+          });
+          const cType = res.headers.get('content-type') || '';
+          if (cType.includes('application/json')) {
+            const data = await res.json().catch(() => ({}));
+            if (data && data.success) {
+              console.log('Backend sync response:', data.message);
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
 
       // 3. Merge logs locally into appData
       if (newPunches.length > 0) {
@@ -2322,27 +2334,29 @@ const appAttendance = {
     const note = document.getElementById('att-edit-note').value;
 
     let isSaved = false;
-    try {
-      const res = await fetch('/api/attendance/timesheets/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          timesheet_id: tsId,
-          check_in: checkIn,
-          check_out: checkOut,
-          work_units: workUnits,
-          ot_hours: otHours,
-          status,
-          note,
-          operator_name: 'HR Admin'
-        })
-      });
-      const cType = res.headers.get('content-type') || '';
-      if (cType.includes('application/json')) {
-        const data = await res.json().catch(() => ({}));
-        if (data && data.success) isSaved = true;
-      }
-    } catch (err) {}
+    if (window.appData && appData.hasServerBackend) {
+      try {
+        const res = await fetch('/api/attendance/timesheets/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            timesheet_id: tsId,
+            check_in: checkIn,
+            check_out: checkOut,
+            work_units: workUnits,
+            ot_hours: otHours,
+            status,
+            note,
+            operator_name: 'HR Admin'
+          })
+        });
+        const cType = res.headers.get('content-type') || '';
+        if (cType.includes('application/json')) {
+          const data = await res.json().catch(() => ({}));
+          if (data && data.success) isSaved = true;
+        }
+      } catch (err) {}
+    }
 
     const idx = (appData.timesheets || []).findIndex(t => t.timesheet_id === tsId);
     if (idx >= 0) {
@@ -2366,17 +2380,19 @@ const appAttendance = {
 
     if (!confirm(confirmMsg)) return;
 
-    try {
-      const res = await fetch('/api/attendance/timesheets/lock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month: this.currentMonth, is_locked: newLockState })
-      });
-      const cType = res.headers.get('content-type') || '';
-      if (cType.includes('application/json')) {
-        await res.json().catch(() => ({}));
-      }
-    } catch (err) {}
+    if (window.appData && appData.hasServerBackend) {
+      try {
+        const res = await fetch('/api/attendance/timesheets/lock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ month: this.currentMonth, is_locked: newLockState })
+        });
+        const cType = res.headers.get('content-type') || '';
+        if (cType.includes('application/json')) {
+          await res.json().catch(() => ({}));
+        }
+      } catch (err) {}
+    }
 
     (appData.timesheets || []).forEach(t => {
       if ((t.date || '').startsWith(this.currentMonth)) {

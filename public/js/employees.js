@@ -1129,11 +1129,11 @@ const appEmployees = {
   async openDetailModal(empId) {
     try {
       let serverJson = null;
-      try {
-        const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
-        serverJson = await res.json();
-      } catch (fe) {
-        console.warn('API detail fetch fallback:', fe);
+      if (typeof appData !== 'undefined' && appData.hasServerBackend) {
+        try {
+          const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
+          if (res.ok) serverJson = await res.json();
+        } catch (fe) {}
       }
 
       if (serverJson && serverJson.success && serverJson.data) {
@@ -1210,11 +1210,11 @@ const appEmployees = {
   async openEditModal(empId) {
     try {
       let serverJson = null;
-      try {
-        const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
-        serverJson = await res.json();
-      } catch (fe) {
-        console.warn('API edit fetch fallback:', fe);
+      if (typeof appData !== 'undefined' && appData.hasServerBackend) {
+        try {
+          const res = await fetch(`/api/employees/${encodeURIComponent(empId)}`);
+          if (res.ok) serverJson = await res.json();
+        } catch (fe) {}
       }
 
       const masterData = this.buildFullMasterProfile(empId, serverJson);
