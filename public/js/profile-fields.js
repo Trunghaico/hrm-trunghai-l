@@ -466,6 +466,17 @@ function fillDetailModalData(masterData, allowancesList = null) {
       if (typeof appData !== 'undefined' && appData.getPositionId) {
         val = appData.getPositionId(val || masterData.position_id || masterData['Vị trí công việc']);
       }
+    } else if (f.key === 'Đơn vị công tác') {
+      const dId = masterData['Mã đơn vị công tác'] || masterData.department_id;
+      if (dId && typeof appData !== 'undefined' && appData.deptMap && appData.deptMap[dId]) {
+        val = appData.deptMap[dId];
+      } else if (!val && masterData.department_name) {
+        val = masterData.department_name;
+      }
+    } else if (f.key === 'Mã đơn vị công tác') {
+      if (!val && masterData.department_id) {
+        val = masterData.department_id;
+      }
     }
 
     if (val === undefined || val === null || val === '') {
@@ -616,6 +627,17 @@ function fillFormModalData(masterData = {}, isEdit = false) {
     } else if (f.key === 'Chức danh') {
       if (typeof appData !== 'undefined' && appData.getPositionName) {
         val = appData.getPositionName(val || masterData.job_title || masterData.position_name || masterData['Vị trí công việc']);
+      }
+    } else if (f.key === 'Đơn vị công tác') {
+      const dId = masterData['Mã đơn vị công tác'] || masterData.department_id;
+      if (dId && typeof appData !== 'undefined' && appData.deptMap && appData.deptMap[dId]) {
+        val = appData.deptMap[dId];
+      } else if (!val && masterData.department_name) {
+        val = masterData.department_name;
+      }
+    } else if (f.key === 'Mã đơn vị công tác') {
+      if (!val && masterData.department_id) {
+        val = masterData.department_id;
       }
     }
 

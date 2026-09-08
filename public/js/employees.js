@@ -1020,11 +1020,11 @@ const appEmployees = {
       'Quốc tịch': pick(base['Quốc tịch'], emp.nationality, 'Việt Nam'),
       'MST cá nhân': pick(base['MST cá nhân'], emp.personal_tax_code, emp.tax_code),
 
-      'Đơn vị công tác': pick(base['Đơn vị công tác'], appData.deptMap?.[emp.department_id], emp.department_name, emp.department_id),
-      'Mã đơn vị công tác': pick(base['Mã đơn vị công tác'], emp.department_id),
-      'Vị trí công việc': appData.getPositionName ? appData.getPositionName(base['Vị trí công việc'] || emp.position_name || emp.position_id || emp.job_title) : pick(base['Vị trí công việc'], emp.position_name, emp.position_id),
-      'Mã vị trí công việc': appData.getPositionId ? appData.getPositionId(base['Mã vị trí công việc'] || emp.position_id || emp.position_name) : pick(base['Mã vị trí công việc'], emp.position_id),
-      'Chức danh': appData.getPositionName ? appData.getPositionName(base['Chức danh'] || emp.job_title || emp.position_name || emp.position_id) : pick(base['Chức danh'], emp.job_title, emp.position_name),
+      'Đơn vị công tác': appData.deptMap?.[emp.department_id] || emp.department_name || pick(base['Đơn vị công tác'], emp.department_id),
+      'Mã đơn vị công tác': emp.department_id || pick(base['Mã đơn vị công tác']),
+      'Vị trí công việc': appData.getPositionName ? appData.getPositionName(emp.position_name || emp.position_id || base['Vị trí công việc'] || emp.job_title) : pick(base['Vị trí công việc'], emp.position_name, emp.position_id),
+      'Mã vị trí công việc': appData.getPositionId ? appData.getPositionId(emp.position_id || base['Mã vị trí công việc'] || emp.position_name) : pick(base['Mã vị trí công việc'], emp.position_id),
+      'Chức danh': appData.getPositionName ? appData.getPositionName(emp.position_name || emp.job_title || base['Chức danh'] || emp.position_id) : pick(base['Chức danh'], emp.job_title, emp.position_name),
       'Cấp': pick(base['Cấp'], emp.job_grade),
       'Bậc': pick(base['Bậc'], emp.job_step),
       'Mã chấm công': pick(base['Mã chấm công'], emp.time_attendance_code),
@@ -1328,6 +1328,39 @@ const appEmployees = {
       return;
     }
 
+    // 1. Resolve & bind Department
+    let boundDeptId = (masterData['Mã đơn vị công tác'] || masterData['Đơn vị công tác'] || '').trim();
+    let boundDeptName = (masterData['Đơn vị công tác'] || '').trim();
+    if (boundDeptId && appData.deptMap && appData.deptMap[boundDeptId]) {
+      boundDeptName = appData.deptMap[boundDeptId];
+    } else if (boundDeptName && appData.departments) {
+      const foundD = appData.departments.find(d => d.department_name.toLowerCase() === boundDeptName.toLowerCase());
+      if (foundD) {
+        boundDeptId = foundD.department_id;
+        boundDeptName = foundD.department_name;
+      }
+    }
+
+    // 2. Resolve & bind Position
+    let boundPosId = (masterData['Mã vị trí công việc'] || masterData['Vị trí công việc'] || '').trim();
+    if (appData.getPositionId) {
+      boundPosId = appData.getPositionId(boundPosId);
+    }
+    let boundPosName = appData.getPositionName ? appData.getPositionName(boundPosId || masterData['Vị trí công việc'] || '') : (masterData['Vị trí công việc'] || '');
+
+    // Synchronize into masterData
+    masterData['Mã đơn vị công tác'] = boundDeptId;
+    masterData['Đơn vị công tác'] = boundDeptName;
+    masterData['department_id'] = boundDeptId;
+    masterData['department_name'] = boundDeptName;
+
+    masterData['Mã vị trí công việc'] = boundPosId;
+    masterData['Vị trí công việc'] = boundPosName;
+    masterData['Chức danh'] = boundPosName;
+    masterData['position_id'] = boundPosId;
+    masterData['position_name'] = boundPosName;
+    masterData['job_title'] = boundPosName;
+
     const payload = {
       master_profile: masterData,
       employee_id: empId,
@@ -1340,12 +1373,12 @@ const appEmployees = {
       religion: masterData['Tôn giáo'] || 'Không',
       marital_status: masterData['Tình trạng hôn nhân'] || 'Độc thân',
       tax_code: masterData['MST cá nhân'] || '',
-      department_id: masterData['Mã đơn vị công tác'] || masterData['Đơn vị công tác'] || '',
-      department_name: masterData['Đơn vị công tác'] || '',
-      position_id: (appData.getPositionId ? appData.getPositionId(masterData['Mã vị trí công việc'] || masterData['Vị trí công việc'] || '') : (masterData['Mã vị trí công việc'] || masterData['Vị trí công việc'] || '')),
-      position_name: (appData.getPositionName ? appData.getPositionName(masterData['Vị trí công việc'] || masterData['Mã vị trí công việc'] || '') : (masterData['Vị trí công việc'] || '')),
+      department_id: boundDeptId,
+      department_name: boundDeptName,
+      position_id: boundPosId,
+      position_name: boundPosName,
       job_rank: masterData['Bậc'] || masterData['Bậc lương'] || 'Cấp 3',
-      job_title: (appData.getPositionName ? appData.getPositionName(masterData['Chức danh'] || masterData['Vị trí công việc'] || '') : (masterData['Chức danh'] || masterData['Vị trí công việc'] || '')),
+      job_title: boundPosName,
       work_location: masterData['Địa điểm làm việc'] || '',
       direct_manager_name: masterData['Quản lý trực tiếp'] || '',
       labor_nature: masterData['Tính chất lao động'] || 'Chính thức',

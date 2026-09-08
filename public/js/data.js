@@ -260,14 +260,14 @@ const appData = {
     if (!s || s === '-') return '';
     const clean = s.replace(/^THG_/i, '');
     const found = (this.positions || []).find(p =>
-      (p.position_name && p.position_name.toLowerCase() === s.toLowerCase()) ||
       (p.position_id && p.position_id.toLowerCase() === s.toLowerCase()) ||
+      (p.position_name && p.position_name.toLowerCase() === s.toLowerCase()) ||
       (p.position_id && p.position_id.replace(/^THG_/i, '').toLowerCase() === clean.toLowerCase())
     );
     if (found && found.position_id) {
-      return found.position_id.replace(/^THG_/i, '');
+      return found.position_id;
     }
-    return clean;
+    return s.startsWith('THG_') ? s : ('THG_' + clean);
   }
 };
 
