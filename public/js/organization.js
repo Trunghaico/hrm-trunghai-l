@@ -1227,7 +1227,7 @@ const appOrganization = {
         if (bdhdaItem) {
           duoiPhongBranches.push({
             item: bdhdaItem,
-            label: 'Ban ĐHDA (Dưới Phòng)',
+            label: 'Ban Điều Hành Dự Án',
             children: khoiOtherItems.map(k => ({
               item: k,
               label: 'Khối Dự Án',
@@ -1251,7 +1251,7 @@ const appOrganization = {
                 borderColor: '#0D9488'
               }
             },
-            label: 'Khối Dự Án (Dưới Phòng)',
+            label: 'Khối Dự Án',
             children: khoiOtherItems.map(k => ({
               item: k,
               label: 'Khối Dự Án',
@@ -1262,7 +1262,7 @@ const appOrganization = {
 
         rootTreeBranch = {
           item: rootItem,
-          label: 'Ban Giám Đốc (Lãnh Đạo)',
+          label: 'Ban Giám Đốc',
           isRoot: true,
           children: [
             ...phongBranches,
