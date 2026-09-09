@@ -3612,8 +3612,9 @@ tr.row-selected {
   background-size: 24px 24px;
   background-color: #F8FAFC;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   min-width: 100%;
   overflow-x: auto;
 }

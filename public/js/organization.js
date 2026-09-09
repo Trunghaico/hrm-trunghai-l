@@ -1124,15 +1124,15 @@ const appOrganization = {
       });
 
       // Build True Tree Hierarchy Data Structure for this company
-      // Rule: Ban Tổng giám đốc lớn nhất -> Ban giám đốc -> các ban khác ngang nhau -> phòng - Khối ngang nhau.
-      // Công ty nào không có cấp nào thì cấp hiện diện kế tiếp sẽ là lớn nhất (Root).
+      // Rule: Ban Tổng giám đốc lớn nhất -> Ban giám đốc -> 5 ban khác ngang nhau -> phòng -> Khối trực tiếp/gián tiếp ở dưới cùng không liên kết.
       let rootTreeBranch = null;
+      let bottomUnits = [];
 
       if (tier1_BTGD.length > 0) {
-        // CÔNG TY CÓ BAN TỔNG GIÁM ĐỐC (THG)
+        // CÔNG TY CÓ BAN TỔNG GIÁM ĐỐC (THG - TRUNG HẢI)
         const rootItem = tier1_BTGD[0];
         
-        // Sắp xếp các Ban chuyên môn theo thứ tự chuẩn hóa: TCHC, TCKT, KHTH, QLTB, PC
+        // Sắp xếp 5 Ban chuyên môn theo thứ tự chuẩn hóa: TCHC, TCKT, KHTH, QLTB, PC
         const banOrder = ['BTCHC', 'BTCKT', 'BKHTH', 'BQLTB', 'BPC'];
         tier3_BAN.sort((a, b) => {
           const codeA = (a.department_id || '').toUpperCase();
@@ -1142,7 +1142,7 @@ const appOrganization = {
           return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99);
         });
 
-        // 1. Nhánh các Ban chuyên môn: Chính xác 5 Ban của Trung Hải nằm ngang hàng với nhau
+        // 1. Nhánh các Ban chuyên môn: Chính xác 5 Ban của Trung Hải nằm ngang hàng với nhau trên 1 dòng
         const banBranches = tier3_BAN.map(b => ({
           item: b,
           label: 'Ban Chuyên Môn',
@@ -1157,14 +1157,37 @@ const appOrganization = {
             label: 'Ban Giám Đốc',
             children: banBranches
           };
+        } else {
+          bgdBranch = {
+            item: {
+              department_id: 'BGD.TH',
+              department_name: 'BAN GIÁM ĐỐC TRUNG HẢI',
+              company_id: 'THG',
+              info: {
+                tier: 2,
+                tierCode: 'BGD',
+                tierName: 'Ban Giám Đốc',
+                badgeClass: 'badge-tier-2',
+                icon: 'fa-building-columns',
+                color: '#3730A3',
+                bgColor: '#EEF2FF',
+                borderColor: '#4F46E5'
+              }
+            },
+            label: 'Ban Giám Đốc',
+            children: banBranches
+          };
         }
 
         rootTreeBranch = {
           item: rootItem,
           label: 'Ban Tổng Giám Đốc',
           isRoot: true,
-          children: bgdBranch ? [bgdBranch] : banBranches
+          children: [bgdBranch]
         };
+
+        // Các khối trực tiếp & gián tiếp, văn phòng dự án nằm ở dưới cùng không nối dây lên trên
+        bottomUnits = tier5_DUOI_PHONG;
 
       } else if (tier2_BGD.length > 0) {
         // CÔNG TY CÓ BAN GIÁM ĐỐC LÀM ROOT (PM, TP, TN)
@@ -1180,51 +1203,23 @@ const appOrganization = {
           return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99);
         });
 
-        // Level 2 Branches: Các Phòng ban chức năng (PHCNS, PKHTH, PTCKT ngang nhau ở trên)
+        // Level 2 Branches: Các Phòng ban chức năng
         const phongBranches = tier4_PHONG.map(p => ({
           item: p,
           label: 'Phòng Ban',
           children: []
         }));
 
-        // Level 3 (Dưới phòng): Ban Điều Hành Dự Án & Các Khối Dự Án
-        const bdhdaItem = tier5_DUOI_PHONG.find(d => d.department_id === 'BDHDA.PM' || (d.department_name || '').includes('ĐIỀU HÀNH'));
-        const khoiOtherItems = tier5_DUOI_PHONG.filter(d => d !== bdhdaItem);
+        // Nếu có Ban Điều Hành Dự Án (như PM), xếp ngang hàng cùng các phòng ở cấp 2
+        const bdhdaItem = tier5_DUOI_PHONG.find(d => d.department_id === 'BDHDA.PM' || (d.department_name || '').includes('BAN ĐIỀU HÀNH DỰ ÁN'));
+        const directIndirectUnits = tier5_DUOI_PHONG.filter(d => d !== bdhdaItem);
 
-        let duoiPhongBranches = [];
+        const level2Children = [...phongBranches];
         if (bdhdaItem) {
-          duoiPhongBranches.push({
+          level2Children.push({
             item: bdhdaItem,
             label: 'Ban Điều Hành Dự Án',
-            children: khoiOtherItems.map(k => ({
-              item: k,
-              label: 'Khối Dự Án',
-              children: []
-            }))
-          });
-        } else if (khoiOtherItems.length > 0) {
-          duoiPhongBranches.push({
-            item: {
-              department_id: `KHOI_${comp.company_id}`,
-              department_name: `KHỐI DỰ ÁN ${comp.company_id}`,
-              company_id: comp.company_id,
-              info: {
-                tier: 5,
-                tierCode: 'DUOI_PHONG',
-                tierName: 'Khối Dự Án',
-                badgeClass: 'badge-tier-5',
-                icon: 'fa-cubes-stacked',
-                color: '#0F766E',
-                bgColor: '#F0FDFA',
-                borderColor: '#0D9488'
-              }
-            },
-            label: 'Khối Dự Án',
-            children: khoiOtherItems.map(k => ({
-              item: k,
-              label: 'Khối Dự Án',
-              children: []
-            }))
+            children: []
           });
         }
 
@@ -1232,11 +1227,11 @@ const appOrganization = {
           item: rootItem,
           label: 'Ban Giám Đốc',
           isRoot: true,
-          children: [
-            ...phongBranches,
-            ...duoiPhongBranches
-          ]
+          children: level2Children
         };
+
+        // Các khối trực tiếp & gián tiếp còn lại nằm ở dưới cùng độc lập
+        bottomUnits = directIndirectUnits;
 
       } else if (tier4_PHONG.length > 0 || tier3_BAN.length > 0) {
         // Fallback root if neither BTGD nor BGD exists
@@ -1248,6 +1243,7 @@ const appOrganization = {
           isRoot: true,
           children: allUpper.slice(1).map(item => ({ item, label: 'Đơn Vị', children: [] }))
         };
+        bottomUnits = tier5_DUOI_PHONG;
       }
 
       html += `
@@ -1284,6 +1280,16 @@ const appOrganization = {
               <div class="org-tree-root-container">
                 ${renderTreeBranch(rootTreeBranch)}
               </div>
+              ${bottomUnits.length > 0 ? `
+                <div class="org-bottom-units-container" style="margin-top: 36px; padding-top: 24px; border-top: 1px dashed #CBD5E1; display: flex; flex-direction: column; align-items: center; width: 100%;">
+                  <div style="font-size: 11.5px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-cubes-stacked"></i> Khối Trực Tiếp &amp; Gián Tiếp
+                  </div>
+                  <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                    ${bottomUnits.map(unit => renderDeptCard(unit, 'Khối Đơn Vị')).join('')}
+                  </div>
+                </div>
+              ` : ''}
             `}
           </div>
         </div>
