@@ -3555,9 +3555,19 @@ tr.row-selected {
   to { opacity: 1; transform: translateY(0); }
 }
 
+.perm-row {
+  transition: background-color 0.15s ease;
+}
 
+.perm-row:hover {
+  background-color: #F1F5F9 !important;
+}
 
+.perm-chk:hover, .perm-chk-row-all:hover {
+  transform: scale(1.15);
+  transition: transform 0.1s ease;
+}
 
-
-
-
+#perm-matrix-tbody td {
+  vertical-align: middle;
+}

@@ -1,11 +1,120 @@
 // ==========================================================================
-// AUTHENTICATION & ROLE-BASED ACCESS CONTROL (RBAC) MODULE
+// AUTHENTICATION & GRANULAR ROLE-BASED ACCESS CONTROL (RBAC) MODULE
+// HRM Trung Hải Enterprise Edition
 // ==========================================================================
 
 const appAuth = {
   currentUser: null,
   storageKey: 'hrm_trunghai_user_session',
   tokenKey: 'hrm_trunghai_jwt_token',
+
+  // Danh mục phân hệ chuẩn trên toàn hệ thống
+  MODULES: [
+    { id: 'dashboard', name: 'Tổng quan / Dashboard', icon: 'fa-gauge-high', category: 'Tổng quan' },
+    { id: 'employees', name: 'Hồ sơ nhân sự', icon: 'fa-users', category: 'Nhân sự' },
+    { id: 'resigned', name: 'Nhân sự nghỉ việc', icon: 'fa-user-xmark', category: 'Nhân sự' },
+    { id: 'contracts', name: 'Hợp đồng lao động', icon: 'fa-file-contract', category: 'Hợp đồng' },
+    { id: 'attendance', name: 'Quản lý Chấm công', icon: 'fa-clock', category: 'Chấm công' },
+    { id: 'zk-devices', name: 'Máy chấm công & Kết nối', icon: 'fa-fingerprint', category: 'Chấm công' },
+    { id: 'org-chart', name: 'Sơ đồ cơ cấu tổ chức', icon: 'fa-sitemap', category: 'Tổ chức' },
+    { id: 'companies', name: 'Danh sách công ty', icon: 'fa-city', category: 'Tổ chức' },
+    { id: 'departments', name: 'Danh sách phòng ban', icon: 'fa-building', category: 'Tổ chức' },
+    { id: 'positions', name: 'Vị trí chức danh', icon: 'fa-briefcase', category: 'Tổ chức' },
+    { id: 'reports', name: 'Báo cáo nhân sự & Thống kê', icon: 'fa-chart-line', category: 'Báo cáo & Hệ thống' },
+    { id: 'accounts', name: 'Phân quyền tài khoản', icon: 'fa-user-shield', category: 'Báo cáo & Hệ thống' },
+    { id: 'logs', name: 'Nhật ký hoạt động', icon: 'fa-clock-rotate-left', category: 'Báo cáo & Hệ thống' },
+    { id: 'trash', name: 'Thùng rác & Khôi phục', icon: 'fa-trash-can', category: 'Báo cáo & Hệ thống' }
+  ],
+
+  // Danh sách các quyền thao tác
+  ACTIONS: [
+    { id: 'view', name: 'Xem', icon: 'fa-eye', desc: 'Truy cập danh mục & xem dữ liệu' },
+    { id: 'create', name: 'Thêm', icon: 'fa-plus', desc: 'Tạo mới bản ghi' },
+    { id: 'edit', name: 'Sửa', icon: 'fa-pen-to-square', desc: 'Chỉnh sửa thông tin' },
+    { id: 'delete', name: 'Xóa', icon: 'fa-trash', desc: 'Xóa bản ghi' },
+    { id: 'export', name: 'Xuất', icon: 'fa-file-excel', desc: 'Xuất file Excel / CSV' },
+    { id: 'import', name: 'Nhập', icon: 'fa-file-import', desc: 'Nhập dữ liệu từ Excel' },
+    { id: 'special', name: 'Duyệt / Khóa', icon: 'fa-shield-halved', desc: 'Khóa sổ, đồng bộ, khôi phục' }
+  ],
+
+  // Bộ mẫu phân quyền theo vai trò (Role Presets)
+  ROLE_PRESETS: {
+    ADMIN: {
+      name: '👑 Admin (Toàn quyền hệ thống)',
+      description: 'Có đầy đủ 100% tất cả các quyền trên mọi danh mục',
+      permissions: null // null means full access to everything
+    },
+    HR_MANAGER: {
+      name: '💼 Trưởng phòng Nhân sự (HR Manager)',
+      description: 'Toàn quyền quản lý Nhân sự, Hợp đồng, Chấm công, Báo cáo và Tổ chức',
+      permissions: {
+        dashboard: { view: true, export: true },
+        employees: { view: true, create: true, edit: true, delete: true, export: true, import: true, special: true },
+        resigned: { view: true, delete: true, export: true, special: true },
+        contracts: { view: true, create: true, edit: true, delete: true, export: true, special: true },
+        attendance: { view: true, create: true, edit: true, export: true, special: true },
+        'zk-devices': { view: true, export: true },
+        'org-chart': { view: true, export: true },
+        companies: { view: true, create: true, edit: true, export: true },
+        departments: { view: true, create: true, edit: true, export: true },
+        positions: { view: true, create: true, edit: true, export: true },
+        reports: { view: true, export: true },
+        accounts: { view: false },
+        logs: { view: true, export: true },
+        trash: { view: true, special: true }
+      }
+    },
+    TIMEKEEPER: {
+      name: '⏱️ Quản trị Chấm công (Timekeeper)',
+      description: 'Chuyên trách quản lý Chấm công, Máy chấm công và Xem nhân sự',
+      permissions: {
+        dashboard: { view: true },
+        employees: { view: true, export: true },
+        attendance: { view: true, create: true, edit: true, export: true, special: true },
+        'zk-devices': { view: true, create: true, edit: true, delete: true, special: true },
+        reports: { view: true, export: true },
+        departments: { view: true }
+      }
+    },
+    ACCOUNTANT: {
+      name: '📊 Kế toán tiền lương (Accountant)',
+      description: 'Xem và xuất báo cáo Chấm công, Hợp đồng, Nhân sự để tính lương',
+      permissions: {
+        dashboard: { view: true },
+        employees: { view: true, export: true },
+        contracts: { view: true, export: true },
+        attendance: { view: true, export: true },
+        reports: { view: true, export: true },
+        departments: { view: true },
+        positions: { view: true }
+      }
+    },
+    DEPT_MANAGER: {
+      name: '👔 Quản lý bộ phận (Manager)',
+      description: 'Xem nhân sự và quản lý chấm công, duyệt đơn thuộc bộ phận',
+      permissions: {
+        dashboard: { view: true },
+        employees: { view: true },
+        attendance: { view: true, create: true, edit: true, export: true },
+        departments: { view: true },
+        reports: { view: true }
+      }
+    },
+    EMPLOYEE: {
+      name: '👤 Nhân viên thông thường (Employee)',
+      description: 'Chỉ xem bảng tin Dashboard, Chấm công cá nhân và Hợp đồng cá nhân',
+      permissions: {
+        dashboard: { view: true },
+        attendance: { view: true },
+        contracts: { view: true }
+      }
+    },
+    CUSTOM: {
+      name: '⚙️ Tùy chỉnh chi tiết (Custom)',
+      description: 'Thiết lập ma trận phân quyền thủ công theo từng danh mục cụ thể',
+      permissions: {}
+    }
+  },
 
   init() {
     this.attachEventListeners();
@@ -41,25 +150,101 @@ const appAuth = {
     };
   },
 
+  // ========================================================================
+  // CORE PERMISSION CHECKER: appAuth.can(module, action)
+  // ========================================================================
+  can(module, action = 'view') {
+    const user = this.getCurrentUser();
+    if (!user) return false;
+
+    // 1. ADMIN luôn có toàn quyền 100%
+    if (user.role === 'ADMIN' || user.role === 'admin') {
+      return true;
+    }
+
+    // 2. Kiểm tra nếu có phân quyền tường minh (explicit permissions object)
+    if (user.permissions && typeof user.permissions === 'object') {
+      const modPerms = user.permissions[module];
+      if (modPerms) {
+        // Nếu là boolean trực tiếp cho toàn module
+        if (typeof modPerms === 'boolean') {
+          return modPerms;
+        }
+        // Nếu là object chi tiết { view: true, create: false, ... }
+        if (typeof modPerms === 'object') {
+          if (action === 'view') {
+            return modPerms.view !== false; // Mặc định true nếu có object
+          }
+          return Boolean(modPerms[action]);
+        }
+      }
+      return false;
+    }
+
+    // 3. Fallback theo Role Presets
+    const preset = this.ROLE_PRESETS[user.role];
+    if (preset) {
+      if (preset.permissions === null) return true; // Full access
+      const modPerms = preset.permissions[module];
+      if (modPerms) {
+        if (typeof modPerms === 'boolean') return modPerms;
+        if (action === 'view') return modPerms.view !== false;
+        return Boolean(modPerms[action]);
+      }
+      return false;
+    }
+
+    // Mặc định cho USER thông thường
+    if (action === 'view' && ['dashboard', 'attendance', 'contracts'].includes(module)) {
+      return true;
+    }
+    return false;
+  },
+
+  // Helper kiểm tra nhiều quyền cùng lúc
+  canAny(module, actions = []) {
+    return actions.some(act => this.can(module, act));
+  },
+
+  canAll(module, actions = []) {
+    return actions.every(act => this.can(module, act));
+  },
+
   async checkSession() {
     try {
       const saved = localStorage.getItem(this.storageKey);
       const token = localStorage.getItem(this.tokenKey);
       
-      if (saved && token) {
+      if (saved) {
         this.currentUser = JSON.parse(saved);
+
+        // Sync with appData accounts if available for up-to-date permissions
+        if (window.appData && Array.isArray(appData.accounts)) {
+          const freshAcc = appData.accounts.find(a => 
+            a.account_id === this.currentUser.account_id || 
+            a.employee_id === this.currentUser.employee_id ||
+            a.account_email === this.currentUser.account_email
+          );
+          if (freshAcc) {
+            this.currentUser = { ...this.currentUser, ...freshAcc };
+            localStorage.setItem(this.storageKey, JSON.stringify(this.currentUser));
+          }
+        }
+
         this.applyUserSession(this.currentUser);
         this.hideLoginScreen();
 
         // Asynchronously verify token with server
-        fetch('/api/auth/me', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).then(res => res.json()).then(data => {
-          if (!data.success) {
-            console.warn('Session expired or invalid, logging out...');
-            this.confirmLogout(false);
-          }
-        }).catch(err => console.warn('Auth check skipped:', err.message));
+        if (token) {
+          fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }).then(res => res.json()).then(data => {
+            if (!data.success) {
+              console.warn('Session expired or invalid, logging out...');
+              this.confirmLogout(false);
+            }
+          }).catch(err => console.warn('Auth check skipped:', err.message));
+        }
 
         return;
       }
@@ -126,7 +311,6 @@ const appAuth = {
     }
   },
 
-  // Modal-based Logout flow
   openLogoutModal() {
     const modal = document.getElementById('modal-logout-confirm');
     if (modal) {
@@ -155,7 +339,9 @@ const appAuth = {
     }
   },
 
-  // Apply Role-Based UI Constraints (ADMIN vs USER)
+  // ========================================================================
+  // APPLY GRANULAR USER PERMISSIONS TO THE ENTIRE UI
+  // ========================================================================
   applyUserSession(user) {
     if (!user) return;
 
@@ -166,7 +352,8 @@ const appAuth = {
 
     const initials = user.full_name ? user.full_name.split(' ').map(n => n[0]).slice(-2).join('') : 'U';
     const isAdmin = user.role === 'ADMIN';
-    const displayRole = isAdmin ? 'Admin' : 'User';
+    const preset = this.ROLE_PRESETS[user.role];
+    const displayRole = preset ? preset.name.split('(')[0].trim() : (isAdmin ? 'Admin' : (user.role || 'User'));
 
     if (topUserName) topUserName.textContent = user.full_name;
     if (topUserRole) {
@@ -181,38 +368,80 @@ const appAuth = {
     const sideUserAvatar = document.getElementById('sidebar-user-avatar') || document.querySelector('.sidebar-user .user-avatar');
 
     if (sideUserName) sideUserName.textContent = user.full_name;
-    if (sideUserRole) sideUserRole.textContent = `${displayRole} - ${user.employee_id}`;
+    if (sideUserRole) sideUserRole.textContent = `${displayRole} - ${user.employee_id || user.account_id || ''}`;
     if (sideUserAvatar) sideUserAvatar.textContent = initials;
 
-    // 3. Role-Based Navigation & Action Filtering
-    const navAccounts = document.querySelector('.nav-item[data-view="accounts"]');
-    const navLogs = document.querySelector('.nav-item[data-view="logs"]');
-    const navTrash = document.querySelector('.nav-item[data-view="trash"]');
-    const navReports = document.querySelector('.nav-item[data-view="reports"]');
-    const btnClearLogs = document.getElementById('btn-clear-logs');
+    // 3. Dynamic Granular Sidebar Navigation Filtering
+    document.querySelectorAll('.sidebar-nav .nav-item[data-view]').forEach(item => {
+      const viewId = item.getAttribute('data-view');
+      if (!viewId) return;
 
-    if (isAdmin) {
-      // ADMIN: Toàn quyền truy cập tất cả chức năng
-      if (navAccounts) navAccounts.style.display = 'flex';
-      if (navLogs) navLogs.style.display = 'flex';
-      if (navTrash) navTrash.style.display = 'flex';
-      if (navReports) navReports.style.display = 'flex';
-      if (btnClearLogs) btnClearLogs.style.display = 'inline-flex';
-    } else {
-      // USER: Không hiển thị Nhật ký, Thùng rác, Phân quyền
-      if (navAccounts) navAccounts.style.display = 'none';
-      if (navLogs) navLogs.style.display = 'none';
-      if (navTrash) navTrash.style.display = 'none';
-      if (navReports) navReports.style.display = 'flex';
-      if (btnClearLogs) btnClearLogs.style.display = 'none';
+      const canView = this.can(viewId, 'view');
+      item.style.display = canView ? 'flex' : 'none';
+    });
 
-      // If user is currently inside a restricted view, redirect back to Dashboard
-      const currentActivePanel = document.querySelector('.view-panel.active');
-      if (currentActivePanel && ['view-accounts', 'view-logs', 'view-trash'].includes(currentActivePanel.id)) {
-        const dashboardNav = document.querySelector('.sidebar-nav .nav-item[data-view="dashboard"]');
-        if (dashboardNav) dashboardNav.click();
+    // Hide sidebar section headers if all items in that section are hidden
+    document.querySelectorAll('.sidebar-nav .nav-section-title').forEach(sectionTitle => {
+      let nextEl = sectionTitle.nextElementSibling;
+      let hasVisibleChild = false;
+      while (nextEl && !nextEl.classList.contains('nav-section-title') && !nextEl.classList.contains('sidebar-footer')) {
+        if (nextEl.classList.contains('nav-item') && nextEl.style.display !== 'none') {
+          hasVisibleChild = true;
+          break;
+        }
+        nextEl = nextEl.nextElementSibling;
+      }
+      sectionTitle.style.display = hasVisibleChild ? 'flex' : 'none';
+    });
+
+    // 4. Check if currently active view is restricted; if so, redirect to first allowed view
+    const currentActivePanel = document.querySelector('.view-panel.active');
+    if (currentActivePanel) {
+      const currentViewId = currentActivePanel.id.replace('view-', '');
+      if (!this.can(currentViewId, 'view')) {
+        // Find first permitted view
+        const allowedNav = Array.from(document.querySelectorAll('.sidebar-nav .nav-item[data-view]'))
+          .find(nav => nav.style.display !== 'none');
+        if (allowedNav) {
+          allowedNav.click();
+        } else {
+          const dashboardNav = document.querySelector('.sidebar-nav .nav-item[data-view="dashboard"]');
+          if (dashboardNav) dashboardNav.click();
+        }
       }
     }
+
+    // 5. Dynamic Action Elements Permission Filter (data-perm-module & data-perm-action)
+    this.enforceActionPermissions();
+  },
+
+  // Enforce granular action permissions across buttons in DOM
+  enforceActionPermissions() {
+    document.querySelectorAll('[data-perm-module][data-perm-action]').forEach(el => {
+      const mod = el.getAttribute('data-perm-module');
+      const act = el.getAttribute('data-perm-action');
+      const allowed = this.can(mod, act);
+
+      if (!allowed) {
+        if (el.getAttribute('data-perm-mode') === 'disable') {
+          el.disabled = true;
+          el.classList.add('disabled');
+          el.setAttribute('title', 'Bạn không có quyền thực hiện thao tác này');
+        } else {
+          el.style.display = 'none';
+        }
+      } else {
+        if (el.getAttribute('data-perm-mode') === 'disable') {
+          el.disabled = false;
+          el.classList.remove('disabled');
+        } else {
+          // Restore default display if it was hidden
+          if (el.style.display === 'none') {
+            el.style.display = '';
+          }
+        }
+      }
+    });
   },
 
   attachEventListeners() {
@@ -251,3 +480,4 @@ const appAuth = {
     }
   }
 };
+

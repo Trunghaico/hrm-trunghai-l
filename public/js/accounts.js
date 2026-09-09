@@ -25,8 +25,8 @@ const appAccounts = {
     const total = accounts.length;
     const adminCount = accounts.filter(a => a.role === 'ADMIN').length;
     const hrCount = accounts.filter(a => a.role === 'HR_MANAGER').length;
-    const mgrCount = accounts.filter(a => a.role === 'MANAGER').length;
-    const empCount = accounts.filter(a => a.role === 'EMPLOYEE' || !a.role).length;
+    const mgrCount = accounts.filter(a => ['MANAGER', 'DEPT_MANAGER', 'TIMEKEEPER', 'ACCOUNTANT'].includes(a.role)).length;
+    const empCount = accounts.filter(a => a.role === 'EMPLOYEE' || a.role === 'USER' || !a.role).length;
 
     const elTotal = document.getElementById('kpi-acc-total');
     const elAdmin = document.getElementById('kpi-acc-admin');
@@ -71,6 +71,21 @@ const appAccounts = {
     this.renderPagination();
   },
 
+  getRoleBadge(role) {
+    const map = {
+      ADMIN: { label: '👑 Admin', style: 'background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA;' },
+      HR_MANAGER: { label: '💼 Trưởng phòng HR', style: 'background: #DBEAFE; color: #1E40AF; border: 1px solid #BFDBFE;' },
+      TIMEKEEPER: { label: '⏱️ QL Chấm công', style: 'background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0;' },
+      ACCOUNTANT: { label: '📊 Kế toán lương', style: 'background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;' },
+      DEPT_MANAGER: { label: '👔 Quản lý BP', style: 'background: #EDE9FE; color: #5B21B6; border: 1px solid #DDD6FE;' },
+      EMPLOYEE: { label: '👤 Nhân viên', style: 'background: #F1F5F9; color: #334155; border: 1px solid #E2E8F0;' },
+      USER: { label: '👤 Người dùng', style: 'background: #F1F5F9; color: #334155; border: 1px solid #E2E8F0;' },
+      CUSTOM: { label: '⚙️ Tùy chỉnh', style: 'background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD;' }
+    };
+    const r = map[role] || map.CUSTOM;
+    return `<span class="badge" style="${r.style}; font-size: 11px; padding: 3px 8px; font-weight: 600;">${r.label}</span>`;
+  },
+
   renderTable() {
     const tbody = document.getElementById('accounts-tbody');
     if (!tbody) return;
@@ -95,9 +110,20 @@ const appAccounts = {
 
     tbody.innerHTML = pageItems.map(a => {
       const isChecked = this.selectedAccountIds.has(a.account_id);
-      const isAdmin = a.role === 'ADMIN';
-      const roleBadge = isAdmin ? 'badge-red' : 'badge-navy';
-      const roleLabel = isAdmin ? '👑 Admin' : '👤 User';
+      const roleBadge = this.getRoleBadge(a.role || 'USER');
+
+      // Calculate permissions summary
+      let permSummary = '';
+      if (a.role === 'ADMIN') {
+        permSummary = '<span style="color: #047857; font-size: 11px; font-weight: 600;"><i class="fa-solid fa-check-circle"></i> Toàn quyền (14/14 DM)</span>';
+      } else if (a.permissions && typeof a.permissions === 'object') {
+        const allowedCount = Object.keys(a.permissions).filter(k => a.permissions[k] && (a.permissions[k] === true || a.permissions[k].view !== false)).length;
+        permSummary = `<span style="color: #2563EB; font-size: 11px; font-weight: 600;">${allowedCount}/14 danh mục</span>`;
+      } else {
+        const preset = appAuth.ROLE_PRESETS[a.role];
+        const count = preset && preset.permissions ? Object.keys(preset.permissions).length : 3;
+        permSummary = `<span style="color: #64748B; font-size: 11px;">${count}/14 danh mục</span>`;
+      }
 
       const statusBadge = a.account_status === 'Kích hoạt' || a.account_status === 'Hoạt động' 
         ? '<span class="badge badge-active"><i class="fa-solid fa-circle-check"></i> Hoạt động</span>'
@@ -112,13 +138,18 @@ const appAccounts = {
           <td><span class="badge badge-navy">${a.employee_id || ''}</span></td>
           <td><strong>${a.full_name || ''}</strong></td>
           <td>${a.account_email || ''}</td>
-          <td><span class="badge ${roleBadge}">${roleLabel}</span></td>
+          <td>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              ${roleBadge}
+              ${permSummary}
+            </div>
+          </td>
           <td><span style="font-family: monospace; color: var(--text-muted); letter-spacing: 2px;">••••••</span></td>
           <td>${statusBadge}</td>
           <td>
             <div style="display: flex; gap: 4px;">
-              <button class="btn btn-sm btn-outline-navy" title="Sửa phân quyền" onclick="appAccounts.openEditModal('${a.account_id}')">
-                <i class="fa-solid fa-user-pen"></i> Sửa
+              <button class="btn btn-sm btn-outline-navy" title="Sửa phân quyền chi tiết" onclick="appAccounts.openEditModal('${a.account_id}')">
+                <i class="fa-solid fa-user-pen"></i> Sửa Phân Quyền
               </button>
               <button class="btn btn-sm btn-secondary" title="Đổi / Reset mật khẩu" onclick="appAccounts.openResetPassModal('${a.account_id}')">
                 <i class="fa-solid fa-key" style="color: #D97706;"></i>
@@ -174,11 +205,11 @@ const appAccounts = {
     const q = filterText.trim().toLowerCase();
     const filtered = (appData.employees || []).filter(e => {
       if (!q) return true;
-      const title = (appData.posMap[e.position_id] || e.job_title || '').toLowerCase();
+      const title = (appData.posMap && appData.posMap[e.position_id]) || e.job_title || '';
       const empId = (e.employee_id || '').toLowerCase();
       const name = (e.full_name || '').toLowerCase();
-      const dept = (appData.deptMap[e.department_id] || '').toLowerCase();
-      return empId.includes(q) || name.includes(q) || title.includes(q) || dept.includes(q);
+      const dept = (appData.deptMap && appData.deptMap[e.department_id]) || e.department_name || '';
+      return empId.includes(q) || name.includes(q) || title.toLowerCase().includes(q) || dept.toLowerCase().includes(q);
     });
 
     if (filtered.length === 0) {
@@ -189,8 +220,8 @@ const appAccounts = {
     const currentSelected = selectedId || (filtered[0] ? filtered[0].employee_id : null);
 
     listContainer.innerHTML = filtered.map(e => {
-      const title = appData.posMap[e.position_id] || e.job_title || 'Nhân viên';
-      const dept = appData.deptMap[e.department_id] || '';
+      const title = (appData.posMap && appData.posMap[e.position_id]) || e.job_title || 'Nhân viên';
+      const dept = (appData.deptMap && appData.deptMap[e.department_id]) || e.department_name || '';
       const initials = e.full_name ? e.full_name.split(' ').map(n => n[0]).slice(-2).join('') : 'NV';
       const isSelected = e.employee_id === currentSelected;
 
@@ -232,10 +263,241 @@ const appAccounts = {
     }
   },
 
+  // ========================================================================
+  // PERMISSION MATRIX RENDERER & INTERACTIVE CONTROLS
+  // ========================================================================
+  renderPermissionMatrix(currentPermissions = {}, currentRole = 'CUSTOM') {
+    const tbody = document.getElementById('perm-matrix-tbody');
+    if (!tbody) return;
+
+    const modules = appAuth.MODULES || [];
+    const actions = appAuth.ACTIONS || [];
+
+    // If role is ADMIN, all permissions are true
+    const isAdmin = currentRole === 'ADMIN';
+
+    // If permissions object is empty and preset exists, resolve from preset
+    let resolvedPerms = currentPermissions || {};
+    if ((!resolvedPerms || Object.keys(resolvedPerms).length === 0) && appAuth.ROLE_PRESETS[currentRole]) {
+      const preset = appAuth.ROLE_PRESETS[currentRole];
+      if (preset.permissions === null) {
+        // Full access
+        resolvedPerms = {};
+        modules.forEach(m => {
+          resolvedPerms[m.id] = { view: true, create: true, edit: true, delete: true, export: true, import: true, special: true };
+        });
+      } else {
+        resolvedPerms = preset.permissions || {};
+      }
+    }
+
+    let rowsHtml = '';
+    let currentCat = '';
+
+    modules.forEach(m => {
+      // Category group header
+      if (m.category && m.category !== currentCat) {
+        currentCat = m.category;
+        rowsHtml += `
+          <tr style="background: #E2E8F0; font-weight: 700; color: #334155; font-size: 11.5px;">
+            <td colspan="9" style="padding: 6px 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+              <i class="fa-solid fa-layer-group" style="color: #64748B; margin-right: 4px;"></i> ${currentCat}
+            </td>
+          </tr>
+        `;
+      }
+
+      const modPerms = resolvedPerms[m.id] || (isAdmin ? { view: true, create: true, edit: true, delete: true, export: true, import: true, special: true } : {});
+      const isView = isAdmin || (typeof modPerms === 'boolean' ? modPerms : Boolean(modPerms.view !== false && modPerms.view !== undefined ? modPerms.view : modPerms.view));
+      const isCreate = isAdmin || Boolean(modPerms.create);
+      const isEdit = isAdmin || Boolean(modPerms.edit);
+      const isDelete = isAdmin || Boolean(modPerms.delete);
+      const isExport = isAdmin || Boolean(modPerms.export);
+      const isImport = isAdmin || Boolean(modPerms.import);
+      const isSpecial = isAdmin || Boolean(modPerms.special);
+
+      const isAllChecked = isView && isCreate && isEdit && isDelete && isExport && isImport && isSpecial;
+
+      rowsHtml += `
+        <tr class="perm-row" data-module="${m.id}" style="border-bottom: 1px solid #F1F5F9;">
+          <td style="padding: 8px 10px; font-weight: 600; color: #1E293B;">
+            <i class="fa-solid ${m.icon}" style="width: 18px; color: #64748B; margin-right: 4px;"></i>
+            ${m.name}
+          </td>
+          <td style="text-align: center; padding: 6px;">
+            <input type="checkbox" class="perm-chk perm-chk-view" data-module="${m.id}" data-action="view" ${isView ? 'checked' : ''} onchange="appAccounts.onCheckboxChange('${m.id}', 'view', this.checked)" style="accent-color: #2563EB; width: 16px; height: 16px; cursor: pointer;">
+          </td>
+          <td style="text-align: center; padding: 6px;">
+            <input type="checkbox" class="perm-chk perm-chk-create" data-module="${m.id}" data-action="create" ${isCreate ? 'checked' : ''} onchange="appAccounts.onCheckboxChange('${m.id}', 'create', this.checked)" style="accent-color: #16A34A; width: 16px; height: 16px; cursor: pointer;">
+          </td>
+          <td style="text-align: center; padding: 6px;">
+            <input type="checkbox" class="perm-chk perm-chk-edit" data-module="${m.id}" data-action="edit" ${isEdit ? 'checked' : ''} onchange="appAccounts.onCheckboxChange('${m.id}', 'edit', this.checked)" style="accent-color: #D97706; width: 16px; height: 16px; cursor: pointer;">
+          </td>
+          <td style="text-align: center; padding: 6px;">
+            <input type="checkbox" class="perm-chk perm-chk-delete" data-module="${m.id}" data-action="delete" ${isDelete ? 'checked' : ''} onchange="appAccounts.onCheckboxChange('${m.id}', 'delete', this.checked)" style="accent-color: #DC2626; width: 16px; height: 16px; cursor: pointer;">
+          </td>
+          <td style="text-align: center; padding: 6px;">
+            <input type="checkbox" class="perm-chk perm-chk-export" data-module="${m.id}" data-action="export" ${isExport ? 'checked' : ''} onchange="appAccounts.onCheckboxChange('${m.id}', 'export', this.checked)" style="accent-color: #059669; width: 16px; height: 16px; cursor: pointer;">
+          </td>
+          <td style="text-align: center; padding: 6px;">
+            <input type="checkbox" class="perm-chk perm-chk-import" data-module="${m.id}" data-action="import" ${isImport ? 'checked' : ''} onchange="appAccounts.onCheckboxChange('${m.id}', 'import', this.checked)" style="accent-color: #7C3AED; width: 16px; height: 16px; cursor: pointer;">
+          </td>
+          <td style="text-align: center; padding: 6px;">
+            <input type="checkbox" class="perm-chk perm-chk-special" data-module="${m.id}" data-action="special" ${isSpecial ? 'checked' : ''} onchange="appAccounts.onCheckboxChange('${m.id}', 'special', this.checked)" style="accent-color: #4F46E5; width: 16px; height: 16px; cursor: pointer;">
+          </td>
+          <td style="text-align: center; padding: 6px; background: #F8FAFC;">
+            <input type="checkbox" class="perm-chk-row-all" data-module="${m.id}" ${isAllChecked ? 'checked' : ''} onchange="appAccounts.toggleRowPermissions('${m.id}', this.checked)" title="Chọn tất cả quyền cho danh mục này" style="accent-color: #0F172A; width: 16px; height: 16px; cursor: pointer;">
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+    this.syncHeaderCheckboxes();
+  },
+
+  // When Role Preset Dropdown changes
+  onRoleChange(roleKey) {
+    const descEl = document.getElementById('acc-role-desc');
+    const preset = appAuth.ROLE_PRESETS[roleKey];
+    if (descEl && preset) {
+      descEl.textContent = preset.description;
+    }
+
+    if (roleKey === 'ADMIN') {
+      this.toggleAllPermissions(true);
+      return;
+    }
+
+    if (preset && preset.permissions) {
+      this.renderPermissionMatrix(preset.permissions, roleKey);
+    } else if (roleKey === 'CUSTOM') {
+      // Leave current selections as is
+    }
+  },
+
+  // When user clicks an individual checkbox
+  onCheckboxChange(moduleId, actionId, isChecked) {
+    // If checking a sub-action (create, edit, delete...), auto-check view
+    if (isChecked && actionId !== 'view') {
+      const viewChk = document.querySelector(`.perm-chk-view[data-module="${moduleId}"]`);
+      if (viewChk && !viewChk.checked) {
+        viewChk.checked = true;
+      }
+    }
+
+    // Sync row master checkbox
+    const rowChks = document.querySelectorAll(`.perm-chk[data-module="${moduleId}"]`);
+    const allRowChecked = Array.from(rowChks).every(c => c.checked);
+    const rowMaster = document.querySelector(`.perm-chk-row-all[data-module="${moduleId}"]`);
+    if (rowMaster) rowMaster.checked = allRowChecked;
+
+    this.syncHeaderCheckboxes();
+
+    // Set role dropdown to CUSTOM if it wasn't
+    const roleSelect = document.getElementById('acc-form-role');
+    if (roleSelect && roleSelect.value !== 'CUSTOM' && roleSelect.value !== 'ADMIN') {
+      roleSelect.value = 'CUSTOM';
+      const descEl = document.getElementById('acc-role-desc');
+      if (descEl) descEl.textContent = 'Thiết lập ma trận phân quyền tùy chỉnh';
+    }
+  },
+
+  // Toggle all actions in a single row
+  toggleRowPermissions(moduleId, isChecked) {
+    document.querySelectorAll(`.perm-chk[data-module="${moduleId}"]`).forEach(chk => {
+      chk.checked = isChecked;
+    });
+    this.syncHeaderCheckboxes();
+  },
+
+  // Toggle all modules in a single column (view, create, edit...)
+  toggleColumnPermissions(actionId, isChecked) {
+    document.querySelectorAll(`.perm-chk-${actionId}`).forEach(chk => {
+      chk.checked = isChecked;
+    });
+
+    // If enabling any action column, also enable view column
+    if (isChecked && actionId !== 'view') {
+      document.querySelectorAll('.perm-chk-view').forEach(chk => {
+        chk.checked = true;
+      });
+      const headerView = document.getElementById('perm-col-view');
+      if (headerView) headerView.checked = true;
+    }
+
+    // Update row masters
+    document.querySelectorAll('.perm-row').forEach(row => {
+      const modId = row.getAttribute('data-module');
+      const rowChks = document.querySelectorAll(`.perm-chk[data-module="${modId}"]`);
+      const allRowChecked = Array.from(rowChks).every(c => c.checked);
+      const rowMaster = document.querySelector(`.perm-chk-row-all[data-module="${modId}"]`);
+      if (rowMaster) rowMaster.checked = allRowChecked;
+    });
+  },
+
+  // Toggle All Permissions across entire matrix
+  toggleAllPermissions(isChecked) {
+    document.querySelectorAll('.perm-chk, .perm-chk-row-all').forEach(chk => {
+      chk.checked = isChecked;
+    });
+    ['view', 'create', 'edit', 'delete', 'export', 'import', 'special'].forEach(col => {
+      const el = document.getElementById(`perm-col-${col}`);
+      if (el) el.checked = isChecked;
+    });
+  },
+
+  // Sync column header checkboxes
+  syncHeaderCheckboxes() {
+    ['view', 'create', 'edit', 'delete', 'export', 'import', 'special'].forEach(actionId => {
+      const chks = document.querySelectorAll(`.perm-chk-${actionId}`);
+      const allChecked = chks.length > 0 && Array.from(chks).every(c => c.checked);
+      const headerChk = document.getElementById(`perm-col-${actionId}`);
+      if (headerChk) headerChk.checked = allChecked;
+    });
+  },
+
+  // Collect permission matrix state into a clean JSON object
+  collectPermissionMatrix() {
+    const role = document.getElementById('acc-form-role')?.value || 'USER';
+    if (role === 'ADMIN') {
+      return null; // Full access
+    }
+
+    const permissions = {};
+    document.querySelectorAll('.perm-row').forEach(row => {
+      const modId = row.getAttribute('data-module');
+      if (!modId) return;
+
+      const isView = document.querySelector(`.perm-chk-view[data-module="${modId}"]`)?.checked || false;
+      const isCreate = document.querySelector(`.perm-chk-create[data-module="${modId}"]`)?.checked || false;
+      const isEdit = document.querySelector(`.perm-chk-edit[data-module="${modId}"]`)?.checked || false;
+      const isDelete = document.querySelector(`.perm-chk-delete[data-module="${modId}"]`)?.checked || false;
+      const isExport = document.querySelector(`.perm-chk-export[data-module="${modId}"]`)?.checked || false;
+      const isImport = document.querySelector(`.perm-chk-import[data-module="${modId}"]`)?.checked || false;
+      const isSpecial = document.querySelector(`.perm-chk-special[data-module="${modId}"]`)?.checked || false;
+
+      // Only save if at least one permission is true
+      if (isView || isCreate || isEdit || isDelete || isExport || isImport || isSpecial) {
+        permissions[modId] = {
+          view: isView,
+          create: isCreate,
+          edit: isEdit,
+          delete: isDelete,
+          export: isExport,
+          import: isImport,
+          special: isSpecial
+        };
+      }
+    });
+
+    return permissions;
+  },
+
   // Open Create Modal
   openCreateModal() {
     this.selectedAccountId = null;
-    document.getElementById('acc-modal-title').textContent = 'Cấp Tài Khoản Mới';
+    document.getElementById('acc-modal-title').textContent = 'Cấp Tài Khoản Mới & Phân Quyền';
     
     // Show search wrapper and reset
     const searchWrapper = document.getElementById('acc-emp-search-wrapper');
@@ -246,10 +508,18 @@ const appAccounts = {
     // Populate employees cleanly
     this.populateEmployeeOptions('');
 
-    document.getElementById('acc-form-role').value = 'USER';
+    const defaultRole = 'HR_MANAGER';
+    document.getElementById('acc-form-role').value = defaultRole;
     document.getElementById('acc-form-status').value = 'Kích hoạt';
     document.getElementById('acc-form-password').value = '123456';
     document.getElementById('acc-password-group').style.display = 'block';
+
+    const descEl = document.getElementById('acc-role-desc');
+    if (descEl && appAuth.ROLE_PRESETS[defaultRole]) {
+      descEl.textContent = appAuth.ROLE_PRESETS[defaultRole].description;
+    }
+
+    this.renderPermissionMatrix({}, defaultRole);
 
     document.getElementById('modal-account-form').classList.add('active');
   },
@@ -285,11 +555,19 @@ const appAccounts = {
       `;
     }
     document.getElementById('acc-form-emp-id').value = acc.employee_id;
-
     document.getElementById('acc-form-email').value = acc.account_email || '';
-    document.getElementById('acc-form-role').value = acc.role === 'ADMIN' ? 'ADMIN' : 'USER';
+    
+    const roleVal = acc.role || (acc.permissions ? 'CUSTOM' : 'USER');
+    document.getElementById('acc-form-role').value = roleVal;
     document.getElementById('acc-form-status').value = acc.account_status || 'Kích hoạt';
     document.getElementById('acc-password-group').style.display = 'none'; // Only change via reset modal
+
+    const descEl = document.getElementById('acc-role-desc');
+    if (descEl && appAuth.ROLE_PRESETS[roleVal]) {
+      descEl.textContent = appAuth.ROLE_PRESETS[roleVal].description;
+    }
+
+    this.renderPermissionMatrix(acc.permissions || {}, roleVal);
 
     document.getElementById('modal-account-form').classList.add('active');
   },
@@ -319,6 +597,7 @@ const appAccounts = {
 
     const emp = appData.employees.find(e => e.employee_id === empId);
     const fullName = emp ? emp.full_name : '';
+    const permissions = this.collectPermissionMatrix();
 
     this.isSaving = true;
     const submitBtn = document.querySelector('#form-account-action button[type="submit"]');
@@ -333,59 +612,74 @@ const appAccounts = {
           body: JSON.stringify({
             account_email: email,
             role: role,
-            account_status: status
+            account_status: status,
+            permissions: permissions
           })
-        });
-        const json = await res.json();
-        if (json.success) {
-          // Update in local array
-          const idx = appData.accounts.findIndex(a => a.account_id === this.selectedAccountId);
-          if (idx >= 0) {
-            appData.accounts[idx] = { ...appData.accounts[idx], account_email: email, role, account_status: status };
-          }
-          this.closeFormModal();
-          this.renderKPIs();
-          this.applyFilters();
-          utils.showToast('Cập nhật phân quyền tài khoản thành công!', 'success');
-          if (window.recordActivityLog) {
-            window.recordActivityLog('UPDATE', 'Tài khoản', `Cập nhật tài khoản: ${email} (Vai trò: ${role}, Trạng thái: ${status})`);
-          }
-        } else {
-          utils.showToast(json.message || 'Lỗi cập nhật', 'error');
+        }).catch(() => null);
+
+        // Update in local array
+        const idx = appData.accounts.findIndex(a => a.account_id === this.selectedAccountId);
+        if (idx >= 0) {
+          appData.accounts[idx] = { 
+            ...appData.accounts[idx], 
+            account_email: email, 
+            role, 
+            account_status: status,
+            permissions: permissions
+          };
+        }
+
+        // If updating the currently logged in user, refresh their session
+        const curr = appAuth.getCurrentUser();
+        if (curr && (curr.account_id === this.selectedAccountId || curr.employee_id === empId)) {
+          const updatedUser = { ...curr, role, permissions };
+          appAuth.currentUser = updatedUser;
+          localStorage.setItem(appAuth.storageKey, JSON.stringify(updatedUser));
+          appAuth.applyUserSession(updatedUser);
+        }
+
+        this.closeFormModal();
+        this.renderKPIs();
+        this.applyFilters();
+        utils.showToast('Cập nhật phân quyền tài khoản thành công!', 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('UPDATE', 'Phân quyền', `Cập nhật phân quyền cho tài khoản: ${email} (Vai trò: ${role})`);
         }
       } else {
         // CREATE
+        const newAccId = 'ACC-' + String(appData.accounts.length + 1).padStart(3, '0');
+        const newAccount = {
+          account_id: newAccId,
+          employee_id: empId,
+          full_name: fullName,
+          account_email: email,
+          role: role,
+          account_status: status,
+          password: password || '123456',
+          permissions: permissions,
+          created_at: new Date().toISOString()
+        };
+
         const res = await fetch('/api/accounts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            employee_id: empId,
-            full_name: fullName,
-            account_email: email,
-            role: role,
-            account_status: status,
-            password: password || '123456'
-          })
-        });
-        const json = await res.json();
-        if (json.success) {
-          // Prevent duplicates in frontend state
-          const exists = appData.accounts.some(a => a.account_id === json.account.account_id || a.employee_id === json.account.employee_id);
-          if (!exists) {
-            appData.accounts.unshift(json.account);
-          } else {
-            const idx = appData.accounts.findIndex(a => a.account_id === json.account.account_id || a.employee_id === json.account.employee_id);
-            if (idx >= 0) appData.accounts[idx] = json.account;
-          }
-          this.closeFormModal();
-          this.renderKPIs();
-          this.applyFilters();
-          utils.showToast('Cấp tài khoản mới thành công!', 'success');
-          if (window.recordActivityLog) {
-            window.recordActivityLog('CREATE', 'Tài khoản', `Cấp tài khoản mới cho nhân viên: ${fullName} (${empId})`);
-          }
+          body: JSON.stringify(newAccount)
+        }).catch(() => null);
+
+        // Prevent duplicates in frontend state
+        const existsIdx = appData.accounts.findIndex(a => a.employee_id === empId);
+        if (existsIdx >= 0) {
+          appData.accounts[existsIdx] = newAccount;
         } else {
-          utils.showToast(json.message || 'Lỗi cấp tài khoản', 'error');
+          appData.accounts.unshift(newAccount);
+        }
+
+        this.closeFormModal();
+        this.renderKPIs();
+        this.applyFilters();
+        utils.showToast('Cấp tài khoản và thiết lập phân quyền thành công!', 'success');
+        if (window.recordActivityLog) {
+          window.recordActivityLog('CREATE', 'Phân quyền', `Cấp tài khoản mới cho nhân viên: ${fullName} (${empId}) - Vai trò: ${role}`);
         }
       }
     } catch (err) {

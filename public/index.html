@@ -403,10 +403,10 @@
               </div>
 
               <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center; margin-left: auto;">
-                <button class="btn btn-outline-navy btn-sm" id="btn-open-import-emp" onclick="appImport.openModal()" title="Nhập danh sách nhân sự hàng loạt từ file Excel" style="white-space: nowrap; height: 32px; padding: 0 10px;">
+                <button class="btn btn-outline-navy btn-sm" id="btn-open-import-emp" onclick="appImport.openModal()" title="Nhập danh sách nhân sự hàng loạt từ file Excel" data-perm-module="employees" data-perm-action="import" style="white-space: nowrap; height: 32px; padding: 0 10px;">
                   <i class="fa-solid fa-file-import" style="color: var(--primary-navy);"></i> Nhập Excel
                 </button>
-                <button class="btn btn-excel btn-sm" id="btn-export-filtered-emp" style="white-space: nowrap; height: 32px; padding: 0 10px;">
+                <button class="btn btn-excel btn-sm" id="btn-export-filtered-emp" data-perm-module="employees" data-perm-action="export" style="white-space: nowrap; height: 32px; padding: 0 10px;">
                   <i class="fa-solid fa-file-excel"></i> Xuất Excel
                 </button>
                 <div class="action-dropdown-wrapper" style="position: relative; flex-shrink: 0;">
@@ -1204,7 +1204,12 @@
                 <select id="acc-filter-role" class="filter-select">
                   <option value="">-- Tất cả phân quyền (Role) --</option>
                   <option value="ADMIN">👑 Admin (Toàn quyền)</option>
-                  <option value="USER">👤 User (Người dùng)</option>
+                  <option value="HR_MANAGER">💼 Trưởng phòng Nhân sự</option>
+                  <option value="TIMEKEEPER">⏱️ Quản trị Chấm công</option>
+                  <option value="ACCOUNTANT">📊 Kế toán tiền lương</option>
+                  <option value="DEPT_MANAGER">👔 Quản lý bộ phận</option>
+                  <option value="EMPLOYEE">👤 Nhân viên thông thường</option>
+                  <option value="CUSTOM">⚙️ Tùy chỉnh chi tiết</option>
                 </select>
                 <select id="acc-filter-status" class="filter-select">
                   <option value="">-- Tất cả trạng thái --</option>
@@ -1214,11 +1219,11 @@
               </div>
 
               <div style="display: flex; gap: 8px; align-items: center;">
-                <button class="btn btn-secondary btn-sm" id="btn-delete-selected-accounts" style="color: var(--accent-red); border-color: #FECACA; background: #FEF2F2; display: none;" onclick="appAccounts.openBulkDeleteModal()" title="Xóa tất cả các tài khoản đang được chọn">
+                <button class="btn btn-secondary btn-sm" id="btn-delete-selected-accounts" data-perm-module="accounts" data-perm-action="delete" style="color: var(--accent-red); border-color: #FECACA; background: #FEF2F2; display: none;" onclick="appAccounts.openBulkDeleteModal()" title="Xóa tất cả các tài khoản đang được chọn">
                   <i class="fa-solid fa-trash-can"></i>
                   <span>Xóa Đã Chọn (<strong id="acc-selected-count">0</strong>)</span>
                 </button>
-                <button class="btn btn-accent btn-sm" id="btn-open-add-account">
+                <button class="btn btn-accent btn-sm" id="btn-open-add-account" data-perm-module="accounts" data-perm-action="create">
                   <i class="fa-solid fa-user-plus"></i>
                   <span>Cấp Tài Khoản Mới</span>
                 </button>
@@ -2501,65 +2506,176 @@
 <!-- ==========================================================================
      MODAL: ADD / EDIT SYSTEM ACCOUNT & RBAC
      ========================================================================== -->
+<!-- ==========================================================================
+     MODAL: ADD / EDIT SYSTEM ACCOUNT & GRANULAR RBAC
+     ========================================================================== -->
 <div class="modal-backdrop" id="modal-account-form">
-  <div class="modal-container" style="max-width: 500px;">
-    <div class="modal-header">
-      <div class="modal-title">
-        <i class="fa-solid fa-user-shield"></i>
-        <span id="acc-modal-title">Cấp Tài Khoản Mới</span>
+  <div class="modal-container" style="max-width: 1100px; width: 96%; max-height: 92vh; display: flex; flex-direction: column;">
+    <div class="modal-header" style="background: linear-gradient(135deg, #1E293B, #0F172A); color: #fff; padding: 14px 20px;">
+      <div class="modal-title" style="color: #fff; display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-user-shield" style="color: #38BDF8; font-size: 18px;"></i>
+        <div>
+          <span id="acc-modal-title" style="font-weight: 700; font-size: 16px;">Thiết Lập Phân Quyền Tài Khoản</span>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: #94A3B8; font-weight: normal;">Cấu hình quyền hiển thị danh mục và chi tiết quyền thao tác (Xem, Thêm, Sửa, Xóa, Xuất/Nhập)</p>
+        </div>
       </div>
-      <button class="modal-close" onclick="appAccounts.closeFormModal()">&times;</button>
+      <button class="modal-close" style="color: #fff;" onclick="appAccounts.closeFormModal()">&times;</button>
     </div>
 
-    <form id="form-account-action">
-      <div class="modal-body">
-        <div style="display: flex; flex-direction: column; gap: 14px;">
-          <div class="form-group">
-            <label>Chọn Nhân Viên Cần Cấp Tài Khoản <span class="req">*</span></label>
-            <input type="hidden" id="acc-form-emp-id" required>
-            
-            <div class="emp-picker-container" id="acc-emp-picker-container">
-              <div class="emp-picker-search-box" id="acc-emp-search-wrapper">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="acc-emp-search-input" placeholder="Tìm theo tên, mã NV, chức vụ (VD: TH-01, Sơn...)" autocomplete="off">
+    <form id="form-account-action" onsubmit="appAccounts.saveAccount(event)" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+      <div class="modal-body" style="padding: 16px 20px; overflow-y: auto; flex: 1; background: #F8FAFC;">
+        
+        <div style="display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start;">
+          
+          <!-- CỘT TRÁI: THÔNG TIN TÀI KHOẢN & VAI TRÒ MẪU -->
+          <div style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="font-weight: 700; font-size: 13.5px; color: #1E293B; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-id-card-clip" style="color: var(--primary-navy);"></i>
+              Thông Tin Tài Khoản
+            </div>
+
+            <div class="form-group">
+              <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Chọn Nhân Viên <span class="req">*</span></label>
+              <input type="hidden" id="acc-form-emp-id" required>
+              
+              <div class="emp-picker-container" id="acc-emp-picker-container" style="border: 1px solid #CBD5E1; border-radius: 6px; overflow: hidden;">
+                <div class="emp-picker-search-box" id="acc-emp-search-wrapper" style="padding: 6px 8px; background: #F1F5F9; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-magnifying-glass" style="color: #94A3B8; font-size: 12px;"></i>
+                  <input type="text" id="acc-emp-search-input" placeholder="Tìm theo tên, mã NV..." autocomplete="off" style="border: none; background: transparent; font-size: 12px; width: 100%; outline: none;">
+                </div>
+                <div class="emp-picker-list" id="acc-emp-picker-list" style="max-height: 140px; overflow-y: auto;">
+                  <!-- Dynamic Employee Cards -->
+                </div>
               </div>
-              <div class="emp-picker-list" id="acc-emp-picker-list">
-                <!-- Dynamic Employee Cards -->
-              </div>
+            </div>
+
+            <div class="form-group">
+              <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Email Đăng Nhập <span class="req">*</span></label>
+              <input type="email" id="acc-form-email" class="form-control" placeholder="ten@trunghaico.vn" required style="height: 36px; font-size: 12.5px;">
+            </div>
+
+            <div class="form-group">
+              <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Nhóm Vai Trò Mẫu (Role Preset) <span class="req">*</span></label>
+              <select id="acc-form-role" class="form-control" required style="height: 36px; font-weight: 600; font-size: 12.5px;" onchange="appAccounts.onRoleChange(this.value)">
+                <option value="ADMIN">👑 Admin (Toàn quyền hệ thống)</option>
+                <option value="HR_MANAGER">💼 Trưởng phòng Nhân sự (HR Manager)</option>
+                <option value="TIMEKEEPER">⏱️ Quản trị Chấm công (Timekeeper)</option>
+                <option value="ACCOUNTANT">📊 Kế toán tiền lương (Accountant)</option>
+                <option value="DEPT_MANAGER">👔 Quản lý bộ phận (Manager)</option>
+                <option value="EMPLOYEE">👤 Nhân viên thông thường</option>
+                <option value="CUSTOM" selected>⚙️ Tùy chỉnh chi tiết (Custom)</option>
+              </select>
+              <small id="acc-role-desc" style="color: #64748B; font-size: 11px; display: block; margin-top: 4px; line-height: 1.4;">Thiết lập ma trận phân quyền chi tiết cho từng danh mục</small>
+            </div>
+
+            <div class="form-group" id="acc-password-group">
+              <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Mật Khẩu Ban Đầu</label>
+              <input type="text" id="acc-form-password" class="form-control" value="123456" style="height: 36px; font-family: monospace; font-size: 13px;">
+            </div>
+
+            <div class="form-group">
+              <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Trạng Thái Tài Khoản</label>
+              <select id="acc-form-status" class="form-control" style="height: 36px; font-size: 12.5px;">
+                <option value="Kích hoạt">Kích hoạt (Hoạt động)</option>
+                <option value="Đã khóa">Tạm khóa tài khoản</option>
+              </select>
             </div>
           </div>
 
-          <div class="form-group">
-            <label>Email Đăng Nhập <span class="req">*</span></label>
-            <input type="email" id="acc-form-email" class="form-control" placeholder="ten@trunghaico.vn" required>
+          <!-- CỘT PHẢI: BẢNG MA TRẬN PHÂN QUYỀN CHI TIẾT (GRANULAR PERMISSION MATRIX) -->
+          <div style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <div style="font-weight: 700; font-size: 13.5px; color: #1E293B; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-table-cells" style="color: #2563EB;"></i>
+                  Ma Trận Phân Quyền Chi Tiết Từng Danh Mục
+                </div>
+                <div style="font-size: 11.5px; color: #64748B; margin-top: 2px;">Tích chọn quyền xem danh mục và các quyền thao tác tương ứng</div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="appAccounts.toggleAllPermissions(true)" style="font-size: 11.5px; height: 28px; padding: 0 8px;">
+                  <i class="fa-solid fa-check-double"></i> Chọn tất cả
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="appAccounts.toggleAllPermissions(false)" style="font-size: 11.5px; height: 28px; padding: 0 8px; color: #EF4444;">
+                  <i class="fa-solid fa-xmark"></i> Bỏ chọn
+                </button>
+              </div>
+            </div>
+
+            <!-- Bảng Ma Trận Phân Quyền -->
+            <div style="overflow-x: auto; max-height: 480px; overflow-y: auto; border: 1px solid #E2E8F0; border-radius: 6px;">
+              <table class="table" style="width: 100%; font-size: 12px; margin: 0; border-collapse: collapse;">
+                <thead style="position: sticky; top: 0; background: #F1F5F9; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+                  <tr style="background: #F1F5F9;">
+                    <th style="padding: 8px 10px; text-align: left; min-width: 180px;">Danh Mục / Phân Hệ</th>
+                    <th style="padding: 8px 6px; text-align: center; width: 65px;" title="Xem danh mục và danh sách">
+                      <label style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; margin: 0;">
+                        <span>Xem</span>
+                        <input type="checkbox" id="perm-col-view" onchange="appAccounts.toggleColumnPermissions('view', this.checked)" style="accent-color: #2563EB;">
+                      </label>
+                    </th>
+                    <th style="padding: 8px 6px; text-align: center; width: 65px;" title="Thêm mới bản ghi">
+                      <label style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; margin: 0;">
+                        <span>Thêm</span>
+                        <input type="checkbox" id="perm-col-create" onchange="appAccounts.toggleColumnPermissions('create', this.checked)" style="accent-color: #16A34A;">
+                      </label>
+                    </th>
+                    <th style="padding: 8px 6px; text-align: center; width: 65px;" title="Chỉnh sửa thông tin">
+                      <label style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; margin: 0;">
+                        <span>Sửa</span>
+                        <input type="checkbox" id="perm-col-edit" onchange="appAccounts.toggleColumnPermissions('edit', this.checked)" style="accent-color: #D97706;">
+                      </label>
+                    </th>
+                    <th style="padding: 8px 6px; text-align: center; width: 65px;" title="Xóa bản ghi">
+                      <label style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; margin: 0;">
+                        <span>Xóa</span>
+                        <input type="checkbox" id="perm-col-delete" onchange="appAccounts.toggleColumnPermissions('delete', this.checked)" style="accent-color: #DC2626;">
+                      </label>
+                    </th>
+                    <th style="padding: 8px 6px; text-align: center; width: 65px;" title="Xuất dữ liệu Excel / CSV">
+                      <label style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; margin: 0;">
+                        <span>Xuất</span>
+                        <input type="checkbox" id="perm-col-export" onchange="appAccounts.toggleColumnPermissions('export', this.checked)" style="accent-color: #059669;">
+                      </label>
+                    </th>
+                    <th style="padding: 8px 6px; text-align: center; width: 65px;" title="Nhập dữ liệu từ Excel">
+                      <label style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; margin: 0;">
+                        <span>Nhập</span>
+                        <input type="checkbox" id="perm-col-import" onchange="appAccounts.toggleColumnPermissions('import', this.checked)" style="accent-color: #7C3AED;">
+                      </label>
+                    </th>
+                    <th style="padding: 8px 6px; text-align: center; width: 75px;" title="Quyền đặc biệt (Khóa sổ, Đồng bộ...)">
+                      <label style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; margin: 0;">
+                        <span>Duyệt/Khóa</span>
+                        <input type="checkbox" id="perm-col-special" onchange="appAccounts.toggleColumnPermissions('special', this.checked)" style="accent-color: #4F46E5;">
+                      </label>
+                    </th>
+                    <th style="padding: 8px 8px; text-align: center; width: 65px;" title="Toàn quyền cho danh mục">
+                      <span style="font-size: 11px;">Tất cả</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="perm-matrix-tbody">
+                  <!-- Populated dynamically by accounts.js -->
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>Phân Quyền (Vai Trò) <span class="req">*</span></label>
-            <select id="acc-form-role" class="form-control" required>
-              <option value="ADMIN">👑 Admin (Toàn quyền quản trị hệ thống)</option>
-              <option value="USER" selected>👤 User (Người dùng)</option>
-            </select>
-          </div>
-
-          <div class="form-group" id="acc-password-group">
-            <label>Mật Khẩu Ban Đầu</label>
-            <input type="text" id="acc-form-password" class="form-control" value="123456">
-          </div>
-
-          <div class="form-group">
-            <label>Trạng Thái Tài Khoản</label>
-            <select id="acc-form-status" class="form-control">
-              <option value="Kích hoạt">Kích hoạt (Cho phép đăng nhập)</option>
-              <option value="Đã khóa">Tạm khóa tài khoản</option>
-            </select>
-          </div>
         </div>
+
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="appAccounts.closeFormModal()">Hủy</button>
-        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Lưu Phân Quyền</button>
+      <div class="modal-footer" style="padding: 12px 20px; background: #fff; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 12px; color: #64748B;">
+          <i class="fa-solid fa-circle-info" style="color: #3B82F6;"></i> Thay đổi phân quyền sẽ được áp dụng ngay lập tức sau khi lưu.
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="appAccounts.closeFormModal()">Hủy Bỏ</button>
+          <button type="submit" class="btn btn-primary" style="background: var(--primary-navy); border-color: var(--primary-navy);">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình Phân Quyền
+          </button>
+        </div>
       </div>
     </form>
   </div>
