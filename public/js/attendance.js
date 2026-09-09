@@ -1820,6 +1820,14 @@ const appAttendance = {
       };
       const verifyTypeVn = verifyTypeMap[l.verify_type] || l.verify_type || 'Vân tay';
 
+      let sourceBadge = '';
+      const devName = l.device_name || 'Ronald Jack';
+      if ((l.log_id && l.log_id.startsWith('SQL-')) || l.device_ip === '113.161.53.133' || ['TANG TRET', 'THANH PHAT L3', 'PHU MINH L2'].includes(devName.toUpperCase())) {
+        sourceBadge = `<span class="badge" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 11px;" title="Nguồn: CSDL Mitaco SQL Server (113.161.53.133)"><i class="fa-solid fa-database"></i> Mitaco (${devName})</span>`;
+      } else {
+        sourceBadge = `<span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 11px;" title="Nguồn: Máy chấm công trực tiếp"><i class="fa-solid fa-fingerprint"></i> Máy ${devName}</span>`;
+      }
+
       return `
         <tr>
           <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
@@ -1827,7 +1835,7 @@ const appAttendance = {
           <td><strong>${emp ? emp.full_name : 'Chưa gán nhân sự'}</strong></td>
           <td style="color: #64748B; font-size: 11.5px;">${emp ? (emp.department || '---') : '---'}</td>
           <td style="font-family: monospace; color: #047857; font-weight: 600;">${l.timestamp}</td>
-          <td style="font-size: 11.5px;">${l.device_name || 'Ronald Jack 009'} ${l.device_ip ? `(${l.device_ip}:${l.device_port || 5005})` : ''}</td>
+          <td style="font-size: 11.5px;">${sourceBadge} <span style="color: #94A3B8; font-size: 10.5px;">${l.device_ip ? `(${l.device_ip})` : ''}</span></td>
           <td style="text-align: center;"><span class="badge" style="background: #F1F5F9; color: #334155;">${verifyTypeVn}</span></td>
         </tr>
       `;
