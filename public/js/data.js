@@ -412,11 +412,13 @@ const appData = {
     this.deptMap = {};
     this.deptIdMap = {};
 
-    // Filter out dummy department entries that clone the company
+    // Filter out dummy department entries that clone the company or invalid depts
     if (Array.isArray(this.departments)) {
       this.departments = this.departments.filter(d => {
         if (!d) return false;
         if (d.department_id === 'TN' || d.department_id === 'THG' || d.department_id === 'CTY') return false;
+        // Trung Nam không có Ban điều hành dự án
+        if (d.department_id === 'BĐHDA.TN' || d.department_id === 'BDHDA.TN') return false;
         const comp = (this.companies || []).find(c => c.company_id === d.company_id);
         if (comp && d.department_name && d.department_name.trim().toLowerCase() === comp.company_name.trim().toLowerCase()) return false;
         return true;
@@ -549,11 +551,10 @@ const appData = {
 
     if (low.includes('trung nam') || low.includes('.tn')) {
       if (low.includes('giám đốc') || low === 'bgd.tn') return 'BAN GIÁM ĐỐC TRUNG NAM';
-      if (low.includes('điều hành dự án') || low === 'bđhda.tn') return 'BAN ĐIỀU HÀNH DỰ ÁN TRUNG NAM';
       if (low.includes('hành chính nhân sự') || low === 'phcns.tn') return 'PHÒNG HÀNH CHÍNH NHÂN SỰ TRUNG NAM';
       if (low.includes('thương mại') || low.includes('kinh doanh') || low === 'pkdtm.tn') return 'PHÒNG KINH DOANH THƯƠNG MẠI TRUNG NAM';
       if (low.includes('kế toán') || low === 'ptckt.tn') return 'PHÒNG TÀI CHÍNH KẾ TOÁN TRUNG NAM';
-      if (low === 'tn' || low.includes('công ty')) return 'BAN ĐIỀU HÀNH DỰ ÁN TRUNG NAM';
+      if (low === 'tn' || low.includes('công ty')) return 'BAN GIÁM ĐỐC TRUNG NAM';
     }
 
     return s;
@@ -609,11 +610,10 @@ const appData = {
 
     if (low.includes('trung nam') || low.includes('.tn')) {
       if (low.includes('giám đốc') || low === 'bgd.tn') return 'BGD.TN';
-      if (low.includes('điều hành dự án') || low === 'bđhda.tn') return 'BĐHDA.TN';
       if (low.includes('hành chính nhân sự') || low === 'phcns.tn') return 'PHCNS.TN';
       if (low.includes('thương mại') || low.includes('kinh doanh') || low === 'pkdtm.tn') return 'PKDTM.TN';
       if (low.includes('kế toán') || low === 'ptckt.tn') return 'PTCKT.TN';
-      if (low === 'tn' || low.includes('công ty')) return 'BĐHDA.TN';
+      if (low === 'tn' || low.includes('công ty')) return 'BGD.TN';
     }
 
     return s;
