@@ -3713,15 +3713,16 @@ tr.row-selected {
   border-right: 2px solid #3B82F6;
 }
 
-/* Node Cards */
+/* Node Cards (Compact & Professional) */
 .org-node-card {
   background: #FFFFFF;
-  border-radius: 10px;
-  padding: 14px 16px;
-  width: 250px;
-  min-width: 230px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.07);
-  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  width: 215px;
+  min-width: 190px;
+  max-width: 225px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   border-top-width: 4px !important;
   border-top-style: solid !important;
@@ -3734,14 +3735,15 @@ tr.row-selected {
 }
 
 .org-node-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.13);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
 }
 
 .org-node-root {
-  width: 290px;
-  min-width: 270px;
-  box-shadow: 0 8px 24px rgba(153, 27, 27, 0.14);
+  width: 250px;
+  min-width: 230px;
+  max-width: 260px;
+  box-shadow: 0 6px 20px rgba(153, 27, 27, 0.12);
 }
 
 .org-pos-list {

@@ -1132,29 +1132,62 @@ const appOrganization = {
         // CÔNG TY CÓ BAN TỔNG GIÁM ĐỐC (THG)
         const rootItem = tier1_BTGD[0];
         
-        // Children of BGD or Root
+        // Sắp xếp các Ban chuyên môn theo thứ tự chuẩn hóa: TCHC, TCKT, KHTH, QLTB, PC
+        const banOrder = ['BTCHC', 'BTCKT', 'BKHTH', 'BQLTB', 'BPC'];
+        tier3_BAN.sort((a, b) => {
+          const codeA = (a.department_id || '').toUpperCase();
+          const codeB = (b.department_id || '').toUpperCase();
+          const idxA = banOrder.findIndex(k => codeA.includes(k));
+          const idxB = banOrder.findIndex(k => codeB.includes(k));
+          return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99);
+        });
+
+        // 1. Nhánh các Ban chuyên môn ngang nhau ở trên
         const banBranches = tier3_BAN.map(b => ({
           item: b,
           label: 'Ban Chuyên Môn',
           children: []
         }));
 
+        // 2. Nhánh các Khối đơn vị / Dự án vận hành công trường (ở tầng dưới)
         const subUnderBranches = tier5_DUOI_PHONG.map(k => ({
           item: k,
-          label: 'Khối / ĐHDA',
+          label: 'Khối Đơn Vị',
           children: []
         }));
 
-        // BGD is child of BTGD
+        // Ghép các khối vào nhánh dưới nếu có
+        let allLevel3Branches = [...banBranches];
+        if (subUnderBranches.length > 0) {
+          // Tạo một nhánh khối dự án vận hành công trường nằm ngang hàng hoặc có các khối con
+          allLevel3Branches.push({
+            item: {
+              department_id: 'KHOI_DUAN_TH',
+              department_name: 'KHỐI DỰ ÁN & CÔNG TRƯỜNG',
+              company_id: 'THG',
+              info: {
+                tier: 5,
+                tierCode: 'DUOI_PHONG',
+                tierName: 'Khối Dự Án',
+                badgeClass: 'badge-tier-5',
+                icon: 'fa-cubes-stacked',
+                color: '#0F766E',
+                bgColor: '#F0FDFA',
+                borderColor: '#0D9488'
+              }
+            },
+            label: 'Khối Đơn Vị',
+            children: subUnderBranches
+          });
+        }
+
+        // BGD là con của BTGD, các Ban chuyên môn là con của BGD
         let bgdBranch = null;
         if (tier2_BGD.length > 0) {
           bgdBranch = {
             item: tier2_BGD[0],
             label: 'Ban Giám Đốc',
-            children: banBranches.length > 0 ? [
-              ...banBranches,
-              ...(subUnderBranches.length > 0 ? subUnderBranches : [])
-            ] : subUnderBranches
+            children: allLevel3Branches
           };
         }
 
@@ -1162,14 +1195,24 @@ const appOrganization = {
           item: rootItem,
           label: 'Ban Tổng Giám Đốc',
           isRoot: true,
-          children: bgdBranch ? [bgdBranch] : banBranches
+          children: bgdBranch ? [bgdBranch] : allLevel3Branches
         };
 
       } else if (tier2_BGD.length > 0) {
         // CÔNG TY CÓ BAN GIÁM ĐỐC LÀM ROOT (PM, TP, TN)
         const rootItem = tier2_BGD[0];
 
-        // Level 2 Branches: Các Phòng ban chức năng
+        // Sắp xếp các Phòng ban: HCNS, KHTH/KDTM, TCKT
+        const phongOrder = ['PHCNS', 'PKHTH', 'PKDTM', 'PTCKT'];
+        tier4_PHONG.sort((a, b) => {
+          const codeA = (a.department_id || '').toUpperCase();
+          const codeB = (b.department_id || '').toUpperCase();
+          const idxA = phongOrder.findIndex(k => codeA.includes(k));
+          const idxB = phongOrder.findIndex(k => codeB.includes(k));
+          return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99);
+        });
+
+        // Level 2 Branches: Các Phòng ban chức năng (PHCNS, PKHTH, PTCKT ngang nhau ở trên)
         const phongBranches = tier4_PHONG.map(p => ({
           item: p,
           label: 'Phòng Ban',
@@ -1177,13 +1220,11 @@ const appOrganization = {
         }));
 
         // Level 3 (Dưới phòng): Ban Điều Hành Dự Án & Các Khối Dự Án
-        // Với Phú Minh: BDHDA.PM có các khối trực tiếp / gián tiếp trực thuộc
         const bdhdaItem = tier5_DUOI_PHONG.find(d => d.department_id === 'BDHDA.PM' || (d.department_name || '').includes('ĐIỀU HÀNH'));
         const khoiOtherItems = tier5_DUOI_PHONG.filter(d => d !== bdhdaItem);
 
         let duoiPhongBranches = [];
         if (bdhdaItem) {
-          // BDHDA có thể ôm các khối dự án trực thuộc
           duoiPhongBranches.push({
             item: bdhdaItem,
             label: 'Ban ĐHDA (Dưới Phòng)',
@@ -1193,12 +1234,30 @@ const appOrganization = {
               children: []
             }))
           });
-        } else {
-          duoiPhongBranches = khoiOtherItems.map(k => ({
-            item: k,
-            label: 'Khối Đơn Vị (Dưới Phòng)',
-            children: []
-          }));
+        } else if (khoiOtherItems.length > 0) {
+          duoiPhongBranches.push({
+            item: {
+              department_id: `KHOI_${comp.company_id}`,
+              department_name: `KHỐI DỰ ÁN ${comp.company_id}`,
+              company_id: comp.company_id,
+              info: {
+                tier: 5,
+                tierCode: 'DUOI_PHONG',
+                tierName: 'Khối Dự Án',
+                badgeClass: 'badge-tier-5',
+                icon: 'fa-cubes-stacked',
+                color: '#0F766E',
+                bgColor: '#F0FDFA',
+                borderColor: '#0D9488'
+              }
+            },
+            label: 'Khối Dự Án (Dưới Phòng)',
+            children: khoiOtherItems.map(k => ({
+              item: k,
+              label: 'Khối Dự Án',
+              children: []
+            }))
+          });
         }
 
         rootTreeBranch = {
