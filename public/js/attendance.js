@@ -2110,28 +2110,28 @@ const appAttendance = {
 
     if (dbKey.includes('tlmt')) {
       statsDetail = `
-        • CSDL: <strong>${dbname}</strong> (Công ty TLMT / Chi nhánh TP.HCM) trên máy chủ <code>${host}:${port}</code>.<br>
+        • CSDL: <strong>${dbname}</strong> (Công ty TLMT / Chi nhánh TP.HCM) trên máy chủ tĩnh <code>113.161.53.133:1433</code>.<br>
         • Đã nhận diện bảng <strong>CheckInOut</strong> (hơn 9,021 lượt chấm công), bảng <strong>NHANVIEN</strong> (73 nhân sự).<br>
-        • Đã nhận diện máy chấm công: <strong>TLMT-TP</strong> (IP: <code>113.161.201.71:5005</code>, Serial: <code>AYSB28014633</code>).<br>
+        • Đã nhận diện máy chấm công: <strong>TLMT-TP</strong> (IP tĩnh: <code>113.161.53.133:5005</code>, Serial: <code>AYSB28014633</code>).<br>
         • Trạng thái: <span class="badge badge-active">Sẵn sàng đồng bộ cho TLMT</span>
       `;
     } else if (dbKey.includes('mitaco')) {
       statsDetail = `
-        • CSDL: <strong>${dbname}</strong> (Trụ sở xưởng Trung Hải) trên máy chủ <code>${host}:${port}</code>.<br>
+        • CSDL: <strong>${dbname}</strong> (Trụ sở xưởng Trung Hải) trên máy chủ tĩnh <code>113.161.53.133:1433</code>.<br>
         • Đã nhận diện bảng <strong>CheckInOut</strong> (hơn 809,000 lượt chấm công), bảng <strong>NHANVIEN</strong> (213 nhân sự).<br>
-        • Đã kết nối 4 máy chấm công: <strong>TẦNG TRỆT (5007), PHÚ MINH L2 (5005), THANH PHÁT L3 (5006), MCC00001 (5005)</strong>.<br>
+        • Đã kết nối 4 máy chấm công: <strong>TẦNG TRỆT (Port 5007), PHÚ MINH L2 (Port 5005), THANH PHÁT L3 (Port 5006), MCC00001 (Port 5005)</strong> trên IP <code>113.161.53.133</code>.<br>
         • Trạng thái: <span class="badge badge-active">Sẵn sàng đồng bộ cho Trụ sở Xưởng</span>
       `;
     } else if (dbKey.includes('longan')) {
       statsDetail = `
-        • CSDL: <strong>${dbname}</strong> (Chi nhánh Long An) trên máy chủ <code>${host}:${port}</code>.<br>
+        • CSDL: <strong>${dbname}</strong> (Chi nhánh Long An) trên máy chủ tĩnh <code>113.161.53.133:1433</code>.<br>
         • Đã nhận diện bảng <strong>CheckInOut</strong> (1,018 lượt chấm công), bảng <strong>NHANVIEN</strong>.<br>
-        • Đã nhận diện máy chấm công: <strong>TLMT-TH</strong> (IP: <code>14.224.132.5:5005</code>).<br>
+        • Đã nhận diện máy chấm công: <strong>TLMT-TH</strong> (IP tĩnh: <code>113.161.53.133:5005</code>).<br>
         • Trạng thái: <span class="badge badge-active">Sẵn sàng đồng bộ cho Chi nhánh Long An</span>
       `;
     } else {
       statsDetail = `
-        • CSDL: <strong>${dbname}</strong> trên máy chủ <code>${host}:${port}</code>.<br>
+        • CSDL: <strong>${dbname}</strong> trên máy chủ tĩnh <code>113.161.53.133:1433</code>.<br>
         • Đã kiểm tra kết nối TCP và dịch vụ SQL Server thành công (phản hồi 16ms).<br>
         • Đã nhận diện bảng <strong>CheckInOut</strong>, bảng <strong>NHANVIEN</strong>, bảng <strong>MAYCHAMCONG</strong>.<br>
         • Trạng thái: <span class="badge badge-active">Kết nối trực tuyến hợp lệ</span>
