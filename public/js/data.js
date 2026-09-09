@@ -2,6 +2,71 @@
 // DATA STORE & HELPER UTILITIES
 // ==========================================================================
 
+// IndexedDB Large Storage Helper (handles unlimited MBs for timesheets & punch logs without QuotaExceededError)
+window.hrmStorage = {
+  dbPromise: null,
+  getDB() {
+    if (!this.dbPromise) {
+      this.dbPromise = new Promise((resolve) => {
+        try {
+          if (!window.indexedDB) {
+            resolve(null);
+            return;
+          }
+          const req = indexedDB.open('HRM_TrungHai_DB', 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('attendance')) {
+              db.createObjectStore('attendance');
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        } catch(e) {
+          resolve(null);
+        }
+      });
+    }
+    return this.dbPromise;
+  },
+  async set(key, val) {
+    try {
+      const db = await this.getDB();
+      if (db) {
+        return new Promise((resolve) => {
+          try {
+            const tx = db.transaction('attendance', 'readwrite');
+            tx.objectStore('attendance').put(val, key);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          } catch(e) {
+            resolve(false);
+          }
+        });
+      }
+    } catch(e) {}
+    return false;
+  },
+  async get(key) {
+    try {
+      const db = await this.getDB();
+      if (db) {
+        return new Promise((resolve) => {
+          try {
+            const tx = db.transaction('attendance', 'readonly');
+            const req = tx.objectStore('attendance').get(key);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+          } catch(e) {
+            resolve(null);
+          }
+        });
+      }
+    } catch(e) {}
+    return null;
+  }
+};
+
 const appData = {
   isLoaded: false,
   tables: {},
@@ -90,57 +155,87 @@ const appData = {
 
         // Hỗ trợ lưu trữ bền vững (Persistence Storage) cho chấm công, bảng công, ca & máy chấm công
         try {
+          if (window.hrmStorage) {
+            try {
+              const idbTs = await window.hrmStorage.get('hrm_attendance_timesheets');
+              if (idbTs && Array.isArray(idbTs) && idbTs.length > 0) {
+                this.timesheets = idbTs;
+              }
+              const idbLogs = await window.hrmStorage.get('hrm_attendance_logs');
+              if (idbLogs && Array.isArray(idbLogs) && idbLogs.length > 0) {
+                const existingKeys = new Set((this.attendanceLogs || []).map(l => `${l.attendance_code}_${l.timestamp}`));
+                idbLogs.forEach(p => {
+                  const k = `${p.attendance_code}_${p.timestamp}`;
+                  if (!existingKeys.has(k)) {
+                    this.attendanceLogs.push(p);
+                    existingKeys.add(k);
+                  }
+                });
+              }
+            } catch(e) {}
+          }
+
           const localLogs = localStorage.getItem('hrm_attendance_logs');
           if (localLogs) {
-            const parsedLogs = JSON.parse(localLogs);
-            if (Array.isArray(parsedLogs) && parsedLogs.length > 0) {
-              const existingKeys = new Set((this.attendanceLogs || []).map(l => `${l.attendance_code}_${l.timestamp}`));
-              parsedLogs.forEach(p => {
-                const k = `${p.attendance_code}_${p.timestamp}`;
-                if (!existingKeys.has(k)) {
-                  this.attendanceLogs.push(p);
-                  existingKeys.add(k);
-                }
-              });
-            }
+            try {
+              const parsedLogs = JSON.parse(localLogs);
+              if (Array.isArray(parsedLogs) && parsedLogs.length > 0) {
+                const existingKeys = new Set((this.attendanceLogs || []).map(l => `${l.attendance_code}_${l.timestamp}`));
+                parsedLogs.forEach(p => {
+                  const k = `${p.attendance_code}_${p.timestamp}`;
+                  if (!existingKeys.has(k)) {
+                    this.attendanceLogs.push(p);
+                    existingKeys.add(k);
+                  }
+                });
+              }
+            } catch(e) {}
           }
 
           const localTs = localStorage.getItem('hrm_attendance_timesheets');
           if (localTs) {
-            const parsedTs = JSON.parse(localTs);
-            if (Array.isArray(parsedTs) && parsedTs.length > 0) {
-              this.timesheets = parsedTs;
-            }
+            try {
+              const parsedTs = JSON.parse(localTs);
+              if (Array.isArray(parsedTs) && parsedTs.length > 0) {
+                this.timesheets = parsedTs;
+              }
+            } catch(e) {}
           }
 
           const localReqs = localStorage.getItem('hrm_attendance_requests');
           if (localReqs) {
-            const parsedReqs = JSON.parse(localReqs);
-            if (Array.isArray(parsedReqs) && parsedReqs.length > 0) {
-              const existingIds = new Set((this.attendanceRequests || []).map(r => r.request_id));
-              parsedReqs.forEach(r => {
-                if (!existingIds.has(r.request_id)) {
-                  this.attendanceRequests.unshift(r);
-                  existingIds.add(r.request_id);
-                }
-              });
-            }
+            try {
+              const parsedReqs = JSON.parse(localReqs);
+              if (Array.isArray(parsedReqs) && parsedReqs.length > 0) {
+                const existingIds = new Set((this.attendanceRequests || []).map(r => r.request_id));
+                parsedReqs.forEach(r => {
+                  if (!existingIds.has(r.request_id)) {
+                    this.attendanceRequests.unshift(r);
+                    existingIds.add(r.request_id);
+                  }
+                });
+              }
+            } catch(e) {}
           }
 
           const localDevs = localStorage.getItem('hrm_attendance_devices');
           if (localDevs) {
-            const parsedDevs = JSON.parse(localDevs);
-            if (Array.isArray(parsedDevs) && parsedDevs.length > 0) {
-              this.attendanceDevices = parsedDevs;
-            }
+            try {
+              const parsedDevs = JSON.parse(localDevs);
+              if (Array.isArray(parsedDevs) && parsedDevs.length > 0) {
+                this.attendanceDevices = parsedDevs;
+              }
+            } catch(e) {}
           }
 
           const localShifts = localStorage.getItem('hrm_attendance_shifts');
           if (localShifts) {
-            const parsedShifts = JSON.parse(localShifts);
-            if (Array.isArray(parsedShifts) && parsedShifts.length > 0) {
-              this.shifts = parsedShifts;
-            }
+            try {
+              const parsedShifts = JSON.parse(localShifts);
+              if (Array.isArray(parsedShifts) && parsedShifts.length > 0) {
+                this.shifts = parsedShifts;
+              }
+            } catch(e) {}
           }
         } catch (e) {
           console.warn('Cannot read local attendance storage:', e);

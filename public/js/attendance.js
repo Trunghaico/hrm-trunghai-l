@@ -3798,25 +3798,36 @@ const appAttendance = {
     }, 400);
   },
 
-  saveLocalAttendanceState() {
+  async saveLocalAttendanceState() {
     try {
-      if (appData.attendanceLogs && Array.isArray(appData.attendanceLogs)) {
-        localStorage.setItem('hrm_attendance_logs', JSON.stringify(appData.attendanceLogs));
-      }
-      if (appData.timesheets && Array.isArray(appData.timesheets)) {
-        localStorage.setItem('hrm_attendance_timesheets', JSON.stringify(appData.timesheets));
-      }
+      // 1. Small settings & configs -> Safe localStorage
       if (this.devices && Array.isArray(this.devices)) {
-        localStorage.setItem('hrm_attendance_devices', JSON.stringify(this.devices));
+        try { localStorage.setItem('hrm_attendance_devices', JSON.stringify(this.devices)); } catch(e){}
       }
       if (appData.attendanceRequests && Array.isArray(appData.attendanceRequests)) {
-        localStorage.setItem('hrm_attendance_requests', JSON.stringify(appData.attendanceRequests));
+        try { localStorage.setItem('hrm_attendance_requests', JSON.stringify(appData.attendanceRequests)); } catch(e){}
       }
       if (appData.shifts && Array.isArray(appData.shifts)) {
-        localStorage.setItem('hrm_attendance_shifts', JSON.stringify(appData.shifts));
+        try { localStorage.setItem('hrm_attendance_shifts', JSON.stringify(appData.shifts)); } catch(e){}
       }
+
+      // 2. Large arrays (Punch logs, 23,000+ Timesheets) -> IndexedDB (virtually unlimited quota, no QuotaExceededError)
+      if (window.hrmStorage) {
+        if (appData.attendanceLogs && Array.isArray(appData.attendanceLogs)) {
+          window.hrmStorage.set('hrm_attendance_logs', appData.attendanceLogs);
+        }
+        if (appData.timesheets && Array.isArray(appData.timesheets)) {
+          window.hrmStorage.set('hrm_attendance_timesheets', appData.timesheets);
+        }
+      }
+
+      // 3. Clean up heavy items from localStorage to prevent 5MB browser quota overflow
+      try {
+        localStorage.removeItem('hrm_attendance_timesheets');
+        localStorage.removeItem('hrm_attendance_logs');
+      } catch(e){}
     } catch (err) {
-      console.warn('Lỗi lưu trữ dữ liệu chấm công vào LocalStorage/Database:', err);
+      console.warn('Lỗi lưu trữ dữ liệu chấm công vào Storage:', err);
     }
   }
 };
