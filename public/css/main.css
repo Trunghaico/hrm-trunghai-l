@@ -3618,7 +3618,7 @@ tr.row-selected {
   overflow-x: auto;
 }
 
-/* Tree Structure with Connected Branch Lines */
+/* Tree Structure with Connected Branch Lines (Strict Horizontal Rows) */
 .org-tree-root-container {
   display: flex;
   flex-direction: column;
@@ -3633,7 +3633,8 @@ tr.row-selected {
   flex-direction: column;
   align-items: center;
   position: relative;
-  padding: 0 12px;
+  padding: 0 6px;
+  flex-shrink: 0;
 }
 
 .org-tree-node-box {
@@ -3646,12 +3647,14 @@ tr.row-selected {
 
 .org-tree-children {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap !important; /* Đảm bảo các ban / phòng luôn luôn nằm trên 1 hàng ngang duy nhất */
   justify-content: center;
   align-items: flex-start;
   position: relative;
-  padding-top: 32px;
+  padding-top: 28px;
   margin-top: 0;
-  width: 100%;
+  width: max-content;
 }
 
 /* Stem line coming down from parent card */
@@ -3662,7 +3665,7 @@ tr.row-selected {
   left: 50%;
   transform: translateX(-50%);
   width: 2px;
-  height: 32px;
+  height: 28px;
   background: #3B82F6;
   z-index: 1;
 }
@@ -3676,7 +3679,7 @@ tr.row-selected {
   right: 50%;
   border-top: 2px solid #3B82F6;
   width: 50%;
-  height: 32px;
+  height: 28px;
   z-index: 1;
 }
 
@@ -3713,14 +3716,14 @@ tr.row-selected {
   border-right: 2px solid #3B82F6;
 }
 
-/* Node Cards (Compact & Professional) */
+/* Node Cards (Compact & Professional for 1-Row Fit) */
 .org-node-card {
   background: #FFFFFF;
   border-radius: 8px;
   padding: 10px 12px;
-  width: 215px;
-  min-width: 190px;
-  max-width: 225px;
+  width: 195px;
+  min-width: 180px;
+  max-width: 205px;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -3740,9 +3743,9 @@ tr.row-selected {
 }
 
 .org-node-root {
-  width: 250px;
-  min-width: 230px;
-  max-width: 260px;
+  width: 240px;
+  min-width: 220px;
+  max-width: 250px;
   box-shadow: 0 6px 20px rgba(153, 27, 27, 0.12);
 }
 

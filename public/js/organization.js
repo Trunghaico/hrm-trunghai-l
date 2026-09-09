@@ -1142,52 +1142,20 @@ const appOrganization = {
           return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99);
         });
 
-        // 1. Nhánh các Ban chuyên môn ngang nhau ở trên
+        // 1. Nhánh các Ban chuyên môn: Chính xác 5 Ban của Trung Hải nằm ngang hàng với nhau
         const banBranches = tier3_BAN.map(b => ({
           item: b,
           label: 'Ban Chuyên Môn',
           children: []
         }));
 
-        // 2. Nhánh các Khối đơn vị / Dự án vận hành công trường (ở tầng dưới)
-        const subUnderBranches = tier5_DUOI_PHONG.map(k => ({
-          item: k,
-          label: 'Khối Đơn Vị',
-          children: []
-        }));
-
-        // Ghép các khối vào nhánh dưới nếu có
-        let allLevel3Branches = [...banBranches];
-        if (subUnderBranches.length > 0) {
-          // Tạo một nhánh khối dự án vận hành công trường nằm ngang hàng hoặc có các khối con
-          allLevel3Branches.push({
-            item: {
-              department_id: 'KHOI_DUAN_TH',
-              department_name: 'KHỐI DỰ ÁN & CÔNG TRƯỜNG',
-              company_id: 'THG',
-              info: {
-                tier: 5,
-                tierCode: 'DUOI_PHONG',
-                tierName: 'Khối Dự Án',
-                badgeClass: 'badge-tier-5',
-                icon: 'fa-cubes-stacked',
-                color: '#0F766E',
-                bgColor: '#F0FDFA',
-                borderColor: '#0D9488'
-              }
-            },
-            label: 'Khối Đơn Vị',
-            children: subUnderBranches
-          });
-        }
-
-        // BGD là con của BTGD, các Ban chuyên môn là con của BGD
+        // BGD là con của BTGD, 5 Ban chuyên môn là con của BGD nằm cùng 1 hàng ngang
         let bgdBranch = null;
         if (tier2_BGD.length > 0) {
           bgdBranch = {
             item: tier2_BGD[0],
             label: 'Ban Giám Đốc',
-            children: allLevel3Branches
+            children: banBranches
           };
         }
 
@@ -1195,7 +1163,7 @@ const appOrganization = {
           item: rootItem,
           label: 'Ban Tổng Giám Đốc',
           isRoot: true,
-          children: bgdBranch ? [bgdBranch] : allLevel3Branches
+          children: bgdBranch ? [bgdBranch] : banBranches
         };
 
       } else if (tier2_BGD.length > 0) {
