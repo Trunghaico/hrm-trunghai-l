@@ -28,7 +28,8 @@ foreach ($dbName in $databases) {
             foreach ($devRow in $dsDev.Tables[0].Rows) {
                 $mCode = "$($devRow.MaMCC)".Trim()
                 $mName = "$($devRow.TenMCC)".Trim()
-                $mIp = "113.161.53.133"
+                $mIp = "$($devRow.DiaChiIP)".Trim()
+                if (-not $mIp) { $mIp = "113.161.53.133" }
                 $mPort = [int]($devRow.Port)
                 $mSerial = "$($devRow.Serial)".Trim()
                 $kDev = "${mName}_${mPort}"
@@ -38,16 +39,16 @@ foreach ($dbName in $databases) {
                         device_id = if ($mCode) { $mCode } else { "DEV-" + ($allDevices.Count + 1) }
                         device_name = if ($mName -like "*MCC00001*") { "Máy MCC00001 (TP)" } elseif ($mName) { $mName } else { "Máy Chấm Công" }
                         name = if ($mName) { $mName } else { "Máy Chấm Công" }
-                        ip = "113.161.53.133"
+                        ip = $mIp
                         port = if ($mPort -gt 0) { $mPort } else { 5005 }
                         comm_key = 0
-                        location = if ($mName -like "*TLMT*") { "Chi Nhánh TLMT / TP.HCM" } elseif ($mName -like "*TANG TRET*") { "Tầng Trệt Xưởng" } elseif ($mName -like "*PHU MINH*") { "Phú Minh Lầu 2" } elseif ($mName -like "*THANH PHAT*") { "Thanh Phát Lầu 3" } else { "Văn Phòng / Xưởng" }
+                        location = if ($mName -like "*TLMT*" -or $mName -like "*MCC00001*") { "Chi Nhánh TLMT / TP.HCM" } elseif ($mName -like "*TANG TRET*") { "Tầng Trệt Xưởng" } elseif ($mName -like "*PHU MINH*") { "Phú Minh Lầu 2" } elseif ($mName -like "*THANH PHAT*") { "Thanh Phát Lầu 3" } elseif ($mName -like "*TH*") { "Chi Nhánh Long An" } else { "Văn Phòng / Xưởng" }
                         serial_number = $mSerial
                         database_source = $dbName
                         enabled = $true
                         status = "ONLINE"
                         last_sync = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
-                        note = "Máy chấm công $mName (113.161.53.133:$mPort)"
+                        note = "May cham cong $mName (${mIp}:${mPort})"
                     }
                 }
             }
@@ -117,11 +118,11 @@ foreach ($r in $allRawPunches) {
     $dName = "$($r.DeviceName)".Trim()
     $dPort = 5005
     $dIp = "113.161.53.133"
-    if ($dName -like "*PHU MINH*") { $dPort = 5005; $dName = "PHÚ MINH L2" }
-    elseif ($dName -like "*THANH PHAT*") { $dPort = 5006; $dName = "THANH PHÁT L3" }
-    elseif ($dName -like "*TANG TRET*") { $dPort = 5007; $dName = "TẦNG TRỆT" }
-    elseif ($dName -like "*TLMT-TP*") { $dPort = 5005; $dName = "TLMT-TP" }
-    elseif ($dName -like "*TLMT-TH*") { $dPort = 5005; $dName = "TLMT-TH" }
+    if ($dName -like "*PHU MINH*") { $dPort = 5005; $dIp = "113.161.53.133"; $dName = "PHÚ MINH L2" }
+    elseif ($dName -like "*THANH PHAT*") { $dPort = 5006; $dIp = "113.161.53.133"; $dName = "THANH PHÁT L3" }
+    elseif ($dName -like "*TANG TRET*") { $dPort = 5007; $dIp = "113.161.53.133"; $dName = "TẦNG TRỆT" }
+    elseif ($dName -like "*TLMT-TP*" -or $dName -like "*MCC00001*") { $dPort = 5005; $dIp = "113.161.201.71"; $dName = "TLMT-TP" }
+    elseif ($dName -like "*TLMT-TH*") { $dPort = 5005; $dIp = "14.224.132.5"; $dName = "TLMT-TH" }
 
     $punches += [PSCustomObject]@{
         log_id = "SQL-$($r.DbSource)-$($r.ID)"
