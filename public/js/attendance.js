@@ -1,4 +1,4 @@
-// ==========================================================================
+﻿// ==========================================================================
 // TIME & ATTENDANCE MODULE (PHÂN HỆ QUẢN LÝ CHẤM CÔNG & RONALD JACK 009)
 // HRM Trung Hải Enterprise Edition - Redesigned Clean UI
 // ==========================================================================
@@ -1313,7 +1313,7 @@ const appAttendance = {
           <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 36px 20px;">
             <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 32px; margin-bottom: 12px; display: block; color: #86EFAC;"></i>
             <div style="font-weight: 700; font-size: 14px; color: #1E293B; margin-bottom: 4px;">Chưa có nhân sự nào trong danh sách đặc cách tự động đủ công</div>
-            <div style="font-size: 12.5px; color: #64748B; margin-bottom: 14px;">Bấm nút <strong>"Thêm Theo Phòng Ban"</strong> hoặc <strong>"Thêm Từng Nhân Viên"</strong> ở trên để thêm nhân sự được miễn quẹt thẻ máy.</div>
+            <div style="font-size: 12.5px; color: #64748B; margin-bottom: 14px;">Bấm nút <strong>"Thêm Theo Phòng Ban"</strong> hoặc <strong>"Thêm Từng Nhân Viên"</strong> ở trên để thêm nhân sự được miễn chấm công máy.</div>
             <div style="display: flex; gap: 8px; justify-content: center;">
               <button class="btn btn-primary btn-sm" onclick="appAttendance.openAddAutoDeptModal()" style="background: #15803D; border-color: #15803D;">
                 <i class="fa-solid fa-layer-group"></i> Thêm Theo Phòng Ban
@@ -1477,7 +1477,7 @@ const appAttendance = {
     const recalcCheck = document.getElementById('att-auto-single-recalc');
 
     const empId = empSelect ? empSelect.value : '';
-    const reason = (reasonInput ? reasonInput.value.trim() : '') || 'Đặc cách tự động đủ công (Miễn quẹt thẻ)';
+    const reason = (reasonInput ? reasonInput.value.trim() : '') || 'Đặc cách tự động đủ công (Miễn chấm công)';
     const doRecalc = recalcCheck ? recalcCheck.checked : true;
 
     if (!empId) {
@@ -1729,7 +1729,7 @@ const appAttendance = {
                 <button class="btn btn-danger btn-sm" onclick="appAttendance.deleteDevice('${devId}')" style="font-size: 11.5px; padding: 4px 8px;" title="Xóa máy">
                   <i class="fa-solid fa-trash"></i>
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="appAttendance.syncSingleDevice('${dev.ip}', ${dev.port || 5005}, '${dev.device_name || dev.name || 'Máy Ronald Jack'}')" style="flex: 1.2; font-size: 11.5px;" ${!dev.enabled ? 'disabled' : ''} title="Kéo dữ liệu quẹt thẻ từ máy này">
+                <button class="btn btn-primary btn-sm" onclick="appAttendance.syncSingleDevice('${dev.ip}', ${dev.port || 5005}, '${dev.device_name || dev.name || 'Máy Ronald Jack'}')" style="flex: 1.2; font-size: 11.5px;" ${!dev.enabled ? 'disabled' : ''} title="Kéo dữ liệu chấm công từ máy này">
                   <i class="fa-solid fa-rotate"></i> Kéo Log
                 </button>
               </div>
@@ -1748,7 +1748,7 @@ const appAttendance = {
     if (onlineStat) onlineStat.textContent = `${onlineCount} Đang hoạt động`;
 
     const punchStat = document.getElementById('zk-stat-total-punches');
-    if (punchStat) punchStat.textContent = `${(appData.attendanceLogs || []).length} Lượt quẹt`;
+    if (punchStat) punchStat.textContent = `${(appData.attendanceLogs || []).length} Lượt chấm công`;
   },
 
   populateRawLogFilters() {
@@ -1797,7 +1797,7 @@ const appAttendance = {
         <tr>
           <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">
             <i class="fa-solid fa-list-check" style="font-size: 24px; margin-bottom: 8px; display: block; color: #94A3B8;"></i>
-            Không có bản ghi quẹt thẻ nào. Bấm "Kéo Dữ Liệu" hoặc nạp file từ phần mềm Ronald Jack Pro.
+            Không có bản ghi chấm công nào. Bấm "Kéo Dữ Liệu" hoặc nạp file từ phần mềm Ronald Jack Pro.
           </td>
         </tr>
       `;
@@ -1811,7 +1811,7 @@ const appAttendance = {
 
     const countHeader = document.getElementById('zk-raw-logs-count') || document.getElementById('att-raw-logs-count');
     if (countHeader) {
-      countHeader.textContent = `(Tổng cộng: ${logs.length} bản ghi quẹt thẻ)`;
+      countHeader.textContent = `(Tổng cộng: ${logs.length} bản ghi chấm công)`;
     }
 
     tbody.innerHTML = displayLogs.map((l, idx) => {
@@ -1820,9 +1820,9 @@ const appAttendance = {
         e.employee_id === l.attendance_code
       );
       const verifyTypeMap = {
-        'Van tay': 'Vân tay',
-        'Finger': 'Vân tay',
-        'FINGER': 'Vân tay',
+        'Khuon mat': 'Khuôn mặt',
+        'Face': 'Khuôn mặt',
+        'FACE': 'Khuôn mặt',
         'Card': 'Thẻ từ',
         'The tu': 'Thẻ từ',
         'CARD': 'Thẻ từ',
@@ -1831,7 +1831,7 @@ const appAttendance = {
         'Password': 'Mật mã',
         'PASSWORD': 'Mật mã'
       };
-      const verifyTypeVn = verifyTypeMap[l.verify_type] || l.verify_type || 'Vân tay';
+      const verifyTypeVn = verifyTypeMap[l.verify_type] || l.verify_type || 'Khuôn mặt';
 
       let sourceBadge = '';
       const devName = l.device_name || 'Ronald Jack';
@@ -1872,7 +1872,7 @@ const appAttendance = {
     if (commKeyInput) commKeyInput.value = '0';
     document.getElementById('att-dev-location').value = '';
     document.getElementById('att-dev-enabled').checked = true;
-    document.getElementById('att-dev-note').value = 'Máy quẹt thẻ vân tay / thẻ từ Ronald Jack 009';
+    document.getElementById('att-dev-note').value = 'Máy chấm công khuôn mặt / thẻ từ Ronald Jack 009';
 
     modal.classList.add('active');
   },
@@ -2051,8 +2051,8 @@ const appAttendance = {
         </div>
         <div style="line-height: 1.5;">
           • CSDL: <strong>${dbname}</strong> trên máy chủ <code>${host}:${port}</code>.<br>
-          • Đã nhận diện bảng <strong>CheckInOut</strong> (hơn 809,000 lượt quẹt thẻ), bảng <strong>NHANVIEN</strong> (213 nhân sự), bảng <strong>MAYCHAMCONG</strong> (4 máy chấm công thực tế).<br>
-          • Đã kết nối 4 máy: TẦNG TRỆT, PHÚ MINH L2, THANH PHÁT L3, MCC00001. Sẵn sàng đồng bộ quẹt thẻ!
+          • Đã nhận diện bảng <strong>CheckInOut</strong> (hơn 809,000 lượt chấm công), bảng <strong>NHANVIEN</strong> (213 nhân sự), bảng <strong>MAYCHAMCONG</strong> (4 máy chấm công thực tế).<br>
+          • Đã kết nối 4 máy: TẦNG TRỆT, PHÚ MINH L2, THANH PHÁT L3, MCC00001. Sẵn sàng đồng bộ chấm công!
         </div>
       `;
     }
@@ -2069,10 +2069,10 @@ const appAttendance = {
       statusBox.style.background = '#EFF6FF';
       statusBox.style.color = '#1E40AF';
       statusBox.style.border = '1px solid #BFDBFE';
-      statusBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang trích xuất dữ liệu quẹt thẻ từ CSDL ${dbname} (113.161.53.133:1433)...`;
+      statusBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang trích xuất dữ liệu chấm công từ CSDL ${dbname} (113.161.53.133:1433)...`;
     }
 
-    utils.showToast(`Đang đồng bộ dữ liệu quẹt thẻ từ CSDL ${dbname}...`, 'info');
+    utils.showToast(`Đang đồng bộ dữ liệu chấm công từ CSDL ${dbname}...`, 'info');
 
     let loadedPunches = [];
     try {
@@ -2110,7 +2110,7 @@ const appAttendance = {
             employee_id: emp ? emp.employee_id : (l.employee_id || ''),
             employee_name: emp ? emp.full_name : (l.employee_name || ''),
             timestamp: ts,
-            verify_type: l.verify_type || 'Van tay',
+            verify_type: l.verify_type || 'Khuon mat',
             device_name: l.device_name || 'CSDL Mitaco (SQL Server)',
             device_ip: l.device_ip || '113.161.53.133'
           });
@@ -2157,14 +2157,14 @@ const appAttendance = {
           <i class="fa-solid fa-circle-check" style="color: #10B981;"></i> Đồng Bộ CSDL SQL Server Thành Công!
         </div>
         <div style="line-height: 1.6;">
-          • Đã trích xuất & đối soát: <strong>${appData.attendanceLogs.length} lượt quẹt thẻ</strong> từ bảng CheckInOut.<br>
+          • Đã trích xuất & đối soát: <strong>${appData.attendanceLogs.length} lượt chấm công</strong> từ bảng CheckInOut.<br>
           • Đã tự động tính toán bảng công: <strong>${(appData.timesheets || []).length} bản ghi công</strong> theo hồ sơ nhân sự.<br>
           • Trạng thái 3 máy chấm công: <span class="badge badge-active">Trực tuyến</span> (Port 5005 - 5007).
         </div>
       `;
     }
 
-    utils.showToast(`Đồng bộ thành công ${appData.attendanceLogs.length} lượt quẹt thẻ từ CSDL SQL! Bảng công đã được cập nhật đầy đủ.`, 'success');
+    utils.showToast(`Đồng bộ thành công ${appData.attendanceLogs.length} lượt chấm công từ CSDL SQL! Bảng công đã được cập nhật đầy đủ.`, 'success');
   },
 
   copyAgentCommand() {
@@ -2256,7 +2256,7 @@ const appAttendance = {
         if (preview && previewName && previewCount) {
           preview.style.display = 'block';
           previewName.innerHTML = `<i class="fa-solid fa-file-lines"></i> ${file.name}`;
-          previewCount.textContent = `${rows.length} lượt quẹt hợp lệ`;
+          previewCount.textContent = `${rows.length} lượt chấm công hợp lệ`;
           if (previewDetails) {
             previewDetails.textContent = `Hệ thống đã nhận diện dữ liệu chuẩn và tự động map mã chấm công nhân sự. Bấm "Xác Nhận Nhập" để hoàn tất.`;
           }
@@ -2278,7 +2278,7 @@ const appAttendance = {
 
   confirmImportSoftwarePunchFile() {
     if (!this.pendingImportLogs || this.pendingImportLogs.length === 0) {
-      utils.showToast('Không có dữ liệu quẹt thẻ nào để nhập', 'warning');
+      utils.showToast('Không có dữ liệu chấm công nào để nhập', 'warning');
       return;
     }
 
@@ -2302,7 +2302,7 @@ const appAttendance = {
       }
     });
 
-    utils.showToast(`Đã nhập thành công ${added} lượt quẹt thẻ mới từ file! Bắt đầu tính toán bảng công...`, 'success');
+    utils.showToast(`Đã nhập thành công ${added} lượt chấm công mới từ file! Bắt đầu tính toán bảng công...`, 'success');
 
     const preview = document.getElementById('zk-file-preview');
     const processBtn = document.getElementById('zk-btn-process-file');
@@ -2343,7 +2343,7 @@ const appAttendance = {
   exportRawLogsToExcel() {
     let logs = appData.attendanceLogs || [];
     if (logs.length === 0) {
-      utils.showToast('Không có dữ liệu quẹt thẻ thô để xuất!', 'warning');
+      utils.showToast('Không có dữ liệu chấm công thô để xuất!', 'warning');
       return;
     }
 
@@ -2382,7 +2382,7 @@ const appAttendance = {
       'Mã Nhân Viên',
       'Họ Và Tên',
       'Phòng Ban',
-      'Thời Gian Quẹt Thẻ',
+      'Thời Gian Chấm Công Thẻ',
       'Thiết Bị Chấm',
       'Địa Chỉ IP:Port',
       'Phương Thức'
@@ -2403,7 +2403,7 @@ const appAttendance = {
         l.timestamp || '',
         l.device_name || '',
         l.device_ip ? `${l.device_ip}:${l.device_port || 5005}` : '',
-        l.verify_type || 'Vân tay'
+        l.verify_type || 'Khuôn mặt'
       ];
     });
 
@@ -2412,8 +2412,8 @@ const appAttendance = {
 
     if (typeof XLSX !== 'undefined' && XLSX.utils && XLSX.writeFile) {
       try {
-        const titleRow = [`NHẬT KÝ QUẸT THẺ GỐC MÁY CHẤM CÔNG RONALD JACK - TỔNG CÔNG TY TRUNG HẢI`];
-        const subTitle = [`Ngày xuất: ${new Date().toLocaleDateString('vi-VN')} - Tổng số lượt quẹt: ${logs.length}`];
+        const titleRow = [`NHẬT KÝ CHẤM CÔNG GỐC MÁY CHẤM CÔNG RONALD JACK - TỔNG CÔNG TY TRUNG HẢI`];
+        const subTitle = [`Ngày xuất: ${new Date().toLocaleDateString('vi-VN')} - Tổng số lượt chấm công: ${logs.length}`];
         const wsData = [
           titleRow,
           subTitle,
@@ -2436,7 +2436,7 @@ const appAttendance = {
         ];
         XLSX.utils.book_append_sheet(wb, ws, 'Nhat_Ky_Quet_The_Goc');
         XLSX.writeFile(wb, `${baseFileName}.xlsx`);
-        utils.showToast('Đã xuất file Excel nhật ký quẹt thẻ gốc thành công!', 'success');
+        utils.showToast('Đã xuất file Excel nhật ký chấm công gốc thành công!', 'success');
         return;
       } catch (e) {
         console.warn('XLSX export encountered error, falling back to CSV:', e);
@@ -2444,7 +2444,7 @@ const appAttendance = {
     }
 
     this.downloadCsv(headers, rows, `${baseFileName}.csv`);
-    utils.showToast('Đã xuất file CSV nhật ký quẹt thẻ gốc (chuẩn UTF-8 tương thích Excel)!', 'success');
+    utils.showToast('Đã xuất file CSV nhật ký chấm công gốc (chuẩn UTF-8 tương thích Excel)!', 'success');
   },
 
   // ========================================================================
@@ -2582,13 +2582,13 @@ const appAttendance = {
   },
 
   recalculateClientSide() {
-    utils.showToast('Đang tính toán lại bảng công từ dữ liệu quẹt thẻ thực tế...', 'info');
+    utils.showToast('Đang tính toán lại bảng công từ dữ liệu chấm công thực tế...', 'info');
     const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
     const logs = appData.attendanceLogs || appData.rawAttendanceLogs || [];
     const requests = (appData.attendanceRequests || []).filter(r => r.status === 'APPROVED');
     const shifts = appData.shifts || [];
 
-    // Lấy danh sách tất cả các ngày có trong log quẹt thẻ
+    // Lấy danh sách tất cả các ngày có trong log chấm công
     const uniqueDates = new Set();
     logs.forEach(l => {
       if (l.timestamp && l.timestamp.length >= 10) {
@@ -2603,7 +2603,7 @@ const appAttendance = {
 
     const computedTimesheets = [];
 
-    // Nhóm logs theo ngày và mã quẹt thẻ / employee_id
+    // Nhóm logs theo ngày và mã chấm công / employee_id
     const logsByDateAndCode = {};
     logs.forEach(l => {
       if (!l.timestamp) return;
@@ -2692,7 +2692,7 @@ const appAttendance = {
             status: 'VALID',
             is_locked: false,
             is_manual_edited: false,
-            note: autoConfig.reason ? `Đặc cách: ${autoConfig.reason}` : 'Đặc cách tự động đủ công (Miễn quẹt thẻ)'
+            note: autoConfig.reason ? `Đặc cách: ${autoConfig.reason}` : 'Đặc cách tự động đủ công (Miễn chấm công)'
           });
           return;
         }
@@ -2783,7 +2783,7 @@ const appAttendance = {
         let lateMins = 0;
         let earlyMins = 0;
         let otHours = 0;
-        let note = 'Không quẹt thẻ';
+        let note = 'Không chấm công';
 
         const shiftStartParts = (shift.start_time || '08:00').split(':').map(Number);
         const shiftEndParts = (shift.end_time || '17:30').split(':').map(Number);
@@ -2847,7 +2847,7 @@ const appAttendance = {
           workUnits = Math.round((stdWorkUnits * 0.5) * 100) / 100;
           totalHours = Math.round((stdHours * 0.5) * 10) / 10;
           status = lateMins > 0 ? 'LATE' : 'VALID';
-          note = lateMins > 0 ? `Đi muộn ${lateMins}p (chưa quẹt ra)` : 'Đang làm việc (chưa quẹt ra)';
+          note = lateMins > 0 ? `Đi muộn ${lateMins}p (chưa chấm ra)` : 'Đang làm việc (chưa chấm ra)';
         }
 
         computedTimesheets.push({
@@ -2891,7 +2891,7 @@ const appAttendance = {
     }
     const logCountEl = document.getElementById('att-sync-modal-log-count');
     if (logCountEl) {
-      logCountEl.textContent = `${(appData.attendanceLogs || []).length} lượt quẹt`;
+      logCountEl.textContent = `${(appData.attendanceLogs || []).length} lượt chấm công`;
     }
     const progressBox = document.getElementById('att-sync-progress-box');
     if (progressBox) progressBox.style.display = 'none';
@@ -2914,7 +2914,7 @@ const appAttendance = {
 
   async syncSingleDevice(ip, port, devName) {
     const targetName = devName || `Máy ${ip}:${port || 5005}`;
-    utils.showToast(`Đang kết nối và kéo dữ liệu quẹt thẻ từ ${targetName}...`, 'info');
+    utils.showToast(`Đang kết nối và kéo dữ liệu chấm công từ ${targetName}...`, 'info');
 
     try {
       // 1. Fetch mitaco punches cache or local records
@@ -2958,7 +2958,7 @@ const appAttendance = {
               employee_id: emp ? emp.employee_id : (p.employee_id || ''),
               employee_name: emp ? emp.full_name : (p.employee_name || ''),
               timestamp: ts,
-              verify_type: p.verify_type || 'Van tay',
+              verify_type: p.verify_type || 'Khuon mat',
               device_name: targetName,
               device_ip: ip
             });
@@ -3000,7 +3000,7 @@ const appAttendance = {
     }
 
     console.log('[Attendance] Bắt đầu đồng bộ dữ liệu từ CSDL Ronald Jack Pro...');
-    utils.showToast('Đang đồng bộ dữ liệu quẹt thẻ từ phần mềm Ronald Jack Pro & CSDL SQL...', 'info');
+    utils.showToast('Đang đồng bộ dữ liệu chấm công từ phần mềm Ronald Jack Pro & CSDL SQL...', 'info');
 
     try {
       // 1. Fetch mitaco punches cache or call backend
@@ -3019,7 +3019,7 @@ const appAttendance = {
         newPunches = appData.attendanceLogs;
       }
 
-      console.log(`[Attendance] Đã nạp thành công ${newPunches.length} lượt quẹt thẻ.`);
+      console.log(`[Attendance] Đã nạp thành công ${newPunches.length} lượt chấm công.`);
 
       if (progressBar) progressBar.style.width = '65%';
       if (progressText) progressText.textContent = `Đã kéo ${newPunches.length || 'toàn bộ'} log. Đang đối soát mã chấm công với hồ sơ nhân sự...`;
@@ -3062,7 +3062,7 @@ const appAttendance = {
               employee_id: emp ? emp.employee_id : (p.employee_id || ''),
               employee_name: emp ? emp.full_name : (p.employee_name || ''),
               timestamp: ts,
-              verify_type: p.verify_type || 'Van tay',
+              verify_type: p.verify_type || 'Khuon mat',
               device_name: p.device_name || 'Máy Ronald Jack Pro',
               device_ip: p.device_ip || '192.168.1.201'
             });
@@ -3201,7 +3201,7 @@ const appAttendance = {
   },
 
   async generateSimulatorLogs() {
-    utils.showToast('Đang làm mới và đồng bộ dữ liệu quẹt thẻ kiểm thử thực tế...', 'info');
+    utils.showToast('Đang làm mới và đồng bộ dữ liệu chấm công kiểm thử thực tế...', 'info');
     try {
       try {
         const res = await fetch('/api/attendance/zk/simulate', {
@@ -3224,7 +3224,7 @@ const appAttendance = {
       this.renderRawLogs();
       utils.showToast('Đã tính toán và cập nhật bảng công thực tế thành công!', 'success');
     } catch (err) {
-      utils.showToast('Lỗi làm mới dữ liệu quẹt thẻ: ' + err.message, 'error');
+      utils.showToast('Lỗi làm mới dữ liệu chấm công: ' + err.message, 'error');
     }
   },
 

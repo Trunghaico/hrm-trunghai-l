@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Cloudflare Pages Advanced Worker (_worker.js)
  * Native Edge Runtime for HRM Enterprise
  * Handles all /api/* routes directly and delegates static assets to env.ASSETS
@@ -2562,7 +2562,7 @@ export default {
               let lateMins = 0;
               let earlyMins = 0;
               let otHours = 0;
-              let note = 'Không quẹt thẻ';
+              let note = 'Không chấm công';
 
               if (req) {
                 status = 'LEAVE';
@@ -2598,7 +2598,7 @@ export default {
                 workUnits = 0.5;
                 totalHours = 4.0;
                 status = lateMins > 0 ? 'LATE' : 'VALID';
-                note = lateMins > 0 ? `Đi muộn ${lateMins}p (chưa quẹt ra)` : 'Đang làm việc (chưa quẹt ra)';
+                note = lateMins > 0 ? `Đi muộn ${lateMins}p (chưa chấm ra)` : 'Đang làm việc (chưa chấm ra)';
               }
 
               newTimesheets.push({
@@ -2646,7 +2646,7 @@ export default {
 
         // POST /api/attendance/zk/simulate
         if (path === "attendance/zk/simulate" && method === "POST") {
-          return jsonResponse({ success: true, message: "Đã tạo dữ liệu quẹt thẻ kiểm thử thực tế thành công!" });
+          return jsonResponse({ success: true, message: "Đã tạo dữ liệu chấm công kiểm thử thực tế thành công!" });
         }
 
         // GET /api/attendance/devices
@@ -2752,7 +2752,7 @@ export default {
           }
           return jsonResponse({
             success: true,
-            message: `Đã đồng bộ thành công ${addedCount} bản ghi quẹt thẻ và ${body.timesheets?.length || 0} bảng công từ CSDL Ronald Jack Pro!`,
+            message: `Đã đồng bộ thành công ${addedCount} bản ghi chấm công và ${body.timesheets?.length || 0} bảng công từ CSDL Ronald Jack Pro!`,
             added_count: addedCount,
             timesheets_count: body.timesheets?.length || 0
           });

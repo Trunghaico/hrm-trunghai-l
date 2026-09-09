@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
@@ -1479,7 +1479,7 @@
         <div class="panel-header" style="margin-bottom: 16px;">
           <div>
             <h2 class="panel-title"><i class="fa-solid fa-clock"></i> Quản Lý Chấm Công & Thiết Bị Ronald Jack 009</h2>
-            <p class="panel-subtitle">Tích hợp thiết bị quẹt thẻ Port 5005-5007, tự động đối soát ca làm việc, tính công và chốt lương</p>
+            <p class="panel-subtitle">Tích hợp thiết bị chấm công Port 5005-5007, tự động đối soát ca làm việc, tính công và chốt lương</p>
           </div>
         </div>
 
@@ -1514,7 +1514,7 @@
             <div class="card att-kpi-card" style="border-left: 4px solid #10B981;">
               <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Đang Làm Việc</div>
               <div id="att-kpi-working" style="font-size: 26px; font-weight: 800; color: #047857; margin-top: 4px;">...</div>
-              <div style="font-size: 11px; color: #10B981; margin-top: 2px;">Đã ghi nhận quẹt thẻ vào</div>
+              <div style="font-size: 11px; color: #10B981; margin-top: 2px;">Đã ghi nhận chấm công vào</div>
             </div>
             <div class="card att-kpi-card" style="border-left: 4px solid #F59E0B;">
               <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Đi Muộn</div>
@@ -1524,7 +1524,7 @@
             <div class="card att-kpi-card" style="border-left: 4px solid #8B5CF6;">
               <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Về Sớm</div>
               <div id="att-kpi-early" style="font-size: 26px; font-weight: 800; color: #7C3AED; margin-top: 4px;">...</div>
-              <div style="font-size: 11px; color: #8B5CF6; margin-top: 2px;">Quẹt ra trước kết thúc ca</div>
+              <div style="font-size: 11px; color: #8B5CF6; margin-top: 2px;">Chấm ra trước kết thúc ca</div>
             </div>
             <div class="card att-kpi-card" style="border-left: 4px solid #06B6D4;">
               <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Nghỉ Phép Có Đơn</div>
@@ -1534,7 +1534,7 @@
             <div class="card att-kpi-card" style="border-left: 4px solid #EF4444;">
               <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Vắng Mặt</div>
               <div id="att-kpi-absent" style="font-size: 26px; font-weight: 800; color: #DC2626; margin-top: 4px;">...</div>
-              <div style="font-size: 11px; color: #EF4444; margin-top: 2px;">Không có quẹt thẻ & đơn</div>
+              <div style="font-size: 11px; color: #EF4444; margin-top: 2px;">Không có chấm công & đơn</div>
             </div>
           </div>
 
@@ -1587,7 +1587,7 @@
               <button class="btn btn-secondary btn-sm" onclick="appAttendance.openSyncModal()" title="Đồng bộ từ máy chấm công & phần mềm Ronald Jack Pro">
                 <i class="fa-solid fa-rotate"></i> Đồng Bộ Máy
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="appAttendance.recalculateTimesheets()" title="Tính lại công theo log quẹt thẻ và đơn">
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.recalculateTimesheets()" title="Tính lại công theo log chấm công và đơn">
                 <i class="fa-solid fa-calculator"></i> Tính Lại
               </button>
               <button class="btn btn-secondary btn-sm" id="att-btn-lock" onclick="appAttendance.toggleLockTimesheet()" title="Khóa sổ công để tính lương">
@@ -1596,10 +1596,10 @@
               <button class="btn btn-primary btn-sm" onclick="appAttendance.exportTimesheetToExcel()" title="Xuất file Excel bảng công chi tiết chuẩn tính lương">
                 <i class="fa-solid fa-file-excel"></i> Xuất Bảng Công
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="appAttendance.exportRawLogsToExcel()" title="Xuất toàn bộ nhật ký quẹt thẻ gốc từ máy chấm công">
-                <i class="fa-solid fa-clock-rotate-left"></i> Xuất Log Quẹt Thẻ
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.exportRawLogsToExcel()" title="Xuất toàn bộ nhật ký chấm công gốc từ máy chấm công">
+                <i class="fa-solid fa-clock-rotate-left"></i> Xuất Log Chấm Công
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()" title="Mô phỏng dữ liệu quẹt thẻ kiểm thử">
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()" title="Mô phỏng dữ liệu chấm công kiểm thử">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng
               </button>
             </div>
@@ -1759,9 +1759,9 @@
                   <i class="fa-solid fa-wand-magic-sparkles"></i>
                 </div>
                 <div>
-                  <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #14532D;">Chế Độ Đặc Cách Tự Động Tính Đủ Công (Miễn Quẹt Thẻ Máy)</h3>
+                  <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #14532D;">Chế Độ Đặc Cách Tự Động Tính Đủ Công (Miễn Chấm Công Máy)</h3>
                   <p style="margin: 4px 0 0 0; font-size: 12.5px; color: #166534; line-height: 1.45;">
-                    Nhân viên trong danh sách này sẽ <strong>luôn được hệ thống tự động ghi nhận 1.0 công / 8.0 giờ chuẩn</strong> mà không cần quẹt thẻ tại máy chấm công. Thích hợp cho <strong>Ban Giám Đốc, Quản lý cấp cao, Nhân viên kinh doanh thị trường, Lái xe công tác xa...</strong>
+                    Nhân viên trong danh sách này sẽ <strong>luôn được hệ thống tự động ghi nhận 1.0 công / 8.0 giờ chuẩn</strong> mà không cần chấm công tại máy chấm công. Thích hợp cho <strong>Ban Giám Đốc, Quản lý cấp cao, Nhân viên kinh doanh thị trường, Lái xe công tác xa...</strong>
                   </p>
                 </div>
               </div>
@@ -1855,7 +1855,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <div>
               <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Quy Trình Phê Duyệt Đơn Từ Chấm Công</h3>
-              <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-secondary);">Quản lý đơn xin nghỉ phép, giải trình quên quẹt thẻ, đăng ký tăng ca OT</p>
+              <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-secondary);">Quản lý đơn xin nghỉ phép, giải trình quên chấm công, đăng ký tăng ca OT</p>
             </div>
             <button class="btn btn-primary btn-sm" onclick="appAttendance.openCreateRequestModal()">
               <i class="fa-solid fa-plus"></i> Tạo Đơn Từ Mới
@@ -1982,7 +1982,7 @@
               <i class="fa-solid fa-fingerprint" style="color: #2563EB;"></i> Quản Lý Máy Chấm Công & Kết Nối Ronald Jack
             </h2>
             <p class="panel-subtitle">
-              Quản lý thiết bị phần cứng IP/Port (5005-5007), kết nối trực tiếp CSDL phần mềm Ronald Jack Pro / Wise Eye và theo dõi dữ liệu quẹt thẻ
+              Quản lý thiết bị phần cứng IP/Port (5005-5007), kết nối trực tiếp CSDL phần mềm Ronald Jack Pro / Wise Eye và theo dõi dữ liệu chấm công
             </p>
           </div>
         </div>
@@ -1996,7 +1996,7 @@
             <i class="fa-solid fa-network-wired"></i> Liên Kết Phần Mềm Ronald Jack Pro
           </button>
           <button class="btn btn-secondary zk-nav-tab" data-tab="zk-rawlogs" onclick="appAttendance.switchZkSubTab('zk-rawlogs')">
-            <i class="fa-solid fa-list-check"></i> Nhật Ký Quẹt Thẻ Gốc (Raw Punch Logs)
+            <i class="fa-solid fa-list-check"></i> Nhật Ký Chấm Công Gốc (Raw Punch Logs)
           </button>
         </div>
 
@@ -2021,8 +2021,8 @@
               <button class="btn btn-secondary btn-sm" onclick="appAttendance.syncDeviceTimeAll()" title="Đồng bộ giờ hệ thống xuống thiết bị">
                 <i class="fa-solid fa-clock-rotate-left"></i> Đồng Bộ Giờ
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()" title="Tạo dữ liệu kiểm thử quẹt thẻ">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng Quẹt Thẻ
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.generateSimulatorLogs()" title="Tạo dữ liệu kiểm thử chấm công">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Mô Phỏng Chấm Công
               </button>
             </div>
           </div>
@@ -2052,7 +2052,7 @@
                 <i class="fa-solid fa-database"></i>
               </div>
               <div>
-                <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tổng Bản Ghi Quẹt</div>
+                <div style="font-size: 11.5px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tổng Bản Ghi Chấm Công</div>
                 <div id="zk-stat-total-punches" style="font-size: 22px; font-weight: 800; color: #D97706;">...</div>
               </div>
             </div>
@@ -2078,7 +2078,7 @@
                 <p style="margin: 3px 0 0 0;">Port mặc định của ZKProtocol: <code>5005</code> (hoặc 5006, 5007). Mục <em>Comm Key</em> đặt bằng <code>0</code> (mặc định không đổi mật khẩu).</p>
               </div>
               <div>
-                <strong>3. Đăng ký vân tay & Mã nhân viên:</strong>
+                <strong>3. Đăng ký khuôn mặt & Mã nhân viên:</strong>
                 <p style="margin: 3px 0 0 0;">Mã ID nhân viên đăng ký trên máy Ronald Jack (ví dụ: <code>1001</code>) phải trùng khớp với cột <strong>Mã chấm công (attendance_code)</strong> trong Hồ Sơ Nhân Sự.</p>
               </div>
             </div>
@@ -2167,7 +2167,7 @@
                   <i class="fa-solid fa-file-excel"></i>
                 </div>
                 <div>
-                  <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Nhập Báo Cáo Quẹt Thẻ Xuất Từ Phần Mềm</h3>
+                  <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1E293B;">Nhập Báo Cáo Chấm Công Xuất Từ Phần Mềm</h3>
                   <p style="margin: 0; font-size: 11.5px; color: var(--text-secondary);">Hỗ trợ file Excel, CSV, TXT, DAT xuất từ Ronald Jack Pro hoặc USB</p>
                 </div>
               </div>
@@ -2184,7 +2184,7 @@
                   <strong id="zk-preview-filename" style="color: #1E40AF;"><i class="fa-solid fa-file-lines"></i> file_cham_cong.xlsx</strong>
                   <span id="zk-preview-count" class="badge" style="background: #2563EB; color: #fff;">0 dòng</span>
                 </div>
-                <p id="zk-preview-details" style="margin: 0; color: #3B82F6; font-size: 11.5px;">Phát hiện các cột: Mã chấm công, Thời gian quẹt, Tên máy</p>
+                <p id="zk-preview-details" style="margin: 0; color: #3B82F6; font-size: 11.5px;">Phát hiện các cột: Mã chấm công, Thời gian chấm công, Tên máy</p>
               </div>
 
               <button class="btn btn-primary btn-sm" id="zk-btn-process-file" style="width: 100%; display: none;" onclick="appAttendance.confirmImportSoftwarePunchFile()">
@@ -2258,16 +2258,16 @@
               </span>
             </div>
             <div style="background: #0F172A; color: #E2E8F0; font-family: monospace; font-size: 11.5px; padding: 14px 16px; border-radius: var(--radius-sm); overflow-x: auto; max-height: 160px; line-height: 1.6; border: 1px solid #1E293B;" id="zk-agent-code-box">
-              <span style="color: #64748B;"># Đọc các lượt quẹt thẻ mới từ CSDL Mitaco / Ronald Jack Pro (113.161.53.133,1433)</span><br>
+              <span style="color: #64748B;"># Đọc các lượt chấm công mới từ CSDL Mitaco / Ronald Jack Pro (113.161.53.133,1433)</span><br>
               <span style="color: #38BDF8;">$query</span> = "SELECT c.ID, c.MaChamCong, nv.MaNhanVien, nv.TenNhanVien, c.GioCham, c.TenMay FROM CheckInOut c LEFT JOIN NHANVIEN nv ON c.MaChamCong = nv.MaChamCong WHERE c.GioCham >= @LastSyncTime"<br>
-              <span style="color: #64748B;"># Gửi dữ liệu quẹt thẻ mới lên API Trung Hải HRM</span><br>
+              <span style="color: #64748B;"># Gửi dữ liệu chấm công mới lên API Trung Hải HRM</span><br>
               <span style="color: #38BDF8;">$res</span> = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json" -Body (<span style="color: #F59E0B;">@{ db_type="sql_server"; server_host="113.161.53.133"; database_name="mitaco"; punch_logs=$punches }</span> | ConvertTo-Json)<br>
-              <span style="color: #10B981;">Write-Host "Đã đồng bộ thành công: $($res.added_count) bản ghi quẹt thẻ mới từ CSDL Mitaco."</span>
+              <span style="color: #10B981;">Write-Host "Đã đồng bộ thành công: $($res.added_count) bản ghi chấm công mới từ CSDL Mitaco."</span>
             </div>
           </div>
         </div>
 
-        <!-- SUBTAB 3: RAW PUNCH LOGS (NHẬT KÝ QUẸT THẺ GỐC) -->
+        <!-- SUBTAB 3: RAW PUNCH LOGS (NHẬT KÝ CHẤM CÔNG GỐC) -->
         <div class="zk-tab-content" id="zk-tab-rawlogs" style="display: none;">
           <div class="filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; background: #F8FAFC; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); align-items: center;">
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -2277,13 +2277,13 @@
               </select>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
-              <label for="zk-log-date-picker" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0;">Ngày quẹt:</label>
+              <label for="zk-log-date-picker" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0;">Ngày chấm công:</label>
               <input type="date" id="zk-log-date-picker" class="filter-select" style="height: 34px; font-weight: 600;" onchange="appAttendance.filterRawLogs()">
             </div>
             <div style="flex: 1; min-width: 200px;">
               <input type="text" id="zk-log-search-input" class="filter-input" placeholder="Tìm theo mã chấm công hoặc tên nhân viên..." style="height: 34px;" oninput="appAttendance.filterRawLogs()">
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="appAttendance.exportRawLogsToExcel()" title="Xuất toàn bộ nhật ký quẹt thẻ thô">
+            <button class="btn btn-secondary btn-sm" onclick="appAttendance.exportRawLogsToExcel()" title="Xuất toàn bộ nhật ký chấm công thô">
               <i class="fa-solid fa-file-excel"></i> Xuất Excel Thô
             </button>
           </div>
@@ -2296,8 +2296,8 @@
                   <th style="width: 130px;">Mã Chấm Công</th>
                   <th>Tên Nhân Viên</th>
                   <th>Phòng Ban</th>
-                  <th style="width: 160px;">Thời Gian Quẹt</th>
-                  <th>Thiết Bị / Nguồn Quẹt</th>
+                  <th style="width: 160px;">Thời Gian Chấm Công</th>
+                  <th>Thiết Bị / Nguồn Chấm Công</th>
                   <th style="width: 120px; text-align: center;">Phương Thức</th>
                 </tr>
               </thead>
@@ -4221,7 +4221,7 @@
           <label for="att-req-type" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Loại đơn:</label>
           <select id="att-req-type" class="form-control">
             <option value="LEAVE">Đơn xin nghỉ phép</option>
-            <option value="FORGOT_CHECKIN">Giải trình quên quẹt thẻ / Bổ sung công</option>
+            <option value="FORGOT_CHECKIN">Giải trình quên chấm công / Bổ sung công</option>
             <option value="OVERTIME">Đăng ký làm thêm giờ (OT)</option>
           </select>
         </div>
@@ -4314,7 +4314,7 @@
 
       <div style="margin-bottom: 14px;">
         <label for="att-dev-note" style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Ghi chú thiết bị:</label>
-        <input type="text" id="att-dev-note" class="form-control" placeholder="Máy quẹt thẻ vân tay / thẻ từ Ronald Jack 009...">
+        <input type="text" id="att-dev-note" class="form-control" placeholder="Máy chấm công khuôn mặt / thẻ từ Ronald Jack 009...">
       </div>
 
       <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px 12px; border-radius: var(--radius-sm);">
@@ -4612,7 +4612,7 @@
           <i class="fa-solid fa-shield-halved"></i>
         </div>
         <div style="font-size: 12px; color: #166534; line-height: 1.4;">
-          <strong>Cơ chế Khử Trùng Lặp (Deduplication):</strong> Dùng đồng thời cả 2 cách đồng bộ (SQL CSDL & IP Máy) <strong>hoàn toàn không xung đột</strong>. Mỗi lượt quẹt được kiểm tra duy nhất theo <code>Mã CC + Thời gian</code>.
+          <strong>Cơ chế Khử Trùng Lặp (Deduplication):</strong> Dùng đồng thời cả 2 cách đồng bộ (SQL CSDL & IP Máy) <strong>hoàn toàn không xung đột</strong>. Mỗi lượt chấm công được kiểm tra duy nhất theo <code>Mã CC + Thời gian</code>.
         </div>
       </div>
 
@@ -4766,7 +4766,7 @@
         <i class="fa-solid fa-user-plus" style="font-size: 20px;"></i>
         <div>
           <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">Thêm Nhân Viên Đặc Cách Tự Động Đủ Công</h3>
-          <p style="margin: 2px 0 0 0; font-size: 12px; color: #DCFCE7;">Chọn cá nhân nhân sự để miễn quẹt thẻ máy và tự động hưởng đủ công</p>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: #DCFCE7;">Chọn cá nhân nhân sự để miễn chấm công máy và tự động hưởng đủ công</p>
         </div>
       </div>
       <button type="button" class="modal-close" style="color: #fff;" onclick="appAttendance.closeAddAutoEmpModal()">&times;</button>
@@ -4781,7 +4781,7 @@
 
       <div style="margin-bottom: 16px;">
         <label for="att-auto-single-reason" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Lý do / Căn cứ đặc cách:</label>
-        <input type="text" id="att-auto-single-reason" class="form-control" placeholder="VD: Lãnh đạo cấp cao, Sales công tác thị trường..." value="Đặc cách tự động đủ công (Miễn quẹt thẻ)">
+        <input type="text" id="att-auto-single-reason" class="form-control" placeholder="VD: Lãnh đạo cấp cao, Sales công tác thị trường..." value="Đặc cách tự động đủ công (Miễn chấm công)">
       </div>
 
       <div style="margin-bottom: 6px;">

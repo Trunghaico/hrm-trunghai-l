@@ -1,13 +1,13 @@
-/**
+﻿/**
  * ATTENDANCE ENGINE - BỘ XỬ LÝ CHẤM CÔNG CHUẨN MITAPRO ULTIMATE 2026
  * Dành cho Hệ thống Quản trị Nhân sự HRM Trung Hải
  * 
  * Các tính năng:
  * 1. Quản lý Ca làm việc (Hành chính, Sáng, Chiều, Đêm, Ca gãy)
- * 2. Phân tích log quẹt thẻ thô (Check-in / Check-out / Ghép cặp / Bất thường)
+ * 2. Phân tích log chấm công thô (Check-in / Check-out / Ghép cặp / Bất thường)
  * 3. Thuật toán Đi muộn / Về sớm (Grace period & Làm tròn 5p/15p)
  * 4. Tính giờ làm thêm Overtime (OT ngày thường 150%, CN 200%, Lễ 300%)
- * 5. Tự động áp dụng Đơn từ (Nghỉ phép P/RO/TS/Ô, Giải trình quên quẹt thẻ, Đơn OT, Công tác CT)
+ * 5. Tự động áp dụng Đơn từ (Nghỉ phép P/RO/TS/Ô, Giải trình quên chấm công, Đơn OT, Công tác CT)
  * 6. Tính toán Bảng công chi tiết & Bảng tổng hợp
  */
 
@@ -182,7 +182,7 @@ function calculateDayTimesheet({
     }
   }
 
-  // 1. Phân tích Log quẹt thẻ thô của nhân viên trong ngày
+  // 1. Phân tích Log chấm công thô của nhân viên trong ngày
   const empCodes = new Set([
     String(employee.attendance_code || '').trim(),
     String(employee.time_attendance_code || '').trim(),
@@ -219,7 +219,7 @@ function calculateDayTimesheet({
   const otReq = (approvedRequests || []).find(r => (r.request_type === 'OVERTIME' || r.type === 'OVERTIME') && (r.status === 'APPROVED'));
   const tripReq = (approvedRequests || []).find(r => (r.request_type === 'BUSINESS_TRIP' || r.type === 'BUSINESS_TRIP') && (r.status === 'APPROVED'));
 
-  // Áp dụng đơn giải trình quên quẹt thẻ
+  // Áp dụng đơn giải trình quên chấm công
   let checkIn = rawCheckIn;
   let checkOut = rawCheckOut;
   let hasForgotExplanation = false;
@@ -422,7 +422,7 @@ function calculateDayTimesheet({
     }
     totalWorkHours = Math.max(0, Math.round((spanMins / 60) * 10) / 10);
   } else if (inMins !== null && !outMins) {
-    totalWorkHours = 4.0; // Quên quẹt ra -> tạm tính nửa ca
+    totalWorkHours = 4.0; // Quên chấm ra -> tạm tính nửa ca
   }
 
   // Tính số công (Work Units) & Ký hiệu (Symbol)
@@ -481,8 +481,8 @@ function calculateDayTimesheet({
   let note = '';
   if (hasForgotExplanation) note = 'Đã giải trình chấm công';
   else if (status === 'ABSENT') note = 'Vắng không phép';
-  else if (status === 'MISSING_OUT') note = 'Quên quẹt thẻ ra';
-  else if (status === 'MISSING_IN') note = 'Quên quẹt thẻ vào';
+  else if (status === 'MISSING_OUT') note = 'Quên chấm công ra';
+  else if (status === 'MISSING_IN') note = 'Quên chấm công vào';
   else if (lateMinutes > 0 && earlyMinutes > 0) note = `Đi muộn ${lateMinutes}p, về sớm ${earlyMinutes}p`;
   else if (lateMinutes > 0) note = `Đi muộn ${lateMinutes}p`;
   else if (earlyMinutes > 0) note = `Về sớm ${earlyMinutes}p`;

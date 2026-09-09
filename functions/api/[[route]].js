@@ -2564,7 +2564,7 @@ export async function onRequest(context) {
             let lateMins = 0;
             let earlyMins = 0;
             let otHours = 0;
-            let note = 'Không quẹt thẻ';
+            let note = 'Không chấm công';
 
             if (req) {
               status = 'LEAVE';
@@ -2600,7 +2600,7 @@ export async function onRequest(context) {
               workUnits = 0.5;
               totalHours = 4.0;
               status = lateMins > 0 ? 'LATE' : 'VALID';
-              note = lateMins > 0 ? `Đi muộn ${lateMins}p (chưa quẹt ra)` : 'Đang làm việc (chưa quẹt ra)';
+              note = lateMins > 0 ? `Đi muộn ${lateMins}p (chưa chấm ra)` : 'Đang làm việc (chưa chấm ra)';
             }
 
             newTimesheets.push({
@@ -2643,12 +2643,41 @@ export async function onRequest(context) {
 
       // POST /api/attendance/zk/sync
       if (path === "attendance/zk/sync" && method === "POST") {
-        return jsonResponse({ success: true, message: "Đồng bộ từ máy Ronald Jack 009 hoàn tất!" });
+        const body = await request.json().catch(() => ({}));
+        let logs = data.tables["17_Attendance_Logs"] || [];
+        const punches = body.punches || [];
+        let addedCount = 0;
+        if (Array.isArray(punches) && punches.length > 0) {
+          const existingKeys = new Set(logs.map(l => `${l.attendance_code}_${l.timestamp}`));
+          punches.forEach(p => {
+            const key = `${p.attendance_code}_${p.timestamp}`;
+            if (!existingKeys.has(key)) {
+              logs.unshift({
+                log_id: p.log_id || `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                attendance_code: p.attendance_code,
+                employee_id: p.employee_id || '',
+                employee_name: p.employee_name || '',
+                timestamp: p.timestamp,
+                verify_type: p.verify_type || 'Khuôn mặt',
+                device_name: p.device_name || 'Máy Chấm Công',
+                device_ip: p.device_ip || '113.161.53.133'
+              });
+              existingKeys.add(key);
+              addedCount++;
+            }
+          });
+          await saveTableToD1(db, "17_Attendance_Logs", logs);
+        }
+        return jsonResponse({
+          success: true,
+          message: `Đã đồng bộ thành công ${addedCount} bản ghi chấm công từ máy chấm công!`,
+          added_count: addedCount
+        });
       }
 
       // POST /api/attendance/zk/simulate
       if (path === "attendance/zk/simulate" && method === "POST") {
-        return jsonResponse({ success: true, message: "Đã tạo dữ liệu quẹt thẻ kiểm thử thực tế thành công!" });
+        return jsonResponse({ success: true, message: "Đã tạo dữ liệu chấm công kiểm thử thực tế thành công!" });
       }
 
       // GET /api/attendance/devices
@@ -2754,7 +2783,7 @@ export async function onRequest(context) {
         }
         return jsonResponse({
           success: true,
-          message: `Đã đồng bộ thành công ${addedCount} bản ghi quẹt thẻ và ${body.timesheets?.length || 0} bảng công từ CSDL Ronald Jack Pro!`,
+          message: `Đã đồng bộ thành công ${addedCount} bản ghi chấm công và ${body.timesheets?.length || 0} bảng công từ CSDL Ronald Jack Pro!`,
           added_count: addedCount,
           timesheets_count: body.timesheets?.length || 0
         });

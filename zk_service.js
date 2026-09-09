@@ -1,7 +1,7 @@
-// ==========================================================================
+﻿// ==========================================================================
 // RONALD JACK 009 DEVICE INTEGRATION SERVICE
 // Kết nối máy chấm công qua IP & Cổng Port 5005, 5006, 5007 bằng node-zklib
-// Hỗ trợ tự động hóa (Cron/Interval), khử trùng lặp quẹt thẻ & Virtual Simulator
+// Hỗ trợ tự động hóa (Cron/Interval), khử trùng lặp chấm công & Virtual Simulator
 // ==========================================================================
 
 let ZKLib = null;
@@ -124,7 +124,7 @@ class RonaldJackService {
     }
   }
 
-  // Thuật toán lọc bỏ các bản ghi quẹt thẻ trùng lặp:
+  // Thuật toán lọc bỏ các bản ghi chấm công trùng lặp:
   // Nếu nhân viên quẹt liên tục nhiều lần trong vài phút -> chỉ lấy giờ vào sớm nhất và giờ ra trễ nhất
   deduplicateLogs(rawLogs, gapMinutes = 5) {
     if (!Array.isArray(rawLogs) || rawLogs.length === 0) return [];
@@ -180,7 +180,7 @@ class RonaldJackService {
     return resultLogs;
   }
 
-  // Kéo dữ liệu quẹt thẻ từ 1 máy
+  // Kéo dữ liệu chấm công từ 1 máy
   async pullLogsFromDevice(device) {
     if (!device || !device.enabled) return [];
 
@@ -257,7 +257,7 @@ class RonaldJackService {
     return `${YYYY}-${MM}-${DD} ${hh}:${mm}:${ss}`;
   }
 
-  // Trình tạo dữ liệu quẹt thẻ mô phỏng thực tế cho mục đích kiểm thử
+  // Trình tạo dữ liệu chấm công mô phỏng thực tế cho mục đích kiểm thử
   generateSimulatedLogs(employees, targetDateStr = null) {
     const date = targetDateStr || new Date().toISOString().split('T')[0];
     const logs = [];
@@ -280,7 +280,7 @@ class RonaldJackService {
         device_ip: '192.168.1.201',
         device_port: 5005,
         device_name: 'Ronald Jack 009 - Cửa Chính',
-        verify_type: 'Vân tay'
+        verify_type: 'Khuôn mặt'
       });
       // Quẹt lại 1 phút sau
       const dupInMin = (realInMin + 1) % 60;
@@ -290,7 +290,7 @@ class RonaldJackService {
         device_ip: '192.168.1.201',
         device_port: 5005,
         device_name: 'Ronald Jack 009 - Cửa Chính',
-        verify_type: 'Vân tay'
+        verify_type: 'Khuôn mặt'
       });
 
       // Giả lập giờ ra (dao động 17:20 đến 19:15)
@@ -306,7 +306,7 @@ class RonaldJackService {
         device_ip: '192.168.1.201',
         device_port: 5005,
         device_name: 'Ronald Jack 009 - Cửa Chính',
-        verify_type: 'Vân tay'
+        verify_type: 'Khuôn mặt'
       });
     });
 

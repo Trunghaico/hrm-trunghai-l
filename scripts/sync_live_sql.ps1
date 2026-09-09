@@ -1,4 +1,4 @@
-$connStr = "Server=113.161.53.133,1433;Database=mitaco;User Id=sa;Password=THG@2026!;Connection Timeout=15;"
+﻿$connStr = "Server=113.161.53.133,1433;Database=mitaco;User Id=sa;Password=THG@2026!;Connection Timeout=15;"
 $conn = New-Object System.Data.SqlClient.SqlConnection($connStr)
 $conn.Open()
 
@@ -38,7 +38,7 @@ foreach ($r in $rows) {
     $idMap[$k] = $true
 
     $vMode = "$($r.VerifyMode)"
-    $vType = "Van tay"
+    $vType = "Khuon mat"
     if ($vMode -eq "2") { $vType = "Khuon mat" }
     elseif ($vMode -eq "3") { $vType = "The tu" }
 
@@ -162,7 +162,7 @@ foreach ($dt in $allDates) {
         $lateMins = 0
         $earlyMins = 0
         $otHours = 0
-        $note = "Không quẹt thẻ"
+        $note = "Không chấm công"
 
         if ($checkIn -and $checkOut) {
             $inH = [int]$checkIn.Substring(0,2)
@@ -202,7 +202,7 @@ foreach ($dt in $allDates) {
             $workUnits = 0.5
             $totalHours = 4.0
             $status = if ($lateMins -gt 0) { "LATE" } else { "VALID" }
-            $note = if ($lateMins -gt 0) { "Đi muộn ${lateMins}p (chưa quẹt ra)" } else { "Đang làm việc (chưa quẹt ra)" }
+            $note = if ($lateMins -gt 0) { "Đi muộn ${lateMins}p (chưa chấm ra)" } else { "Đang làm việc (chưa chấm ra)" }
         }
 
         $allTimesheets += [PSCustomObject]@{

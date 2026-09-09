@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
@@ -5474,7 +5474,7 @@ app.post('/api/attendance/zk/sync', async (req, res) => {
 
         res.json({
             success: true,
-            message: `Đồng bộ thành công! Kéo được ${logs.length} bản ghi, thêm mới ${addedCount} bản ghi quẹt thẻ.`,
+            message: `Đồng bộ thành công! Kéo được ${logs.length} bản ghi, thêm mới ${addedCount} bản ghi chấm công.`,
             synced_count: logs.length,
             added_count: addedCount
         });
@@ -5509,12 +5509,12 @@ app.post('/api/attendance/zk/simulate', (req, res) => {
         saveDatabase(db);
         res.json({
             success: true,
-            message: `Đã mô phỏng thành công dữ liệu quẹt thẻ thực tế cho ngày ${targetDate} (${addedCount} bản ghi)!`,
+            message: `Đã mô phỏng thành công dữ liệu chấm công thực tế cho ngày ${targetDate} (${addedCount} bản ghi)!`,
             added_count: addedCount,
             total_logs: simLogs.length
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Lỗi mô phỏng dữ liệu quẹt thẻ: ' + err.message });
+        res.status(500).json({ success: false, message: 'Lỗi mô phỏng dữ liệu chấm công: ' + err.message });
     }
 });
 
@@ -5560,7 +5560,7 @@ app.post('/api/attendance/zk/software-sync', async (req, res) => {
 
         res.json({
             success: true,
-            message: `Đã kết nối cơ sở dữ liệu phần mềm Ronald Jack Pro (${db_type || 'SQL Server'}) thành công! Đồng bộ thêm ${addedCount} lượt quẹt thẻ mới.`,
+            message: `Đã kết nối cơ sở dữ liệu phần mềm Ronald Jack Pro (${db_type || 'SQL Server'}) thành công! Đồng bộ thêm ${addedCount} lượt chấm công mới.`,
             added_count: addedCount
         });
     } catch (err) {

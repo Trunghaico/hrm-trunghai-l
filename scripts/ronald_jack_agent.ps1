@@ -1,4 +1,4 @@
-<#
+﻿<#
 ================================================================================
  TRUNG HAI HRM - BACKGROUND AUTO-SYNC AGENT (MITACO & RONALD JACK PRO)
 ================================================================================
@@ -143,7 +143,7 @@ function Run-SyncCycle {
                 $devName = [string]$row["DeviceName"]
                 $vMode   = [string]$row["VerifyMode"]
 
-                $vTypeName = "Van tay"
+                $vTypeName = "Khuon mat"
                 if ($vMode -eq "2") { $vTypeName = "Khuon mat" }
                 elseif ($vMode -eq "3") { $vTypeName = "The tu" }
                 elseif ($vMode -eq "4") { $vTypeName = "Mat ma" }
@@ -201,7 +201,7 @@ function Run-SyncCycle {
                         timestamp       = $timeStr
                         device_id       = "RJ-ACCESS-$sensor"
                         device_name     = "Ronald Jack Access (Cong $sensor)"
-                        verify_type     = "Van tay"
+                        verify_type     = "Khuon mat"
                     }
 
                     if ([string]::Compare($timeStr, $maxPunchTime) -gt 0) {
