@@ -2746,17 +2746,19 @@ export async function onRequest(context) {
               addedCount++;
             }
           });
-          if (Array.isArray(body.timesheets) && body.timesheets.length > 0) {
-            data.tables["19_Attendance_Timesheets"] = body.timesheets;
-            await saveTableToD1(db, "19_Attendance_Timesheets", body.timesheets);
-          }
-          return jsonResponse({
-            success: true,
-            message: `Đã đồng bộ thành công ${addedCount} bản ghi quẹt thẻ và ${body.timesheets?.length || 0} bảng công từ CSDL Ronald Jack Pro!`,
-            added_count: addedCount,
-            timesheets_count: body.timesheets?.length || 0
-          });
+          await saveTableToD1(db, "17_Attendance_Logs", logs);
         }
+        if (Array.isArray(body.timesheets) && body.timesheets.length > 0) {
+          data.tables["19_Attendance_Timesheets"] = body.timesheets;
+          await saveTableToD1(db, "19_Attendance_Timesheets", body.timesheets);
+        }
+        return jsonResponse({
+          success: true,
+          message: `Đã đồng bộ thành công ${addedCount} bản ghi quẹt thẻ và ${body.timesheets?.length || 0} bảng công từ CSDL Ronald Jack Pro!`,
+          added_count: addedCount,
+          timesheets_count: body.timesheets?.length || 0
+        });
+      }
     }
 
     // Fallback for other standard routes
