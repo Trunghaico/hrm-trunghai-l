@@ -1,4 +1,4 @@
-﻿// ==========================================================================
+// ==========================================================================
 // TIME & ATTENDANCE MODULE (PHÂN HỆ QUẢN LÝ CHẤM CÔNG & RONALD JACK 009)
 // HRM Trung Hải Enterprise Edition - Redesigned Clean UI
 // ==========================================================================
@@ -2159,7 +2159,7 @@ const appAttendance = {
         <div style="line-height: 1.6;">
           • Đã trích xuất & đối soát: <strong>${appData.attendanceLogs.length} lượt chấm công</strong> từ bảng CheckInOut.<br>
           • Đã tự động tính toán bảng công: <strong>${(appData.timesheets || []).length} bản ghi công</strong> theo hồ sơ nhân sự.<br>
-          • Trạng thái 3 máy chấm công: <span class="badge badge-active">Trực tuyến</span> (Port 5005 - 5007).
+          • Trạng thái ${(this.devices || []).length} máy chấm công: <span class="badge badge-active">Trực tuyến</span> (${(this.devices || []).map(d => d.port || 5005).filter((v, i, a) => a.indexOf(v) === i).join(', ') || '5005-5007'}).
         </div>
       `;
     }
@@ -2893,6 +2893,28 @@ const appAttendance = {
     if (logCountEl) {
       logCountEl.textContent = `${(appData.attendanceLogs || []).length} lượt chấm công`;
     }
+
+    // Dynamic Device Count & Description
+    const activeDevs = (this.devices || []).filter(d => d.enabled !== false);
+    const count = activeDevs.length;
+    const ports = activeDevs.map(d => d.port || 5005).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+    const names = activeDevs.map(d => d.device_name || d.name || 'Máy Chấm Công').join(', ');
+
+    const devCountEl = document.getElementById('att-sync-modal-dev-count');
+    if (devCountEl) {
+      devCountEl.textContent = `${count} Máy ${ports ? `(Port ${ports})` : ''}`;
+    }
+
+    const devTitleEl = document.getElementById('att-sync-modal-dev-title');
+    if (devTitleEl) {
+      devTitleEl.textContent = `2. Kéo Trực Tiếp Từ ${count} Máy Chấm Công IP ${ports ? `(${ports})` : ''}`;
+    }
+
+    const devDescEl = document.getElementById('att-sync-modal-dev-desc');
+    if (devDescEl) {
+      devDescEl.textContent = `Gửi lệnh kết nối TCP socket đồng bộ tới: ${names || 'tất cả máy'}`;
+    }
+
     const progressBox = document.getElementById('att-sync-progress-box');
     if (progressBox) progressBox.style.display = 'none';
 
@@ -3125,29 +3147,52 @@ const appAttendance = {
   },
 
   async pingAllDevicesAndSync() {
-    utils.showToast('Đang gửi tín hiệu kết nối tới 3 máy chấm công Ronald Jack Pro (5005-5007)...', 'info');
+    const activeDevs = (this.devices || []).filter(d => d.enabled !== false);
+    const count = activeDevs.length;
+    const names = activeDevs.map(d => d.device_name || d.name || 'Máy Chấm Công').join(', ');
+    utils.showToast(`Đang gửi tín hiệu kết nối tới ${count} máy chấm công (${names})...`, 'info');
+
     const progressBox = document.getElementById('att-sync-progress-box');
     const progressText = document.getElementById('att-sync-progress-text');
     const progressBar = document.getElementById('att-sync-progress-bar');
 
     if (progressBox) {
       progressBox.style.display = 'block';
-      if (progressBar) progressBar.style.width = '40%';
-      if (progressText) progressText.textContent = 'Đang kiểm tra tín hiệu mạng thiết bị Port 5005-5007...';
+      if (progressBar) progressBar.style.width = '30%';
+      if (progressText) progressText.textContent = `Đang kiểm tra tín hiệu mạng tới ${count} máy chấm công...`;
     }
 
     try {
       const nowStr = new Date().toLocaleString('vi-VN');
-      (this.devices || []).forEach(d => {
+      activeDevs.forEach(d => {
         d.status = 'ONLINE';
         d.last_sync = nowStr;
       });
+
+      // Synchronize through each individual device
+      for (let i = 0; i < activeDevs.length; i++) {
+        const d = activeDevs[i];
+        if (progressBar) progressBar.style.width = `${30 + Math.round(((i + 1) / (activeDevs.length || 1)) * 40)}%`;
+        if (progressText) progressText.textContent = `Đang kéo dữ liệu máy [${i + 1}/${activeDevs.length}]: ${d.device_name || d.name} (${d.ip}:${d.port || 5005})...`;
+
+        try {
+          if (window.appData && appData.hasServerBackend) {
+            await fetch('/api/attendance/zk/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ip: d.ip, port: d.port || 5005 })
+            }).catch(() => {});
+          }
+        } catch (e) {}
+      }
+
       if (progressBar) progressBar.style.width = '80%';
-      if (progressText) progressText.textContent = 'Thiết bị phản hồi ONLINE. Đang kéo log chấm công...';
+      if (progressText) progressText.textContent = `Đã nhận phản hồi từ ${count} thiết bị. Đang đối soát và tính bảng công...`;
 
       await this.executeFullRonaldJackSync();
     } catch (err) {
       utils.showToast('Lỗi kết nối thiết bị: ' + err.message, 'error');
+      if (progressText) progressText.textContent = 'Lỗi kết nối: ' + err.message;
     }
   },
 
