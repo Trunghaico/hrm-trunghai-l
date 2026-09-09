@@ -2103,7 +2103,7 @@
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Phần mềm chấm công:</label>
-                  <select id="zk-sw-type" class="form-control" style="font-weight: 600;">
+                  <select id="zk-sw-type" class="form-control" style="font-weight: 600;" onchange="appAttendance.saveSoftwareDbConfig()">
                     <option value="mitaco" selected>Mitaco 5v2 / Mitaco Pro (SQL Server)</option>
                     <option value="ronald_jack_pro">Ronald Jack Pro Official</option>
                     <option value="ronald_jack_plus">Ronald Jack Plus / Software</option>
@@ -2113,7 +2113,7 @@
                 </div>
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Loại Cơ Sở Dữ Liệu:</label>
-                  <select id="zk-sw-db-type" class="form-control" style="font-weight: 600;">
+                  <select id="zk-sw-db-type" class="form-control" style="font-weight: 600;" onchange="appAttendance.saveSoftwareDbConfig()">
                     <option value="sql_server" selected>Microsoft SQL Server (Khuyên dùng)</option>
                     <option value="ms_access">Microsoft Access (.mdb / .accdb)</option>
                     <option value="mysql">MySQL Server</option>
@@ -2124,27 +2124,37 @@
               <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Địa chỉ Máy chủ (Host / IP):</label>
-                  <input type="text" id="zk-sw-host" class="form-control" value="113.161.53.133" placeholder="113.161.53.133 hoặc 127.0.0.1" style="font-family: monospace; font-weight: 600;">
+                  <input type="text" id="zk-sw-host" class="form-control" value="113.161.53.133" placeholder="113.161.53.133 hoặc 127.0.0.1" style="font-family: monospace; font-weight: 600;" oninput="appAttendance.saveSoftwareDbConfig()">
                 </div>
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Port CSDL:</label>
-                  <input type="number" id="zk-sw-port" class="form-control" value="1433" placeholder="1433" style="font-family: monospace; font-weight: 600;">
+                  <input type="number" id="zk-sw-port" class="form-control" value="1433" placeholder="1433" style="font-family: monospace; font-weight: 600;" oninput="appAttendance.saveSoftwareDbConfig()">
                 </div>
               </div>
 
               <div style="margin-bottom: 12px;">
-                <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Tên CSDL hoặc Đường dẫn file Access:</label>
-                <input type="text" id="zk-sw-dbname" class="form-control" value="mitaco" placeholder="mitaco hoặc RonaldJackPro" style="font-family: monospace; font-weight: 600;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 0;">Tên CSDL hoặc Đường dẫn file Access:</label>
+                  <span style="font-size: 11px; color: #64748B;">Gợi ý: Tlmt, Mitaco, longan, ctvp</span>
+                </div>
+                <input type="text" id="zk-sw-dbname" class="form-control" list="zk-sw-db-suggestions" value="Tlmt" placeholder="Tlmt hoặc Mitaco hoặc longan" style="font-family: monospace; font-weight: 600;" oninput="appAttendance.saveSoftwareDbConfig()">
+                <datalist id="zk-sw-db-suggestions">
+                  <option value="Tlmt">Công ty TLMT (Chi nhánh TP.HCM - Máy TLMT-TP)</option>
+                  <option value="Mitaco">Trụ sở xưởng Trung Hải (Tầng Trệt, Lầu 2, Lầu 3)</option>
+                  <option value="longan">Chi nhánh Long An (Máy TLMT-TH)</option>
+                  <option value="ctvp">Công ty CTVP</option>
+                  <option value="khbmt">Chi nhánh Buôn Ma Thuột</option>
+                </datalist>
               </div>
 
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Tài khoản (Username):</label>
-                  <input type="text" id="zk-sw-user" class="form-control" value="sa" placeholder="sa">
+                  <input type="text" id="zk-sw-user" class="form-control" value="sa" placeholder="sa" oninput="appAttendance.saveSoftwareDbConfig()">
                 </div>
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Mật khẩu (Password):</label>
-                  <input type="password" id="zk-sw-password" class="form-control" value="THG@2026!" placeholder="******">
+                  <input type="password" id="zk-sw-password" class="form-control" value="THG@2026!" placeholder="******" oninput="appAttendance.saveSoftwareDbConfig()">
                 </div>
               </div>
 

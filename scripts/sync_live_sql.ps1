@@ -1,17 +1,70 @@
-﻿$connStr = "Server=113.161.53.133,1433;Database=mitaco;User Id=sa;Password=THG@2026!;Connection Timeout=15;"
-$conn = New-Object System.Data.SqlClient.SqlConnection($connStr)
-$conn.Open()
+param(
+    [string]$TargetDatabase = ""
+)
 
-# Query punches from SQL Server
-$cmd = $conn.CreateCommand()
-$cmd.CommandText = @"
+$serverHost = "113.161.53.133,1433"
+$serverUser = "sa"
+$serverPass = "THG@2026!"
+
+$databases = if ($TargetDatabase) { @($TargetDatabase) } else { @("Mitaco", "Tlmt", "longan") }
+
+$allRawPunches = @()
+$allDevices = @()
+$devMap = @{}
+
+foreach ($dbName in $databases) {
+    try {
+        $connStr = "Server=$serverHost;Database=$dbName;User Id=$serverUser;Password=$serverPass;Connection Timeout=10;"
+        $conn = New-Object System.Data.SqlClient.SqlConnection($connStr)
+        $conn.Open()
+
+        # 1. Query Devices
+        try {
+            $cmdDev = $conn.CreateCommand()
+            $cmdDev.CommandText = "SELECT MaMCC, TenMCC, DiaChiIP, Port, Serial, TrangThai FROM MAYCHAMCONG"
+            $adDev = New-Object System.Data.SqlClient.SqlDataAdapter($cmdDev)
+            $dsDev = New-Object System.Data.DataSet
+            $adDev.Fill($dsDev) | Out-Null
+            foreach ($devRow in $dsDev.Tables[0].Rows) {
+                $mCode = "$($devRow.MaMCC)".Trim()
+                $mName = "$($devRow.TenMCC)".Trim()
+                $mIp = "$($devRow.DiaChiIP)".Trim()
+                $mPort = [int]($devRow.Port)
+                $mSerial = "$($devRow.Serial)".Trim()
+                $kDev = "${mIp}_${mPort}"
+                if (-not $devMap.ContainsKey($kDev)) {
+                    $devMap[$kDev] = $true
+                    $allDevices += [PSCustomObject]@{
+                        device_id = if ($mCode) { $mCode } else { "DEV-" + ($allDevices.Count + 1) }
+                        device_name = if ($mName -like "*MCC00001*") { "Máy MCC00001 (TP)" } elseif ($mName) { $mName } else { "Máy Chấm Công" }
+                        name = if ($mName) { $mName } else { "Máy Chấm Công" }
+                        ip = $mIp
+                        port = if ($mPort -gt 0) { $mPort } else { 5005 }
+                        comm_key = 0
+                        location = if ($mName -like "*TLMT*") { "Chi Nhánh TLMT / TP.HCM" } elseif ($mName -like "*TANG TRET*") { "Tầng Trệt Xưởng" } elseif ($mName -like "*PHU MINH*") { "Phú Minh Lầu 2" } elseif ($mName -like "*THANH PHAT*") { "Thanh Phát Lầu 3" } else { "Văn Phòng / Xưởng" }
+                        serial_number = $mSerial
+                        database_source = $dbName
+                        enabled = $true
+                        status = "ONLINE"
+                        last_sync = (Get-Date).ToString("dd/MM/yyyy HH:mm:ss")
+                        note = "Máy chấm công $mName ($dbName)"
+                    }
+                }
+            }
+        } catch {
+            Write-Host "Warning: Could not query MAYCHAMCONG from $dbName : $($_.Exception.Message)"
+        }
+
+        # 2. Query Punches
+        $cmd = $conn.CreateCommand()
+        $cmd.CommandText = @"
 SELECT 
     c.ID, 
     c.MaChamCong AS AttCode, 
     ISNULL(nv.MaNhanVien, '') AS EmpId, 
     ISNULL(nv.TenNhanVien, '') AS EmpName, 
     CONVERT(varchar(19), c.GioCham, 120) AS CheckTimeString, 
-    ISNULL(c.TenMay, 'TANG TRET') AS DeviceName, 
+    ISNULL(c.TenMay, '$dbName') AS DeviceName, 
     ISNULL(c.MaSoMay, 1) AS MachineNo, 
     ISNULL(c.KieuCham, '255') AS VerifyMode 
 FROM CheckInOut c 
@@ -19,18 +72,37 @@ LEFT JOIN NHANVIEN nv ON c.MaChamCong = nv.MaChamCong
 WHERE c.GioCham >= '2026-08-01 00:00:00'
 ORDER BY c.GioCham ASC
 "@
+        $adapter = New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
+        $ds = New-Object System.Data.DataSet
+        $adapter.Fill($ds) | Out-Null
+        $conn.Close()
 
-$adapter = New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
-$ds = New-Object System.Data.DataSet
-$adapter.Fill($ds) | Out-Null
-$conn.Close()
+        $rows = $ds.Tables[0].Rows
+        Write-Host "Punches pulled from live SQL Server ($dbName): $($rows.Count)"
 
-$rows = $ds.Tables[0].Rows
-Write-Host "Punches pulled from live SQL Server (113.161.53.133): $($rows.Count)"
+        foreach ($r in $rows) {
+            $allRawPunches += [PSCustomObject]@{
+                ID = $r.ID
+                AttCode = $r.AttCode
+                EmpId = $r.EmpId
+                EmpName = $r.EmpName
+                CheckTimeString = $r.CheckTimeString
+                DeviceName = $r.DeviceName
+                VerifyMode = $r.VerifyMode
+                DbSource = $dbName
+            }
+        }
+    } catch {
+        Write-Host "Error connecting to database $dbName : $($_.Exception.Message)"
+    }
+}
 
+Write-Host "Total raw punches combined: $($allRawPunches.Count)"
+
+# Deduplicate punches
 $punches = @()
 $idMap = @{}
-foreach ($r in $rows) {
+foreach ($r in $allRawPunches) {
     $attCode = "$($r.AttCode)".Trim()
     $timeStr = "$($r.CheckTimeString)".Trim()
     $k = "${attCode}_${timeStr}"
@@ -43,28 +115,34 @@ foreach ($r in $rows) {
     elseif ($vMode -eq "3") { $vType = "The tu" }
 
     $dName = "$($r.DeviceName)".Trim()
-    $dPort = 5007
-    if ($dName -like "*PHU MINH*") { $dPort = 5005; $dName = "PHÚ MINH L2" }
-    elseif ($dName -like "*THANH PHAT*") { $dPort = 5006; $dName = "THANH PHÁT L3" }
-    elseif ($dName -like "*TANG TRET*") { $dPort = 5007; $dName = "TẦNG TRỆT" }
+    $dPort = 5005
+    $dIp = "113.161.53.133"
+    if ($dName -like "*PHU MINH*") { $dPort = 5005; $dName = "PHÚ MINH L2"; $dIp = "113.161.53.133" }
+    elseif ($dName -like "*THANH PHAT*") { $dPort = 5006; $dName = "THANH PHÁT L3"; $dIp = "113.161.53.133" }
+    elseif ($dName -like "*TANG TRET*") { $dPort = 5007; $dName = "TẦNG TRỆT"; $dIp = "113.161.53.133" }
+    elseif ($dName -like "*TLMT-TP*") { $dPort = 5005; $dName = "TLMT-TP"; $dIp = "113.161.201.71" }
+    elseif ($dName -like "*TLMT-TH*") { $dPort = 5005; $dName = "TLMT-TH"; $dIp = "14.224.132.5" }
 
     $punches += [PSCustomObject]@{
-        log_id = "SQL-$($r.ID)"
+        log_id = "SQL-$($r.DbSource)-$($r.ID)"
         attendance_code = $attCode
         employee_id = "$($r.EmpId)".Trim()
         employee_name = "$($r.EmpName)".Trim()
         timestamp = $timeStr
         verify_type = $vType
         device_name = $dName
-        device_ip = "113.161.53.133"
+        device_ip = $dIp
         device_port = $dPort
     }
 }
 
+Write-Host "Unique punches after deduplication: $($punches.Count)"
+
 # Save mitaco_punches_cache.json
 $cacheObj = [PSCustomObject]@{
-    source = "LIVE_SQL_SERVER_113.161.53.133"
+    source = "LIVE_SQL_SERVER_MULTI_DB"
     synced_at = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+    databases = $databases
     total_punches = $punches.Count
     punches = $punches
 }
@@ -74,6 +152,9 @@ $cacheJson = $cacheObj | ConvertTo-Json -Depth 5
 # Update sample_database.json
 $db = [System.IO.File]::ReadAllText("$PSScriptRoot\..\public\sample_database.json", [System.Text.Encoding]::UTF8) | ConvertFrom-Json
 $db.tables.'17_Attendance_Logs' = @($punches)
+if ($allDevices.Count -gt 0) {
+    $db.tables | Add-Member -MemberType NoteProperty -Name '20_Attendance_Devices' -Value @($allDevices) -Force
+}
 
 # Recalculate timesheets based on live SQL punches
 $dayNames = @{
@@ -148,35 +229,31 @@ foreach ($dt in $allDates) {
 
         $checkIn = ""
         $checkOut = ""
-        if ($empLogs.Count -gt 0) {
-            $checkIn = $empLogs[0].timestamp.Substring(11,5)
-            if ($empLogs.Count -gt 1) {
-                $last = $empLogs[-1].timestamp.Substring(11,5)
-                if ($last -ne $checkIn) { $checkOut = $last }
-            }
-        }
-
-        $status = "ABSENT"
-        $workUnits = 0
-        $totalHours = 0
         $lateMins = 0
         $earlyMins = 0
-        $otHours = 0
-        $note = "Không chấm công"
+        $workUnits = 0.0
+        $totalHours = 0.0
+        $otHours = 0.0
+        $status = "ABSENT"
+        $note = "Vắng mặt (Không có dữ liệu chấm công)"
 
-        if ($checkIn -and $checkOut) {
+        if ($empLogs.Count -ge 2) {
+            $checkIn = $empLogs[0].timestamp.Substring(11, 5)
+            $checkOut = $empLogs[-1].timestamp.Substring(11, 5)
+
             $inH = [int]$checkIn.Substring(0,2)
             $inM = [int]$checkIn.Substring(3,2)
             $outH = [int]$checkOut.Substring(0,2)
             $outM = [int]$checkOut.Substring(3,2)
+
             $inMins = $inH * 60 + $inM
             $outMins = $outH * 60 + $outM
 
             if ($inMins -gt (8 * 60 + 15)) { $lateMins = $inMins - (8 * 60) }
-            if ($outMins -lt (17 * 60 + 15)) { $earlyMins = (17 * 60 + 30) - $outMins }
+            if ($outMins -lt (17 * 60)) { $earlyMins = (17 * 60) - $outMins }
 
             $span = $outMins - $inMins
-            if ($inMins -le (12 * 60) -and $outMins -ge (13 * 60 + 30)) { $span -= 90 }
+            if ($inMins -le (12 * 60) -and $outMins -ge (13 * 60)) { $span -= 60 }
             $totalHours = [Math]::Round([Math]::Max(0, $span / 60.0), 1)
 
             if ($totalHours -ge 7.0) {
@@ -194,7 +271,8 @@ foreach ($dt in $allDates) {
                 $status = "INVALID"
                 $note = "Thời gian làm việc không đủ ca"
             }
-        } elseif ($checkIn) {
+        } elseif ($empLogs.Count -eq 1) {
+            $checkIn = $empLogs[0].timestamp.Substring(11, 5)
             $inH = [int]$checkIn.Substring(0,2)
             $inM = [int]$checkIn.Substring(3,2)
             $inMins = $inH * 60 + $inM
@@ -231,7 +309,8 @@ foreach ($dt in $allDates) {
     }
 }
 
-$db.tables.'19_Attendance_Timesheets' = $allTimesheets
+$persistedTimesheets = @($allTimesheets | Where-Object { $_.date -ge '2026-08-20' -or $_.status -ne 'ABSENT' })
+$db.tables.'19_Attendance_Timesheets' = $persistedTimesheets
 $dbJson = $db | ConvertTo-Json -Compress -Depth 10
 [System.IO.File]::WriteAllText("$PSScriptRoot\..\public\sample_database.json", $dbJson, [System.Text.Encoding]::UTF8)
 
@@ -240,8 +319,8 @@ try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     $apiPayload = @{
         db_type = "sql_server"
-        server_host = "113.161.53.133,1433"
-        database_name = "mitaco"
+        server_host = $serverHost
+        database_name = if ($TargetDatabase) { $TargetDatabase } else { "Tlmt,Mitaco,longan" }
         punch_logs = $punches
         timesheets = $allTimesheets
     } | ConvertTo-Json -Depth 5
@@ -251,5 +330,4 @@ try {
     }
 } catch {}
 
-Write-Host "Sync completed! Total timesheets updated: $($allTimesheets.Count)"
-
+Write-Host "Sync completed! Total punches: $($punches.Count), Total timesheets: $($allTimesheets.Count), Devices found: $($allDevices.Count)"
