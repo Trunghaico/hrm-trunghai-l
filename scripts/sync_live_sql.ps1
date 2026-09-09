@@ -237,10 +237,11 @@ try {
         server_host = "113.161.53.133,1433"
         database_name = "mitaco"
         punch_logs = $punches
+        timesheets = $allTimesheets
     } | ConvertTo-Json -Depth 5
-    $res = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json; charset=utf-8" -Body $apiPayload -TimeoutSec 10 -ErrorAction SilentlyContinue
+    $res = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json; charset=utf-8" -Body $apiPayload -TimeoutSec 15 -ErrorAction SilentlyContinue
     if ($res -and $res.success) {
-        Write-Host "Cloudflare API sync: Success ($($res.added_count) new records)"
+        Write-Host "Cloudflare API sync: Success ($($res.added_count) new punches, $($res.timesheets_count) timesheets updated)"
     }
 } catch {}
 
