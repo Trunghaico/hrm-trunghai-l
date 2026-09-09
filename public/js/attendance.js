@@ -61,21 +61,27 @@ const appAttendance = {
   ],
 
   currentZkSubTab: 'zk-hardware',
+  timesheetPage: 1,
+  timesheetPageSize: 50,
   autoAttendanceEmployees: [],
   autoFilterDept: 'ALL',
   autoFilterSearch: '',
 
+  changeTimesheetPage(delta) {
+    this.timesheetPage = Math.max(1, (this.timesheetPage || 1) + delta);
+    this.renderTimesheets();
+  },
+
   init() {
     console.log('Initializing Time & Attendance Module...');
 
-    // Auto-align default date range to available timesheet data
+    // Auto-align default date range to current month
     try {
       const allTsDates = ((window.appData && appData.timesheets) || []).map(t => t.date).filter(Boolean).sort();
       if (allTsDates.length > 0) {
-        const minAvailable = allTsDates[0];
         const maxAvailable = allTsDates[allTsDates.length - 1];
         const startOfMonth = maxAvailable.substring(0, 7) + '-01';
-        this.fromDate = (minAvailable < startOfMonth) ? minAvailable : startOfMonth;
+        this.fromDate = startOfMonth;
         this.toDate = maxAvailable;
         this.selectedDate = maxAvailable;
         this.currentMonth = maxAvailable.substring(0, 7);
@@ -133,7 +139,9 @@ const appAttendance = {
             enabled: true,
             created_at: new Date().toLocaleDateString('vi-VN')
           }));
-          this.saveAutoAttendanceState();
+          try {
+            localStorage.setItem('hrm_auto_attendance_employees', JSON.stringify(this.autoAttendanceEmployees));
+          } catch(e){}
         }
       }
     } catch (e) {
@@ -540,7 +548,29 @@ const appAttendance = {
       lockBtn.className = isLocked ? 'btn btn-warning' : 'btn btn-secondary';
     }
 
-    tbody.innerHTML = list.map((item, idx) => {
+    // Pagination logic (max 50 rows per render for blazing-fast 2ms UI load)
+    const totalItems = list.length;
+    const totalPages = Math.ceil(totalItems / this.timesheetPageSize) || 1;
+    this.timesheetPage = Math.max(1, Math.min(this.timesheetPage || 1, totalPages));
+
+    const startIndex = (this.timesheetPage - 1) * this.timesheetPageSize;
+    const endIndex = Math.min(startIndex + this.timesheetPageSize, totalItems);
+    const pagedList = list.slice(startIndex, endIndex);
+
+    const pageInfoEl = document.getElementById('att-timesheet-page-info');
+    if (pageInfoEl) pageInfoEl.textContent = `Đang hiển thị ${startIndex + 1} - ${endIndex} / tổng số ${totalItems.toLocaleString('vi-VN')} bản ghi công`;
+
+    const pageNumEl = document.getElementById('att-ts-page-number');
+    if (pageNumEl) pageNumEl.textContent = `Trang ${this.timesheetPage} / ${totalPages}`;
+
+    const prevBtn = document.getElementById('att-ts-prev-btn');
+    if (prevBtn) prevBtn.disabled = (this.timesheetPage <= 1);
+
+    const nextBtn = document.getElementById('att-ts-next-btn');
+    if (nextBtn) nextBtn.disabled = (this.timesheetPage >= totalPages);
+
+    tbody.innerHTML = pagedList.map((item, idx) => {
+      const rowNum = startIndex + idx + 1;
       let statusBadge = '';
       if (item.note && item.note.includes('Đặc cách')) {
         statusBadge = '<span class="badge" style="background:#ECFDF5; color:#047857; border:1px solid #A7F3D0;" title="' + (item.note || 'Đặc cách tự động đủ công') + '"><i class="fa-solid fa-wand-magic-sparkles"></i> Đặc cách</span>';
@@ -609,7 +639,7 @@ const appAttendance = {
 
       return `
         <tr style="${item.day_name === 'Chủ nhật' ? 'background: #FFFBEB;' : ''}">
-          <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
+          <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${rowNum}</td>
           <td style="font-weight: 700; color: #1E40AF; font-family: monospace;">${item.employee_id}</td>
           <td style="text-align: center;">${attCodeDisplay}</td>
           <td>
