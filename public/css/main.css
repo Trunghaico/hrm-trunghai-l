@@ -3571,3 +3571,187 @@ tr.row-selected {
 #perm-matrix-tbody td {
   vertical-align: middle;
 }
+
+/* ==========================================================================
+   ORGANIZATIONAL CHART (SƠ ĐỒ TỔ CHỨC CỘT LIÊN KẾT PHÂN CẤP)
+   ========================================================================== */
+.org-charts-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.org-company-block {
+  background: #FFFFFF;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.org-company-block:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+}
+
+.org-company-header {
+  background: linear-gradient(135deg, #0B1636 0%, #1C3381 100%);
+  color: #FFFFFF;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.org-canvas {
+  padding: 32px 24px;
+  background: radial-gradient(#CBD5E1 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-color: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 100%;
+}
+
+.org-tier-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.org-tier-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.org-tier-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+}
+
+.org-node-card {
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 14px 16px;
+  width: 270px;
+  min-width: 250px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  border-top-width: 4px !important;
+  border-top-style: solid !important;
+  border-left: 1px solid #E2E8F0;
+  border-right: 1px solid #E2E8F0;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex;
+  flex-direction: column;
+}
+
+.org-node-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.org-node-root {
+  width: 320px;
+  min-width: 290px;
+  box-shadow: 0 8px 20px rgba(153, 27, 27, 0.12);
+}
+
+.org-connector-v {
+  width: 2px;
+  height: 28px;
+  background: #94A3B8;
+  margin: 0 auto;
+  position: relative;
+}
+
+.org-connector-v::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: #64748B;
+  border-radius: 50%;
+}
+
+.org-connector-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 14px 0;
+}
+
+.org-branch-h-bar {
+  height: 2px;
+  background: #94A3B8;
+  margin: 0 auto;
+}
+
+.org-pos-list {
+  margin-top: 8px;
+  background: #F8FAFC;
+  border-radius: 6px;
+  padding: 6px 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #E2E8F0;
+  font-size: 11px;
+}
+
+.org-pos-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 4px;
+  border-bottom: 1px dotted #E2E8F0;
+}
+
+.org-pos-item:last-child {
+  border-bottom: none;
+}
+
+@media print {
+  .sidebar, .top-header, .filter-bar, .btn, #org-company-tabs-container {
+    display: none !important;
+  }
+  .main-content, .view-panel, .card, .card-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+  .org-company-block {
+    page-break-inside: avoid;
+    margin-bottom: 24px;
+    box-shadow: none !important;
+    border: 1px solid #CBD5E1 !important;
+  }
+}
+

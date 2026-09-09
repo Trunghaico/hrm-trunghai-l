@@ -639,27 +639,43 @@
       </section>
 
       <!-- ==========================================
-           VIEW: ORG CHART (SƠ ĐỒ TỔ CHỨC: CÔNG TY -> PHÒNG BAN -> CHỨC VỤ)
+           VIEW: ORG CHART (SƠ ĐỒ TỔ CHỨC CỘT LIÊN KẾT PHÂN CẤP 4 CÔNG TY)
            ========================================== -->
       <section class="view-panel" id="view-org-chart">
-        <div class="card">
-          <div class="card-header" style="background: #FFFFFF; border-bottom: 1px solid var(--border-color); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div class="card" style="box-shadow: var(--shadow-sm); border: 1px solid var(--border-color);">
+          <div class="card-header" style="background: #FFFFFF; border-bottom: 1px solid var(--border-color); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
-              <div style="font-size: 15px; font-weight: 700; color: var(--primary-navy);">
-                <i class="fa-solid fa-sitemap" style="color: var(--accent-red); margin-right: 6px;"></i>
-                Sơ Đồ Phân Cấp Cơ Cấu Tổ Chức Doanh Nghiệp
+              <div style="font-size: 16px; font-weight: 800; color: var(--primary-navy); display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-sitemap" style="color: var(--accent-red); font-size: 18px;"></i>
+                <span>Sơ Đồ Phân Cấp Cơ Cấu Tổ Chức Doanh Nghiệp (Cột Liên Kết)</span>
               </div>
-              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
-                Cơ chế quản lý phân cấp: <strong>Công ty</strong> &rarr; <strong>Phòng ban trực thuộc</strong> &rarr; <strong>Chức vụ &amp; Nhân sự</strong>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">
+                Phân cấp liên kết: <span class="badge" style="background: #FEE2E2; color: #991B1B; font-size: 11px;">👑 Ban Tổng Giám Đốc</span> &rarr; <span class="badge" style="background: #E0E7FF; color: #3730A3; font-size: 11px;">🏛️ Ban Giám Đốc</span> &rarr; <span class="badge" style="background: #E0F2FE; color: #0369A1; font-size: 11px;">🏢 Các Ban</span> &rarr; <span class="badge" style="background: #ECFDF5; color: #065F46; font-size: 11px;">📁 Phòng &amp; Khối</span>
               </div>
             </div>
-            <div style="display: flex; gap: 8px;">
-              <button class="btn btn-sm btn-secondary" onclick="appOrganization.renderOrgChart()">
-                <i class="fa-solid fa-rotate"></i> Làm mới sơ đồ
+            
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button class="btn btn-sm btn-secondary" onclick="appOrganization.expandAllNodes(true)" title="Mở rộng tất cả vị trí chức danh">
+                <i class="fa-solid fa-arrows-up-down"></i> Mở rộng
+              </button>
+              <button class="btn btn-sm btn-secondary" onclick="appOrganization.expandAllNodes(false)" title="Thu gọn danh sách chức danh">
+                <i class="fa-solid fa-compress"></i> Thu gọn
+              </button>
+              <button class="btn btn-sm btn-secondary" onclick="appOrganization.printOrgChart()" title="In sơ đồ tổ chức">
+                <i class="fa-solid fa-print"></i> In Sơ Đồ
+              </button>
+              <button class="btn btn-sm btn-primary" onclick="appOrganization.renderOrgChart()" style="background: var(--primary-navy); border-color: var(--primary-navy);">
+                <i class="fa-solid fa-rotate"></i> Làm Mới
               </button>
             </div>
           </div>
-          <div class="card-body" style="padding: 24px; background: #F8FAFC; min-height: 480px;">
+
+          <!-- Company Tabs Selector -->
+          <div style="background: #F1F5F9; padding: 10px 20px; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; overflow-x: auto; align-items: center;" id="org-company-tabs-container">
+            <!-- Rendered by JS: All Companies, THG, TP, TN, PM -->
+          </div>
+
+          <div class="card-body" style="padding: 24px 20px; background: #F8FAFC; min-height: 520px; overflow-x: auto;">
             <div id="org-chart-tree-container">
               <!-- Injected dynamically via JS -->
             </div>

@@ -829,10 +829,116 @@ const appOrganization = {
   },
 
   // ========================================================================
-  // 4. SƠ ĐỒ CƠ CẤU TỔ CHỨC HIERARCHY (CÔNG TY -> PHÒNG BAN -> CHỨC VỤ)
+  // 4. SƠ ĐỒ CƠ CẤU TỔ CHỨC CỘT LIÊN KẾT PHÂN CẤP (4 CÔNG TY ĐỘC LẬP)
   // ========================================================================
+  selectedCompanyTab: 'ALL', // 'ALL' | 'THG' | 'TP' | 'TN' | 'PM'
+  expandedDeptNodes: new Set(),
+
+  selectCompanyTab(compId) {
+    this.selectedCompanyTab = compId;
+    this.renderOrgChart();
+  },
+
+  // Phân loại phòng ban vào 4 tầng thứ bậc chuẩn hóa
+  classifyDepartmentTier(dept) {
+    const name = (dept.department_name || '').toUpperCase().trim();
+    const id = (dept.department_id || '').toUpperCase().trim();
+
+    // 1. Tầng 1: Ban Tổng Giám Đốc / HĐQT
+    if (name.includes('BAN TỔNG GIÁM ĐỐC') || name.includes('BAN TONG GIAM') || id.startsWith('BTGD') || name.includes('HỘI ĐỒNG QUẢN TRỊ') || name.includes('HĐQT')) {
+      return {
+        tier: 1,
+        tierCode: 'BTGD',
+        tierName: 'Ban Tổng Giám Đốc',
+        badgeClass: 'badge-tier-1',
+        icon: 'fa-crown',
+        color: '#991B1B',
+        bgColor: '#FEF2F2',
+        borderColor: '#F87171'
+      };
+    }
+
+    // 2. Tầng 2: Ban Giám Đốc
+    if (name.includes('BAN GIÁM ĐỐC') || name.includes('BAN GIAM DOC') || id.startsWith('BGD') || name.includes('BAN LÃNH ĐẠO')) {
+      return {
+        tier: 2,
+        tierCode: 'BGD',
+        tierName: 'Ban Giám Đốc',
+        badgeClass: 'badge-tier-2',
+        icon: 'fa-building-columns',
+        color: '#3730A3',
+        bgColor: '#EEF2FF',
+        borderColor: '#818CF8'
+      };
+    }
+
+    // 3. Tầng 3: Các Ban Chuyên Môn / Ban Khác
+    if (name.startsWith('BAN ') || id.startsWith('B') || name.includes('BAN ĐIỀU HÀNH') || name.includes('BAN DIEU HANH') || id.startsWith('BDHDA')) {
+      return {
+        tier: 3,
+        tierCode: 'BAN',
+        tierName: 'Ban Chuyên Môn',
+        badgeClass: 'badge-tier-3',
+        icon: 'fa-sitemap',
+        color: '#0369A1',
+        bgColor: '#F0F9FF',
+        borderColor: '#38BDF8'
+      };
+    }
+
+    // 4. Tầng 4: Các Khối (Dự án / Văn phòng / Gián tiếp / Trực tiếp)
+    if (name.startsWith('KHỐI') || name.startsWith('KHOI') || id.includes('GIANTIEP') || id.includes('TRUCTIEP') || id.includes('VP_') || name.includes('KHỐI')) {
+      return {
+        tier: 4,
+        tierCode: 'KHOI',
+        tierName: 'Khối Đơn Vị',
+        badgeClass: 'badge-tier-4-khoi',
+        icon: 'fa-cubes-stacked',
+        color: '#0F766E',
+        bgColor: '#F0FDFA',
+        borderColor: '#2DD4BF'
+      };
+    }
+
+    // 5. Tầng 4 (Cùng cấp): Các Phòng Ban Chức Năng
+    return {
+      tier: 4,
+      tierCode: 'PHONG',
+      tierName: 'Phòng Ban',
+      badgeClass: 'badge-tier-4-phong',
+      icon: 'fa-folder-open',
+      color: '#047857',
+      bgColor: '#ECFDF5',
+      borderColor: '#34D399'
+    };
+  },
+
+  // Mở rộng hoặc thu gọn tất cả vị trí chức danh
+  expandAllNodes(expand = true) {
+    if (expand) {
+      (appData.departments || []).forEach(d => this.expandedDeptNodes.add(d.department_id));
+    } else {
+      this.expandedDeptNodes.clear();
+    }
+    this.renderOrgChart();
+  },
+
+  toggleNodeExpand(deptId) {
+    if (this.expandedDeptNodes.has(deptId)) {
+      this.expandedDeptNodes.delete(deptId);
+    } else {
+      this.expandedDeptNodes.add(deptId);
+    }
+    this.renderOrgChart();
+  },
+
+  printOrgChart() {
+    window.print();
+  },
+
   renderOrgChart() {
     const container = document.getElementById('org-chart-tree-container');
+    const tabsContainer = document.getElementById('org-company-tabs-container');
     if (!container) return;
 
     const companies = appData.companies || [];
@@ -840,7 +946,7 @@ const appOrganization = {
     const positions = appData.positions || [];
     const employees = appData.employees || [];
 
-    // Map counts
+    // Map staff counts
     const deptStaffCount = {};
     const posStaffCount = {};
     employees.forEach(e => {
@@ -848,100 +954,265 @@ const appOrganization = {
       if (e.position_id) posStaffCount[e.position_id] = (posStaffCount[e.position_id] || 0) + 1;
     });
 
+    // 1. Render Company Tabs Selector
+    if (tabsContainer) {
+      let tabsHtml = `
+        <button class="btn btn-sm ${this.selectedCompanyTab === 'ALL' ? 'btn-primary' : 'btn-secondary'}" onclick="appOrganization.selectCompanyTab('ALL')" style="white-space: nowrap; font-weight: 700; ${this.selectedCompanyTab === 'ALL' ? 'background: var(--primary-navy); border-color: var(--primary-navy);' : ''}">
+          <i class="fa-solid fa-layer-group"></i> Tất Cả 4 Công Ty
+        </button>
+      `;
+
+      companies.forEach(comp => {
+        const isSelected = this.selectedCompanyTab === comp.company_id;
+        const compDepts = departments.filter(d => (d.company_id || 'THG') === comp.company_id);
+        let compStaff = 0;
+        compDepts.forEach(d => { compStaff += (deptStaffCount[d.department_id] || 0); });
+
+        const shortName = comp.company_name.replace('CÔNG TY CỔ PHẦN', 'CTCP').replace('CÔNG TY CP', 'CTCP').replace('CÔNG TY TNHH', 'TNHH');
+
+        tabsHtml += `
+          <button class="btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}" onclick="appOrganization.selectCompanyTab('${comp.company_id}')" style="white-space: nowrap; font-weight: 600; ${isSelected ? 'background: var(--primary-navy); border-color: var(--primary-navy);' : ''}" title="${comp.company_name}">
+            <i class="fa-solid fa-city"></i> ${comp.company_id} - ${shortName}
+            <span class="badge" style="background: rgba(0,0,0,0.12); color: inherit; font-size: 10px; margin-left: 4px;">${compStaff} NS</span>
+          </button>
+        `;
+      });
+
+      tabsContainer.innerHTML = tabsHtml;
+    }
+
     if (companies.length === 0) {
       container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Chưa có dữ liệu công ty</div>';
       return;
     }
 
-    let html = '<div class="org-tree" style="display: flex; flex-direction: column; gap: 24px;">';
+    // Filter displayed companies
+    const displayedCompanies = this.selectedCompanyTab === 'ALL' 
+      ? companies 
+      : companies.filter(c => c.company_id === this.selectedCompanyTab);
 
-    companies.forEach(comp => {
+    let html = '<div class="org-charts-wrapper">';
+
+    displayedCompanies.forEach(comp => {
       // Find departments belonging to this company
-      const compDepts = departments.filter(d => (d.company_id || 'TH-CORP') === comp.company_id);
+      const compDepts = departments.filter(d => (d.company_id || 'THG') === comp.company_id);
       let totalCompStaff = 0;
       compDepts.forEach(d => { totalCompStaff += (deptStaffCount[d.department_id] || 0); });
 
+      // Group departments into tiers
+      const tier1_BTGD = [];
+      const tier2_BGD = [];
+      const tier3_BAN = [];
+      const tier4_PHONG = [];
+      const tier4_KHOI = [];
+
+      compDepts.forEach(d => {
+        const info = this.classifyDepartmentTier(d);
+        if (info.tier === 1) tier1_BTGD.push({ ...d, info });
+        else if (info.tier === 2) tier2_BGD.push({ ...d, info });
+        else if (info.tier === 3) tier3_BAN.push({ ...d, info });
+        else if (info.tierCode === 'KHOI') tier4_KHOI.push({ ...d, info });
+        else tier4_PHONG.push({ ...d, info });
+      });
+
+      // Helper function to render a single department card node
+      const renderDeptCard = (item, levelLabel, isRoot = false) => {
+        const dept = item;
+        const numEmps = deptStaffCount[dept.department_id] || 0;
+        const deptPositions = positions.filter(p => p.department_id === dept.department_id);
+        const isExpanded = this.expandedDeptNodes.has(dept.department_id);
+
+        return `
+          <div class="org-node-card ${isRoot ? 'org-node-root' : ''}" style="border-top-color: ${item.info.borderColor} !important;">
+            <!-- Level Indicator Badge -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="badge" style="background: ${item.info.bgColor}; color: ${item.info.color}; font-size: 10.5px; font-weight: 700; border: 1px solid ${item.info.borderColor}; padding: 2px 7px;">
+                <i class="fa-solid ${item.info.icon}"></i> ${levelLabel}
+              </span>
+              <button class="badge" onclick="appOrganization.filterEmployeesByDept('${dept.department_id}')" title="Xem ${numEmps} nhân sự thuộc đơn vị này" style="background: #047857; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 2px 8px; border: none; cursor: pointer;">
+                <i class="fa-solid fa-users" style="font-size: 10px; margin-right: 3px;"></i> ${numEmps} NS
+              </button>
+            </div>
+
+            <!-- Department Title -->
+            <div style="font-size: 13.5px; font-weight: 700; color: #1E293B; line-height: 1.35; margin-bottom: 4px;">
+              ${dept.department_name}
+            </div>
+            <div style="font-size: 11px; color: #64748B; font-family: monospace; margin-bottom: 8px;">
+              Mã: ${dept.department_id}
+            </div>
+
+            <!-- Position Summary / Expandable Section -->
+            <div style="border-top: 1px dashed #E2E8F0; padding-top: 6px; font-size: 11.5px; margin-top: auto;">
+              <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" onclick="appOrganization.toggleNodeExpand('${dept.department_id}')">
+                <span style="color: #475569; font-weight: 600; font-size: 11px;">
+                  <i class="fa-solid fa-briefcase" style="color: #64748B; font-size: 10px;"></i> Vị trí / Chức danh (${deptPositions.length})
+                </span>
+                <span style="color: #2563EB; font-size: 11px;">
+                  <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
+                </span>
+              </div>
+
+              ${isExpanded ? `
+                <div class="org-pos-list">
+                  ${deptPositions.length === 0 ? `
+                    <div style="color: #94A3B8; font-style: italic; font-size: 10.5px; text-align: center; padding: 4px;">Chưa thiết lập chức danh</div>
+                  ` : deptPositions.map(pos => {
+                    const posCount = posStaffCount[pos.position_id] || 0;
+                    return `
+                      <div class="org-pos-item">
+                        <span style="color: #334155; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${pos.position_name}">${pos.position_name}</span>
+                        <span style="font-weight: 700; color: #059669; font-size: 10.5px; margin-left: 6px;">${posCount}</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      };
+
+      // Determine dynamic hierarchy levels
+      // Rule: Ban Tổng giám đốc lớn nhất -> Ban giám đốc -> các ban khác ngang nhau -> phòng - Khối ngang nhau.
+      // Công ty nào không có cấp nào thì cấp hiện diện kế tiếp sẽ là lớn nhất (Root).
+      const hierarchyLevels = [];
+
+      if (tier1_BTGD.length > 0) {
+        hierarchyLevels.push({
+          levelNum: 1,
+          levelTitle: 'Ban Tổng Giám Đốc (Lãnh Đạo Cao Nhất)',
+          pillClass: 'background: #FEE2E2; color: #991B1B; border: 1px solid #F87171;',
+          icon: 'fa-crown',
+          isRoot: true,
+          type: 'single_group',
+          items: tier1_BTGD,
+          levelLabel: 'Ban Tổng Giám Đốc'
+        });
+      }
+
+      if (tier2_BGD.length > 0) {
+        const isRoot = hierarchyLevels.length === 0;
+        hierarchyLevels.push({
+          levelNum: hierarchyLevels.length + 1,
+          levelTitle: isRoot ? 'Ban Giám Đốc (Lãnh Đạo Điều Hành Cao Nhất)' : 'Ban Giám Đốc (Điều Hành)',
+          pillClass: 'background: #EEF2FF; color: #3730A3; border: 1px solid #818CF8;',
+          icon: 'fa-building-columns',
+          isRoot: isRoot,
+          type: 'single_group',
+          items: tier2_BGD,
+          levelLabel: 'Ban Giám Đốc'
+        });
+      }
+
+      if (tier3_BAN.length > 0) {
+        const isRoot = hierarchyLevels.length === 0;
+        hierarchyLevels.push({
+          levelNum: hierarchyLevels.length + 1,
+          levelTitle: isRoot ? 'Các Ban Chuyên Môn Trực Thuộc (Cao Nhất)' : 'Các Ban Chuyên Môn Trực Thuộc (Ngang Hàng)',
+          pillClass: 'background: #E0F2FE; color: #0369A1; border: 1px solid #38BDF8;',
+          icon: 'fa-sitemap',
+          isRoot: isRoot,
+          type: 'single_group',
+          items: tier3_BAN,
+          levelLabel: 'Ban Chuyên Môn'
+        });
+      }
+
+      if (tier4_PHONG.length > 0 || tier4_KHOI.length > 0) {
+        const isRoot = hierarchyLevels.length === 0;
+        hierarchyLevels.push({
+          levelNum: hierarchyLevels.length + 1,
+          levelTitle: isRoot ? 'Các Phòng Ban & Khối Trực Thuộc (Cao Nhất)' : 'Các Phòng Ban Chức Năng & Khối Đơn Vị (Ngang Hàng)',
+          pillClass: 'background: #ECFDF5; color: #065F46; border: 1px solid #34D399;',
+          icon: 'fa-cubes',
+          isRoot: isRoot,
+          type: 'phong_khoi_split',
+          phongItems: tier4_PHONG,
+          khoiItems: tier4_KHOI,
+          levelLabel: 'Phòng / Khối'
+        });
+      }
+
       html += `
-        <div class="org-company-card" style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); overflow: hidden;">
-          <!-- Company Header -->
-          <div style="background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); color: #FFFFFF; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 36px; height: 36px; border-radius: 6px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+        <div class="org-company-block">
+          <!-- Company Header Banner -->
+          <div class="org-company-header">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 44px; height: 44px; border-radius: 8px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 20px;">
                 <i class="fa-solid fa-city"></i>
               </div>
               <div>
-                <div style="font-size: 15px; font-weight: 700; letter-spacing: 0.3px;">${comp.company_name}</div>
-                <div style="font-size: 11.5px; opacity: 0.85; font-family: monospace;">Mã: ${comp.company_id}</div>
+                <div style="font-size: 16px; font-weight: 800; letter-spacing: 0.3px;">${comp.company_name}</div>
+                <div style="font-size: 12px; opacity: 0.85; font-family: monospace;">Mã đơn vị: <strong>${comp.company_id}</strong></div>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="badge" style="background: rgba(255,255,255,0.2); color: #FFFFFF; font-size: 11.5px; padding: 4px 10px;">
-                <i class="fa-solid fa-building"></i> ${compDepts.length} phòng ban
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span class="badge" style="background: rgba(255,255,255,0.18); color: #FFFFFF; font-size: 12px; padding: 5px 12px; font-weight: 600;">
+                <i class="fa-solid fa-building"></i> ${compDepts.length} đơn vị cơ cấu
               </span>
-              <span class="badge" style="background: #10B981; color: #FFFFFF; font-size: 11.5px; padding: 4px 10px;">
+              <span class="badge" style="background: #10B981; color: #FFFFFF; font-size: 12px; padding: 5px 12px; font-weight: 700;">
                 <i class="fa-solid fa-users"></i> ${totalCompStaff} nhân sự
               </span>
             </div>
           </div>
 
-          <!-- Departments Grid inside Company -->
-          <div style="padding: 18px; background: #F8FAFC;">
-            ${compDepts.length === 0 ? `
-              <div style="font-size: 12.5px; color: var(--text-muted); font-style: italic; padding: 10px;">Chưa có phòng ban nào trực thuộc công ty này. Bấm "Thêm Phòng Ban" để gán.</div>
-            ` : `
-              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;">
-                ${compDepts.map(dept => {
-                  const numEmps = deptStaffCount[dept.department_id] || 0;
-                  // Positions in this department
-                  const deptPositions = positions.filter(p => p.department_id === dept.department_id);
-
-                  return `
-                    <div class="org-dept-card" style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-                      <!-- Department Title -->
-                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px;">
-                        <div>
-                          <strong style="font-size: 13.5px; color: var(--primary-navy); display: block;">
-                            <i class="fa-solid fa-building" style="color: #2563EB; margin-right: 5px;"></i>
-                            ${dept.department_name}
-                          </strong>
-                          <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${dept.department_id}</span>
-                        </div>
-                        <span class="badge badge-navy" style="font-size: 11px; font-weight: 700;">
-                          ${numEmps} nhân sự
-                        </span>
-                      </div>
-
-                      <!-- Positions List inside Department -->
-                      <div style="margin-top: 8px;">
-                        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px;">
-                          Chức vụ / Vị trí (${deptPositions.length})
-                        </div>
-                        ${deptPositions.length === 0 ? `
-                          <div style="font-size: 11.5px; color: var(--text-muted); font-style: italic;">Chưa gán chức vụ cụ thể</div>
-                        ` : `
-                          <div style="display: flex; flex-direction: column; gap: 4px;">
-                            ${deptPositions.map(pos => {
-                              const posCount = posStaffCount[pos.position_id] || 0;
-                              return `
-                                <div style="display: flex; align-items: center; justify-content: space-between; background: #F1F5F9; padding: 5px 8px; border-radius: 4px; font-size: 12px;">
-                                  <span style="color: var(--text-primary); font-weight: 500;">
-                                    <i class="fa-solid fa-briefcase" style="font-size: 10px; color: #475569; margin-right: 4px;"></i>
-                                    ${pos.position_name}
-                                  </span>
-                                  <span style="font-size: 11px; color: #059669; font-weight: 700;">
-                                    ${posCount} NS
-                                  </span>
-                                </div>
-                              `;
-                            }).join('')}
-                          </div>
-                        `}
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
+          <!-- Tree Hierarchy Canvas -->
+          <div class="org-canvas">
+            ${hierarchyLevels.length === 0 ? `
+              <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                <i class="fa-solid fa-folder-open" style="font-size: 32px; opacity: 0.4; margin-bottom: 10px; display: block;"></i>
+                Chưa có phòng ban / đơn vị trực thuộc công ty này.
               </div>
-            `}
+            ` : hierarchyLevels.map((lvl, lvlIdx) => {
+              const isLast = lvlIdx === hierarchyLevels.length - 1;
+
+              return `
+                <div class="org-tier-section">
+                  <!-- Tier Header Pill -->
+                  <div class="org-tier-pill" style="${lvl.pillClass}">
+                    <i class="fa-solid ${lvl.icon}"></i> CẤP ${lvl.levelNum}: ${lvl.levelTitle}
+                  </div>
+
+                  <!-- Nodes Row -->
+                  ${lvl.type === 'single_group' ? `
+                    <div class="org-tier-row">
+                      ${lvl.items.map(item => renderDeptCard(item, lvl.levelLabel, lvl.isRoot)).join('')}
+                    </div>
+                  ` : `
+                    <!-- Split row for Phòng and Khối -->
+                    <div style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+                      ${lvl.phongItems.length > 0 ? `
+                        <div style="background: rgba(255,255,255,0.7); border: 1px solid #D1FAE5; border-radius: 8px; padding: 14px;">
+                          <div style="font-size: 12px; font-weight: 700; color: #047857; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-folder-tree"></i> KHỐI CÁC PHÒNG BAN CHỨC NĂNG (${lvl.phongItems.length} Phòng)
+                          </div>
+                          <div class="org-tier-row">
+                            ${lvl.phongItems.map(item => renderDeptCard(item, 'Phòng Ban')).join('')}
+                          </div>
+                        </div>
+                      ` : ''}
+
+                      ${lvl.khoiItems.length > 0 ? `
+                        <div style="background: rgba(255,255,255,0.7); border: 1px solid #CCFBF1; border-radius: 8px; padding: 14px;">
+                          <div style="font-size: 12px; font-weight: 700; color: #0F766E; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-cubes-stacked"></i> KHỐI CÁC ĐƠN VỊ DỰ ÁN & VẬN HÀNH (${lvl.khoiItems.length} Khối)
+                          </div>
+                          <div class="org-tier-row">
+                            ${lvl.khoiItems.map(item => renderDeptCard(item, 'Khối Đơn Vị')).join('')}
+                          </div>
+                        </div>
+                      ` : ''}
+                    </div>
+                  `}
+
+                  <!-- Connector downward to next level if not last -->
+                  ${!isLast ? `
+                    <div class="org-connector-v"></div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       `;
