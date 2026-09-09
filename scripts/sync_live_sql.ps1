@@ -226,7 +226,7 @@ foreach ($dt in $allDates) {
 }
 
 $db.tables.'19_Attendance_Timesheets' = $allTimesheets
-$dbJson = $db | ConvertTo-Json -Depth 10
+$dbJson = $db | ConvertTo-Json -Compress -Depth 10
 [System.IO.File]::WriteAllText("$PSScriptRoot\..\public\sample_database.json", $dbJson, [System.Text.Encoding]::UTF8)
 
 # Sync to Cloudflare Pages Production API if available
