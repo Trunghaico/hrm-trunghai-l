@@ -16,7 +16,7 @@ SELECT
     ISNULL(c.KieuCham, '255') AS VerifyMode 
 FROM CheckInOut c 
 LEFT JOIN NHANVIEN nv ON c.MaChamCong = nv.MaChamCong 
-WHERE c.GioCham >= '2026-09-01 00:00:00'
+WHERE c.GioCham >= '2026-08-01 00:00:00'
 ORDER BY c.GioCham ASC
 "@
 
@@ -42,6 +42,12 @@ foreach ($r in $rows) {
     if ($vMode -eq "2") { $vType = "Khuon mat" }
     elseif ($vMode -eq "3") { $vType = "The tu" }
 
+    $dName = "$($r.DeviceName)".Trim()
+    $dPort = 5007
+    if ($dName -like "*PHU MINH*") { $dPort = 5005; $dName = "PHÚ MINH L2" }
+    elseif ($dName -like "*THANH PHAT*") { $dPort = 5006; $dName = "THANH PHÁT L3" }
+    elseif ($dName -like "*TANG TRET*") { $dPort = 5007; $dName = "TẦNG TRỆT" }
+
     $punches += [PSCustomObject]@{
         log_id = "SQL-$($r.ID)"
         attendance_code = $attCode
@@ -49,9 +55,9 @@ foreach ($r in $rows) {
         employee_name = "$($r.EmpName)".Trim()
         timestamp = $timeStr
         verify_type = $vType
-        device_name = "$($r.DeviceName)".Trim()
-        device_ip = "192.168.1.201"
-        device_port = 5005
+        device_name = $dName
+        device_ip = "113.161.53.133"
+        device_port = $dPort
     }
 }
 

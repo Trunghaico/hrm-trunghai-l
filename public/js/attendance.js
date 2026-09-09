@@ -17,43 +17,46 @@ const appAttendance = {
   portalEmployeeId: '',
   devices: [
     {
-      device_id: 'DEV-01',
-      device_name: 'Ronald Jack 009 - Cổng Chính',
-      name: 'Ronald Jack 009 - Cổng Chính',
-      ip: '192.168.1.201',
-      port: 5005,
-      location: 'Cổng bảo vệ / Lối vào chính',
-      in_out_mode: 'AUTO',
-      enabled: true,
-      last_sync: '08/09/2026 16:30:15',
-      status: 'ONLINE',
-      note: 'Máy vân tay & thẻ từ Ronald Jack 009'
-    },
-    {
-      device_id: 'DEV-02',
-      device_name: 'Ronald Jack 009 - Văn Phòng Kho',
-      name: 'Ronald Jack 009 - Văn Phòng Kho',
-      ip: '192.168.1.202',
-      port: 5006,
-      location: 'Tầng 1 - Khu vực kho tổng',
-      in_out_mode: 'AUTO',
-      enabled: true,
-      last_sync: '08/09/2026 16:30:22',
-      status: 'ONLINE',
-      note: 'Phục vụ nhân viên kho vận'
-    },
-    {
-      device_id: 'DEV-03',
-      device_name: 'Ronald Jack 009 - Xưởng Sản Xuất',
-      name: 'Ronald Jack 009 - Xưởng Sản Xuất',
-      ip: '192.168.1.203',
+      device_id: 'MCC00012',
+      device_name: 'TẦNG TRỆT',
+      name: 'Máy Chấm Công - Tầng Trệt',
+      ip: '113.161.53.133',
       port: 5007,
-      location: 'Khu xưởng cơ khí - gia công',
+      serial: 'AYSH02091522',
+      location: 'Sảnh / Lối vào Tầng Trệt',
       in_out_mode: 'AUTO',
-      enabled: false,
-      last_sync: '08/09/2026 12:00:00',
-      status: 'STANDBY',
-      note: 'Máy quẹt thẻ xưởng dự phòng'
+      enabled: true,
+      last_sync: new Date().toLocaleString('vi-VN'),
+      status: 'ONLINE',
+      note: 'Máy Ronald Jack / Mitaco Tầng Trệt (Serial: AYSH02091522)'
+    },
+    {
+      device_id: 'MCC00003',
+      device_name: 'PHÚ MINH L2',
+      name: 'Máy Chấm Công - Phú Minh L2',
+      ip: '113.161.53.133',
+      port: 5005,
+      serial: 'AYSH02091571',
+      location: 'Tầng 2 - Khối Phú Minh',
+      in_out_mode: 'AUTO',
+      enabled: true,
+      last_sync: new Date().toLocaleString('vi-VN'),
+      status: 'ONLINE',
+      note: 'Máy Ronald Jack / Mitaco Phú Minh L2 (Serial: AYSH02091571)'
+    },
+    {
+      device_id: 'MCC00011',
+      device_name: 'THANH PHÁT L3',
+      name: 'Máy Chấm Công - Thanh Phát L3',
+      ip: '113.161.53.133',
+      port: 5006,
+      serial: 'AYSH02091575',
+      location: 'Tầng 3 - Khối Thanh Phát',
+      in_out_mode: 'AUTO',
+      enabled: true,
+      last_sync: new Date().toLocaleString('vi-VN'),
+      status: 'ONLINE',
+      note: 'Máy Ronald Jack / Mitaco Thanh Phát L3 (Serial: AYSH02091575)'
     }
   ],
 
@@ -1801,7 +1804,17 @@ const appAttendance = {
       return;
     }
 
-    tbody.innerHTML = logs.slice(0, 100).map((l, idx) => {
+    // Sort logs descending (latest first)
+    logs.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+
+    const displayLogs = logs.slice(0, 1000);
+
+    const countHeader = document.getElementById('zk-raw-logs-count') || document.getElementById('att-raw-logs-count');
+    if (countHeader) {
+      countHeader.textContent = `(Tổng cộng: ${logs.length} bản ghi quẹt thẻ)`;
+    }
+
+    tbody.innerHTML = displayLogs.map((l, idx) => {
       const emp = (appData.employees || []).find(e =>
         String(e.attendance_code || '').trim() === String(l.attendance_code || '').trim() ||
         e.employee_id === l.attendance_code
