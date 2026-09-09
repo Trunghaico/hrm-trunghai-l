@@ -63,6 +63,8 @@ const appAttendance = {
   currentZkSubTab: 'zk-hardware',
   timesheetPage: 1,
   timesheetPageSize: 50,
+  rawLogPage: 1,
+  rawLogPageSize: 50,
   autoAttendanceEmployees: [],
   autoFilterDept: 'ALL',
   autoFilterSearch: '',
@@ -70,6 +72,24 @@ const appAttendance = {
   changeTimesheetPage(delta) {
     this.timesheetPage = Math.max(1, (this.timesheetPage || 1) + delta);
     this.renderTimesheets();
+  },
+
+  prevRawLogPage() {
+    if (this.rawLogPage > 1) {
+      this.rawLogPage--;
+      this.renderRawLogs();
+    }
+  },
+
+  nextRawLogPage() {
+    this.rawLogPage = (this.rawLogPage || 1) + 1;
+    this.renderRawLogs();
+  },
+
+  changeRawLogPageSize(size) {
+    this.rawLogPageSize = parseInt(size, 10) || 50;
+    this.rawLogPage = 1;
+    this.renderRawLogs();
   },
 
   init() {
@@ -1794,6 +1814,7 @@ const appAttendance = {
   },
 
   filterRawLogs() {
+    this.rawLogPage = 1;
     this.renderRawLogs();
   },
 
@@ -1833,20 +1854,52 @@ const appAttendance = {
           </td>
         </tr>
       `;
+      const pageInfo = document.getElementById('zk-raw-logs-page-info');
+      if (pageInfo) pageInfo.textContent = 'Không có lượt chấm công nào';
+      const pageNum = document.getElementById('zk-log-page-number');
+      if (pageNum) pageNum.textContent = 'Trang 1 / 1';
+      const prevBtn = document.getElementById('zk-log-btn-prev');
+      if (prevBtn) prevBtn.disabled = true;
+      const nextBtn = document.getElementById('zk-log-btn-next');
+      if (nextBtn) nextBtn.disabled = true;
       return;
     }
 
     // Sort logs descending (latest first)
     logs.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
 
-    const displayLogs = logs.slice(0, 1000);
+    const pageSize = this.rawLogPageSize || 50;
+    const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
+    if (this.rawLogPage > totalPages) this.rawLogPage = totalPages;
+    if (this.rawLogPage < 1) this.rawLogPage = 1;
+
+    const startIdx = (this.rawLogPage - 1) * pageSize;
+    const endIdx = Math.min(logs.length, startIdx + pageSize);
+    const displayLogs = logs.slice(startIdx, endIdx);
 
     const countHeader = document.getElementById('zk-raw-logs-count') || document.getElementById('att-raw-logs-count');
     if (countHeader) {
-      countHeader.textContent = `(Tổng cộng: ${logs.length} bản ghi chấm công)`;
+      countHeader.textContent = `(Tổng cộng: ${logs.length.toLocaleString('vi-VN')} bản ghi chấm công)`;
     }
 
+    const pageInfo = document.getElementById('zk-raw-logs-page-info');
+    if (pageInfo) {
+      pageInfo.innerHTML = `Đang hiển thị <strong>${(startIdx + 1).toLocaleString('vi-VN')} - ${endIdx.toLocaleString('vi-VN')}</strong> trong tổng số <strong>${logs.length.toLocaleString('vi-VN')}</strong> lượt chấm công`;
+    }
+
+    const pageNum = document.getElementById('zk-log-page-number');
+    if (pageNum) {
+      pageNum.textContent = `Trang ${this.rawLogPage} / ${totalPages}`;
+    }
+
+    const prevBtn = document.getElementById('zk-log-btn-prev');
+    if (prevBtn) prevBtn.disabled = (this.rawLogPage <= 1);
+
+    const nextBtn = document.getElementById('zk-log-btn-next');
+    if (nextBtn) nextBtn.disabled = (this.rawLogPage >= totalPages);
+
     tbody.innerHTML = displayLogs.map((l, idx) => {
+      const globalIdx = startIdx + idx + 1;
       const emp = (appData.employees || []).find(e =>
         String(e.attendance_code || '').trim() === String(l.attendance_code || '').trim() ||
         e.employee_id === l.attendance_code
@@ -1858,8 +1911,6 @@ const appAttendance = {
         'Card': 'Thẻ từ',
         'The tu': 'Thẻ từ',
         'CARD': 'Thẻ từ',
-        'Face': 'Khuôn mặt',
-        'FACE': 'Khuôn mặt',
         'Password': 'Mật mã',
         'PASSWORD': 'Mật mã'
       };
@@ -1867,20 +1918,20 @@ const appAttendance = {
 
       let sourceBadge = '';
       const devName = l.device_name || 'Ronald Jack';
-      if ((l.log_id && l.log_id.startsWith('SQL-')) || l.device_ip === '113.161.53.133' || ['TANG TRET', 'THANH PHAT L3', 'PHU MINH L2'].includes(devName.toUpperCase())) {
-        sourceBadge = `<span class="badge" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 11px;" title="Nguồn: CSDL Mitaco SQL Server (113.161.53.133)"><i class="fa-solid fa-database"></i> Mitaco (${devName})</span>`;
+      if ((l.log_id && l.log_id.startsWith('SQL-')) || ['TANG TRET', 'THANH PHAT L3', 'PHU MINH L2', 'TLMT-TP', 'TLMT-TH'].includes(devName.toUpperCase())) {
+        sourceBadge = `<span class="badge" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 11px;" title="Nguồn: CSDL Mitaco / Ronald Jack SQL Server"><i class="fa-solid fa-database"></i> ${devName}</span>`;
       } else {
         sourceBadge = `<span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 11px;" title="Nguồn: Máy chấm công trực tiếp"><i class="fa-solid fa-fingerprint"></i> Máy ${devName}</span>`;
       }
 
       return `
         <tr>
-          <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
+          <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${globalIdx}</td>
           <td><span style="font-family: monospace; color: #1E40AF; font-weight: 700; background: #EFF6FF; padding: 2px 6px; border-radius: 4px;">${l.attendance_code}</span></td>
-          <td><strong>${emp ? emp.full_name : 'Chưa gán nhân sự'}</strong></td>
-          <td style="color: #64748B; font-size: 11.5px;">${emp ? (emp.department || '---') : '---'}</td>
+          <td><strong>${emp ? emp.full_name : (l.employee_name || 'Chưa gán nhân sự')}</strong></td>
+          <td style="color: #64748B; font-size: 11.5px;">${emp ? (emp.department || emp.department_name || '---') : '---'}</td>
           <td style="font-family: monospace; color: #047857; font-weight: 600;">${l.timestamp}</td>
-          <td style="font-size: 11.5px;">${sourceBadge} <span style="color: #94A3B8; font-size: 10.5px;">${l.device_ip ? `(${l.device_ip})` : ''}</span></td>
+          <td style="font-size: 11.5px;">${sourceBadge} <span style="color: #94A3B8; font-size: 10.5px;">${l.device_ip ? `(${l.device_ip}:${l.device_port || 5005})` : ''}</span></td>
           <td style="text-align: center;"><span class="badge" style="background: #F1F5F9; color: #334155;">${verifyTypeVn}</span></td>
         </tr>
       `;
