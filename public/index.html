@@ -645,16 +645,29 @@
         <div class="card" style="box-shadow: var(--shadow-sm); border: 1px solid var(--border-color);">
           <div class="card-header" style="background: #FFFFFF; border-bottom: 1px solid var(--border-color); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
-              <div style="font-size: 16px; font-weight: 800; color: var(--primary-navy); display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-sitemap" style="color: var(--accent-red); font-size: 18px;"></i>
-                <span>Sơ Đồ Phân Cấp Cơ Cấu Tổ Chức Doanh Nghiệp (Cột Liên Kết)</span>
+              <div class="card-title" style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--primary-navy);">
+                <i class="fa-solid fa-diagram-project" style="color: #2563EB;"></i>
+                <span>Sơ Đồ Phân Cấp &amp; Phân Nhánh Cây Tổ Chức Doanh Nghiệp</span>
               </div>
               <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">
-                Phân cấp liên kết: <span class="badge" style="background: #FEE2E2; color: #991B1B; font-size: 11px;">👑 Ban Tổng Giám Đốc</span> &rarr; <span class="badge" style="background: #E0E7FF; color: #3730A3; font-size: 11px;">🏛️ Ban Giám Đốc</span> &rarr; <span class="badge" style="background: #E0F2FE; color: #0369A1; font-size: 11px;">🏢 Các Ban</span> &rarr; <span class="badge" style="background: #ECFDF5; color: #065F46; font-size: 11px;">📁 Phòng &amp; Khối</span>
+                Phân cấp liên kết cây: <span class="badge" style="background: #FEE2E2; color: #991B1B; font-size: 11px;">👑 Ban Tổng Giám Đốc</span> &rarr; <span class="badge" style="background: #EEF2FF; color: #3730A3; font-size: 11px;">🏛️ Ban Giám Đốc</span> &rarr; <span class="badge" style="background: #E0F2FE; color: #0369A1; font-size: 11px;">🏢 Các Ban Chuyên Môn</span> &rarr; <span class="badge" style="background: #ECFDF5; color: #065F46; font-size: 11px;">📁 Phòng Ban Chức Năng</span> &rarr; <span class="badge" style="background: #F0FDFA; color: #0F766E; font-size: 11px;">🏗️ Ban ĐHDA &amp; Khối (Dưới Phòng)</span>
               </div>
             </div>
             
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <!-- Zoom Controls -->
+              <div class="btn-group" style="display: inline-flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; background: #FFF;">
+                <button class="btn btn-sm btn-secondary" onclick="appOrganization.changeZoom(-0.1)" title="Thu nhỏ sơ đồ" style="border: none; border-radius: 0; padding: 4px 10px;">
+                  <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="appOrganization.resetZoom()" id="org-zoom-indicator" title="Đặt lại kích thước 100%" style="border: none; border-radius: 0; font-size: 11px; font-weight: 700; min-width: 52px; padding: 4px 6px;">
+                  100%
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="appOrganization.changeZoom(0.1)" title="Phóng to sơ đồ" style="border: none; border-radius: 0; padding: 4px 10px;">
+                  <i class="fa-solid fa-magnifying-glass-plus"></i>
+                </button>
+              </div>
+
               <button class="btn btn-sm btn-secondary" onclick="appOrganization.expandAllNodes(true)" title="Mở rộng tất cả vị trí chức danh">
                 <i class="fa-solid fa-arrows-up-down"></i> Mở rộng
               </button>
@@ -675,8 +688,8 @@
             <!-- Rendered by JS: All Companies, THG, TP, TN, PM -->
           </div>
 
-          <div class="card-body" style="padding: 24px 20px; background: #F8FAFC; min-height: 520px; overflow-x: auto;">
-            <div id="org-chart-tree-container">
+          <div class="card-body" style="padding: 24px 20px; background: #F8FAFC; min-height: 540px; overflow: auto; position: relative;">
+            <div id="org-chart-tree-container" style="transition: transform 0.2s ease; transform-origin: top center;">
               <!-- Injected dynamically via JS -->
             </div>
           </div>

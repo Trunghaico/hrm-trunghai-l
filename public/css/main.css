@@ -3573,25 +3573,25 @@ tr.row-selected {
 }
 
 /* ==========================================================================
-   ORGANIZATIONAL CHART (SƠ ĐỒ TỔ CHỨC CỘT LIÊN KẾT PHÂN CẤP)
+   ORGANIZATIONAL TREE CHART (SƠ ĐỒ CÂY PHÂN NHÁNH CHUẨN QUỐC TẾ)
    ========================================================================== */
 .org-charts-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 36px;
 }
 
 .org-company-block {
   background: #FFFFFF;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid #E2E8F0;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
   overflow: hidden;
   transition: box-shadow 0.2s ease;
 }
 
 .org-company-block:hover {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.09);
 }
 
 .org-company-header {
@@ -3605,59 +3605,123 @@ tr.row-selected {
   gap: 12px;
 }
 
-.org-canvas {
-  padding: 32px 24px;
-  background: radial-gradient(#CBD5E1 1px, transparent 1px);
-  background-size: 20px 20px;
+/* Tree Canvas with Grid Background */
+.org-tree-canvas {
+  padding: 36px 24px 44px 24px;
+  background: radial-gradient(#CBD5E1 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
   background-color: #F8FAFC;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  min-width: 100%;
-}
-
-.org-tier-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  position: relative;
-}
-
-.org-tier-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 14px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-}
-
-.org-tier-row {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 20px;
-  position: relative;
-  width: 100%;
-  max-width: 100%;
+  min-width: 100%;
+  overflow-x: auto;
 }
 
+/* Tree Structure with Connected Branch Lines */
+.org-tree-root-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  width: max-content;
+  margin: 0 auto;
+}
+
+.org-tree-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding: 0 12px;
+}
+
+.org-tree-node-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.org-tree-children {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  position: relative;
+  padding-top: 32px;
+  margin-top: 0;
+  width: 100%;
+}
+
+/* Stem line coming down from parent card */
+.org-tree-children::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 32px;
+  background: #3B82F6;
+  z-index: 1;
+}
+
+/* Horizontal crossbar & Vertical drop lines into child branches */
+.org-tree-children > .org-tree-branch::before,
+.org-tree-children > .org-tree-branch::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 50%;
+  border-top: 2px solid #3B82F6;
+  width: 50%;
+  height: 32px;
+  z-index: 1;
+}
+
+.org-tree-children > .org-tree-branch::after {
+  right: auto;
+  left: 50%;
+  border-left: 2px solid #3B82F6;
+}
+
+/* Clear outer lines for edge children */
+.org-tree-children > .org-tree-branch:only-child::before,
+.org-tree-children > .org-tree-branch:only-child::after {
+  display: none;
+}
+
+.org-tree-children > .org-tree-branch:only-child {
+  padding-top: 0;
+}
+
+.org-tree-children > .org-tree-branch:first-child::before {
+  border-top: none;
+}
+
+.org-tree-children > .org-tree-branch:last-child::after {
+  border-top: none;
+}
+
+.org-tree-children > .org-tree-branch:first-child::after {
+  border-top-left-radius: 8px;
+}
+
+.org-tree-children > .org-tree-branch:last-child::before {
+  border-top-right-radius: 8px;
+  border-right: 2px solid #3B82F6;
+}
+
+/* Node Cards */
 .org-node-card {
   background: #FFFFFF;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 14px 16px;
-  width: 270px;
-  min-width: 250px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 250px;
+  min-width: 230px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.07);
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   border-top-width: 4px !important;
   border-top-style: solid !important;
@@ -3666,51 +3730,18 @@ tr.row-selected {
   border-bottom: 1px solid #E2E8F0;
   display: flex;
   flex-direction: column;
+  text-align: left;
 }
 
 .org-node-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.13);
 }
 
 .org-node-root {
-  width: 320px;
-  min-width: 290px;
-  box-shadow: 0 8px 20px rgba(153, 27, 27, 0.12);
-}
-
-.org-connector-v {
-  width: 2px;
-  height: 28px;
-  background: #94A3B8;
-  margin: 0 auto;
-  position: relative;
-}
-
-.org-connector-v::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 6px;
-  height: 6px;
-  background: #64748B;
-  border-radius: 50%;
-}
-
-.org-connector-branch {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  margin: 0 0 14px 0;
-}
-
-.org-branch-h-bar {
-  height: 2px;
-  background: #94A3B8;
-  margin: 0 auto;
+  width: 290px;
+  min-width: 270px;
+  box-shadow: 0 8px 24px rgba(153, 27, 27, 0.14);
 }
 
 .org-pos-list {
@@ -3718,7 +3749,7 @@ tr.row-selected {
   background: #F8FAFC;
   border-radius: 6px;
   padding: 6px 8px;
-  max-height: 150px;
+  max-height: 140px;
   overflow-y: auto;
   border: 1px solid #E2E8F0;
   font-size: 11px;
