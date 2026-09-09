@@ -10,7 +10,7 @@ echo ----------------------------------------------------------------------
 echo.
 
 set SCRIPT_DIR=%~dp0
-set PS_SCRIPT=%SCRIPT_DIR%ronald_jack_agent.ps1
+set PS_SCRIPT=%SCRIPT_DIR%sync_live_sql.ps1
 set TASK_NAME=TrungHai_RonaldJack_AutoSync
 
 if not exist "%PS_SCRIPT%" (
@@ -20,7 +20,8 @@ if not exist "%PS_SCRIPT%" (
 )
 
 echo Dang dang ky Task: %TASK_NAME%...
-schtasks /create /tn "%TASK_NAME%" /tr "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"%PS_SCRIPT%\"" /sc MINUTE /mo 5 /f /ru SYSTEM
+schtasks /create /tn "%TASK_NAME%" /tr "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"%PS_SCRIPT%\"" /sc MINUTE /mo 5 /f
+
 
 if %ERRORLEVEL% equ 0 (
     echo.

@@ -229,4 +229,20 @@ $db.tables.'19_Attendance_Timesheets' = $allTimesheets
 $dbJson = $db | ConvertTo-Json -Depth 10
 [System.IO.File]::WriteAllText("$PSScriptRoot\..\public\sample_database.json", $dbJson, [System.Text.Encoding]::UTF8)
 
+# Sync to Cloudflare Pages Production API if available
+try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $apiPayload = @{
+        db_type = "sql_server"
+        server_host = "113.161.53.133,1433"
+        database_name = "mitaco"
+        punch_logs = $punches
+    } | ConvertTo-Json -Depth 5
+    $res = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json; charset=utf-8" -Body $apiPayload -TimeoutSec 10 -ErrorAction SilentlyContinue
+    if ($res -and $res.success) {
+        Write-Host "Cloudflare API sync: Success ($($res.added_count) new records)"
+    }
+} catch {}
+
 Write-Host "Sync completed! Total timesheets updated: $($allTimesheets.Count)"
+
