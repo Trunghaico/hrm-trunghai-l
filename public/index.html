@@ -4954,25 +4954,63 @@
   </div>
 </div>
 
-<!-- Modal Thêm Từng Nhân Viên Đặc Cách -->
+<!-- Modal Thêm Từng Nhân Viên Đặc Cách (Có ô tìm kiếm theo tên / mã nhân viên) -->
 <div class="modal-backdrop" id="modal-att-add-auto-single">
-  <div class="modal-container" style="max-width: 550px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+  <div class="modal-container" style="max-width: 580px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
     <div class="modal-header" style="background: linear-gradient(135deg, #15803D 0%, #16A34A 100%); color: #fff; padding: 16px 20px;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <i class="fa-solid fa-user-plus" style="font-size: 20px;"></i>
         <div>
           <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #fff;">Thêm Nhân Viên Đặc Cách Tự Động Đủ Công</h3>
-          <p style="margin: 2px 0 0 0; font-size: 12px; color: #DCFCE7;">Chọn cá nhân nhân sự để miễn chấm công máy và tự động hưởng đủ công</p>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: #DCFCE7;">Tìm kiếm theo tên hoặc mã nhân sự để gán đặc cách miễn chấm công</p>
         </div>
       </div>
       <button type="button" class="modal-close" style="color: #fff;" onclick="appAttendance.closeAddAutoEmpModal()">&times;</button>
     </div>
     <div class="modal-body" style="padding: 20px; background: #FFFFFF;">
+      <!-- Searchable Employee Picker -->
       <div style="margin-bottom: 16px;">
-        <label for="att-auto-single-emp-select" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Chọn nhân viên:</label>
-        <select id="att-auto-single-emp-select" class="form-control" style="font-weight: 600; height: 38px;">
-          <!-- Populated dynamically -->
-        </select>
+        <label for="att-auto-emp-search-input" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">
+          Chọn nhân viên: <span style="color: #EF4444;">*</span>
+        </label>
+        
+        <!-- Search Input Bar -->
+        <div style="position: relative; margin-bottom: 8px;">
+          <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 13.5px;"></i>
+          <input type="text" id="att-auto-emp-search-input" class="form-control" placeholder="🔍 Gõ tên nhân viên, mã nhân viên (VD: TH-367, Tài...)..." style="padding-left: 36px; padding-right: 32px; font-size: 13px; height: 38px; border-radius: 8px; border: 1.5px solid #CBD5E1;" oninput="appAttendance.onSearchAutoEmp(this.value)" autocomplete="off">
+          <button type="button" id="att-auto-emp-search-clear" onclick="appAttendance.clearSearchAutoEmp()" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94A3B8; cursor: pointer; padding: 4px;" title="Xóa từ khóa">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Selected Employee Preview Box -->
+        <div id="att-auto-selected-emp-box" style="display: none; margin-bottom: 10px; padding: 10px 14px; background: #F0FDF4; border: 1.5px solid #86EFAC; border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: #16A34A; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0;" id="att-auto-selected-avatar">TH</div>
+              <div style="min-width: 0;">
+                <div style="font-weight: 700; font-size: 13.5px; color: #166534; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="att-auto-selected-name">Nguyễn Tấn Tài</div>
+                <div style="font-size: 11.5px; color: #15803D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="att-auto-selected-dept">TH-367 • Phòng Kế Hoạch Tổng Hợp Thành Phát</div>
+              </div>
+            </div>
+            <span class="badge" style="background: #DCFCE7; color: #166534; font-weight: 700; font-size: 11px; flex-shrink: 0; margin-left: 8px;">
+              <i class="fa-solid fa-check"></i> Đã chọn
+            </span>
+          </div>
+        </div>
+
+        <!-- Hidden ID holder and legacy fallback -->
+        <input type="hidden" id="att-auto-single-emp-id" value="">
+        <select id="att-auto-single-emp-select" style="display: none;"></select>
+
+        <!-- Search Results Scrollable Container -->
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #64748B; margin-bottom: 4px;">
+          <span>Kết quả tìm kiếm (<strong id="att-auto-emp-search-count" style="color: #1E293B;">0 nhân sự</strong>):</span>
+          <span style="font-style: italic; color: #94A3B8;">Nhấp vào dòng nhân sự để chọn</span>
+        </div>
+        <div id="att-auto-emp-search-results" style="max-height: 190px; overflow-y: auto; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; padding: 4px;">
+          <!-- Dynamically populated via appAttendance.renderAutoEmpSearchResults() -->
+        </div>
       </div>
 
       <div style="margin-bottom: 16px;">

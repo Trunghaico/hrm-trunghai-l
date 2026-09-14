@@ -1844,21 +1844,168 @@ const appAttendance = {
     }
   },
 
-  openAddAutoEmpModal() {
+  openAddAutoEmpModal(presetEmpId) {
     const modal = document.getElementById('modal-att-add-auto-single');
     if (!modal) return;
 
-    const select = document.getElementById('att-auto-single-emp-select');
-    if (select) {
-      const activeEmps = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
-      select.innerHTML = activeEmps.map(e => {
-        const dept = this.getCanonicalDeptName(e.department_name || e.department_id);
-        const isAlready = this.isAutoAttendanceEmployee(e.employee_id);
-        return `<option value="${e.employee_id}">${e.employee_id} - ${e.full_name} (${dept})${isAlready ? ' [Đang đặc cách]' : ''}</option>`;
-      }).join('');
+    this.selectedAutoEmpId = presetEmpId || '';
+    const searchInput = document.getElementById('att-auto-emp-search-input');
+    if (searchInput) {
+      searchInput.value = '';
+    }
+    const clearBtn = document.getElementById('att-auto-emp-search-clear');
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    this.renderAutoEmpSearchResults('');
+
+    if (presetEmpId) {
+      this.selectAutoEmp(presetEmpId);
+    } else {
+      this.updateSelectedAutoEmpUI(null);
     }
 
     modal.classList.add('active');
+    setTimeout(() => {
+      const input = document.getElementById('att-auto-emp-search-input');
+      if (input) input.focus();
+    }, 150);
+  },
+
+  onSearchAutoEmp(query) {
+    const clearBtn = document.getElementById('att-auto-emp-search-clear');
+    if (clearBtn) {
+      clearBtn.style.display = (query && query.trim().length > 0) ? 'block' : 'none';
+    }
+    this.renderAutoEmpSearchResults(query);
+  },
+
+  clearSearchAutoEmp() {
+    const searchInput = document.getElementById('att-auto-emp-search-input');
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.focus();
+    }
+    const clearBtn = document.getElementById('att-auto-emp-search-clear');
+    if (clearBtn) clearBtn.style.display = 'none';
+    this.renderAutoEmpSearchResults('');
+  },
+
+  renderAutoEmpSearchResults(query) {
+    const container = document.getElementById('att-auto-emp-search-results');
+    const countEl = document.getElementById('att-auto-emp-search-count');
+    if (!container) return;
+
+    const rawQuery = (query || '').toLowerCase().trim();
+    const cleanQuery = rawQuery.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    const activeEmps = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+
+    let filtered = activeEmps;
+    if (cleanQuery) {
+      filtered = activeEmps.filter(e => {
+        const id = (e.employee_id || '').toLowerCase();
+        const code = (e.attendance_code || e.time_attendance_code || '').toLowerCase();
+        const name = (e.full_name || '').toLowerCase();
+        const cleanName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const dept = (e.department_name || e.department_id || '').toLowerCase();
+        const cleanDept = dept.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const pos = (e.position_name || e.position || '').toLowerCase();
+        const cleanPos = pos.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        return id.includes(cleanQuery) ||
+               code.includes(cleanQuery) ||
+               cleanName.includes(cleanQuery) ||
+               name.includes(rawQuery) ||
+               cleanDept.includes(cleanQuery) ||
+               cleanPos.includes(cleanQuery);
+      });
+    }
+
+    if (countEl) countEl.textContent = `${filtered.length} nhân sự`;
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 24px; color: #94A3B8; font-size: 12.5px;">
+          <i class="fa-solid fa-user-slash" style="font-size: 22px; margin-bottom: 6px; display: block; color: #CBD5E1;"></i>
+          Không tìm thấy nhân viên nào phù hợp với từ khóa "<strong>${utils.escapeHtml ? utils.escapeHtml(query) : query}</strong>"
+        </div>
+      `;
+      return;
+    }
+
+    // Limit display to top 50 items for superfast rendering
+    const displayList = filtered.slice(0, 50);
+
+    container.innerHTML = displayList.map(e => {
+      const dept = this.getCanonicalDeptName(e.department_name || e.department_id);
+      const isAlready = this.isAutoAttendanceEmployee(e.employee_id);
+      const isSelected = (this.selectedAutoEmpId === e.employee_id);
+
+      const avatarInitials = (e.full_name || e.employee_id).trim().split(' ').slice(-2).map(w => w[0]).join('').toUpperCase() || 'TH';
+
+      return `
+        <div class="auto-emp-item" onclick="appAttendance.selectAutoEmp('${e.employee_id}')" 
+             style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; margin-bottom: 3px; border-radius: 6px; cursor: pointer; transition: all 0.15s; background: ${isSelected ? '#DCFCE7' : '#FFFFFF'}; border: 1px solid ${isSelected ? '#86EFAC' : '#F1F5F9'};">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: ${isSelected ? '#16A34A' : '#E2E8F0'}; color: ${isSelected ? '#FFFFFF' : '#475569'}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11.5px; flex-shrink: 0;">
+              ${avatarInitials}
+            </div>
+            <div style="min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-family: monospace; font-size: 11px; font-weight: 700; color: #2563EB; background: #EFF6FF; padding: 1px 5px; border-radius: 4px;">${e.employee_id}</span>
+                <strong style="font-size: 13px; color: ${isSelected ? '#15803D' : '#1E293B'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${e.full_name}</strong>
+              </div>
+              <div style="font-size: 11px; color: #64748B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">
+                ${dept || 'Chưa gán phòng ban'} ${e.position_name ? `• ${e.position_name}` : ''}
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: 8px;">
+            ${isAlready ? '<span class="badge" style="background: #FEF3C7; color: #92400E; font-size: 10.5px; border: 1px solid #FDE68A;">Đang đặc cách</span>' : ''}
+            ${isSelected ? '<i class="fa-solid fa-circle-check" style="color: #16A34A; font-size: 16px;"></i>' : '<i class="fa-regular fa-circle" style="color: #CBD5E1; font-size: 15px;"></i>'}
+          </div>
+        </div>
+      `;
+    }).join('') + (filtered.length > 50 ? `<div style="text-align: center; padding: 6px; font-size: 11.5px; color: #94A3B8; font-style: italic;">Còn ${filtered.length - 50} nhân sự khác, hãy gõ thêm từ khóa để thu hẹp danh sách...</div>` : '');
+  },
+
+  selectAutoEmp(empId) {
+    this.selectedAutoEmpId = empId;
+    const emp = (appData.employees || []).find(e => e.employee_id === empId);
+
+    // Update hidden inputs and legacy select
+    const hiddenIdInput = document.getElementById('att-auto-single-emp-id');
+    if (hiddenIdInput) hiddenIdInput.value = empId;
+
+    const legacySelect = document.getElementById('att-auto-single-emp-select');
+    if (legacySelect) legacySelect.value = empId;
+
+    this.updateSelectedAutoEmpUI(emp);
+    this.renderAutoEmpSearchResults(document.getElementById('att-auto-emp-search-input')?.value || '');
+  },
+
+  updateSelectedAutoEmpUI(emp) {
+    const box = document.getElementById('att-auto-selected-emp-box');
+    const nameEl = document.getElementById('att-auto-selected-name');
+    const deptEl = document.getElementById('att-auto-selected-dept');
+    const avatarEl = document.getElementById('att-auto-selected-avatar');
+
+    if (!box) return;
+
+    if (emp) {
+      box.style.display = 'block';
+      if (nameEl) nameEl.textContent = emp.full_name;
+      if (deptEl) {
+        const dept = this.getCanonicalDeptName(emp.department_name || emp.department_id);
+        deptEl.textContent = `${emp.employee_id} • ${dept || 'Chưa phân phòng'}${emp.position_name ? ` • ${emp.position_name}` : ''}`;
+      }
+      if (avatarEl) {
+        const initials = (emp.full_name || emp.employee_id).trim().split(' ').slice(-2).map(w => w[0]).join('').toUpperCase() || 'TH';
+        avatarEl.textContent = initials;
+      }
+    } else {
+      box.style.display = 'none';
+    }
   },
 
   closeAddAutoEmpModal() {
@@ -1867,16 +2014,19 @@ const appAttendance = {
   },
 
   saveAutoEmpAssignment() {
-    const empSelect = document.getElementById('att-auto-single-emp-select');
+    const hiddenIdInput = document.getElementById('att-auto-single-emp-id');
+    const legacySelect = document.getElementById('att-auto-single-emp-select');
     const reasonInput = document.getElementById('att-auto-single-reason');
     const recalcCheck = document.getElementById('att-auto-single-recalc');
 
-    const empId = empSelect ? empSelect.value : '';
+    const empId = this.selectedAutoEmpId || (hiddenIdInput ? hiddenIdInput.value : '') || (legacySelect ? legacySelect.value : '');
     const reason = (reasonInput ? reasonInput.value.trim() : '') || 'Đặc cách tự động đủ công (Miễn chấm công)';
     const doRecalc = recalcCheck ? recalcCheck.checked : true;
 
     if (!empId) {
-      utils.showToast('Vui lòng chọn nhân viên!', 'warning');
+      utils.showToast('Vui lòng chọn nhân viên cần gán đặc cách!', 'warning');
+      const searchInput = document.getElementById('att-auto-emp-search-input');
+      if (searchInput) searchInput.focus();
       return;
     }
 
