@@ -149,7 +149,23 @@ const DEFAULT_TABLES = {
       ip_address: "127.0.0.1"
     }
   ],
-  "13_Recycle_Bin": []
+  "13_Recycle_Bin": [],
+  "15_Attendance_Shifts": [
+    { shift_id: "CA-HC", shift_code: "HC", shift_name: "Ca Hành Chính", start_time: "08:00", end_time: "17:30", break_start: "12:00", break_end: "13:30", break_hours: 1.5, standard_hours: 8.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: "#2563EB", shift_type: "standard" },
+    { shift_id: "CA-DA-NGAY", shift_code: "DA-NGAY", shift_name: "Ca Ngày (06:00 - 18:00)", start_time: "06:00", end_time: "18:00", break_start: "11:30", break_end: "12:30", break_hours: 1.0, standard_hours: 12.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: "#059669", shift_type: "project_day" },
+    { shift_id: "CA-DA-DEM", shift_code: "DA-DEM", shift_name: "Ca Đêm (18:00 - 06:00)", start_time: "18:00", end_time: "06:00", break_start: "23:30", break_end: "00:30", break_hours: 1.0, standard_hours: 12.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: "#7C3AED", shift_type: "night" },
+    { shift_id: "CA-S", shift_code: "S", shift_name: "Ca Sáng", start_time: "08:00", end_time: "12:00", break_start: "", break_end: "", break_hours: 0, standard_hours: 4.0, work_units: 0.5, grace_late_minutes: 15, grace_early_minutes: 15, color: "#10B981", shift_type: "standard" },
+    { shift_id: "CA-C", shift_code: "C", shift_name: "Ca Chiều", start_time: "13:30", end_time: "17:30", break_start: "", break_end: "", break_hours: 0, standard_hours: 4.0, work_units: 0.5, grace_late_minutes: 15, grace_early_minutes: 15, color: "#D97706", shift_type: "standard" }
+  ],
+  "20_Attendance_Devices": [
+    { device_id: "MCC00012", device_name: "TẦNG TRỆT", name: "Máy Chấm Công - Tầng Trệt", ip: "113.161.53.133", port: 5007, serial: "AYSH02091522", location: "Sảnh / Lối vào Tầng Trệt (Xưởng & VP)", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Ronald Jack / Mitaco Tầng Trệt" },
+    { device_id: "MCC00003", device_name: "PHÚ MINH L2", name: "Máy Chấm Công - Phú Minh L2", ip: "113.161.53.133", port: 5005, serial: "AYSH02091571", location: "Tầng 2 - Khối Phú Minh", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Ronald Jack / Mitaco Phú Minh L2" },
+    { device_id: "MCC00011", device_name: "THANH PHÁT L3", name: "Máy Chấm Công - Thanh Phát L3", ip: "113.161.53.133", port: 5006, serial: "AYSH02091575", location: "Tầng 3 - Khối Thanh Phát", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Ronald Jack / Mitaco Thanh Phát L3" },
+    { device_id: "MCC00001", device_name: "TLMT-TP", name: "Máy Chấm Công - Chi Nhánh TLMT / TP.HCM", ip: "113.161.201.71", port: 5005, serial: "AYSH02091510", location: "Chi Nhánh TLMT / TP.HCM", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Ronald Jack Pro TLMT TP.HCM" },
+    { device_id: "MCC00002", device_name: "TLMT-TH", name: "Máy Chấm Công - Chi Nhánh Long An", ip: "14.224.132.5", port: 5005, serial: "AYSH02091588", location: "Chi Nhánh Xưởng Long An", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Ronald Jack Pro Chi Nhánh Long An" },
+    { device_id: "MCC00004", device_name: "KHBMT", name: "Máy Chấm Công - Buôn Ma Thuột", ip: "113.161.53.133", port: 5008, serial: "AYSH02091601", location: "Chi Nhánh Buôn Ma Thuột / Đắk Lắk", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Ronald Jack Pro Chi Nhánh Buôn Ma Thuột" },
+    { device_id: "MCC00005", device_name: "CTVP", name: "Máy Chấm Công - Khối Công Trình CTVP", ip: "113.161.53.133", port: 5009, serial: "AYSH02091602", location: "Khối Dự Án / VP Công Ty CTVP", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Ronald Jack Pro Công Ty CTVP" }
+  ]
 };
 
 // Response helper with CORS and Cache-Busting

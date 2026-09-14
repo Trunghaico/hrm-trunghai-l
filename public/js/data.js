@@ -385,19 +385,18 @@ const appData = {
           }
 
           let finalDevs = [];
-          if (existingDevs !== null) {
+          if (Array.isArray(this.attendanceDevices) && this.attendanceDevices.length > 0) {
+            // 1. CLOUD SERVER DATA HAS HIGHEST PRIORITY
+            finalDevs = this.attendanceDevices;
+          } else if (existingDevs !== null && existingDevs.length > 0) {
+            // 2. Offline local cache fallback
             finalDevs = existingDevs.filter(d => {
               const id = d.device_id || d.id;
               const key = (d.ip && d.port) ? `${d.ip}:${d.port}` : '';
               return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && (!key || !deletedDeviceIds.has(key));
             });
-          } else if (Array.isArray(this.attendanceDevices) && this.attendanceDevices.length > 0) {
-            finalDevs = this.attendanceDevices.filter(d => {
-              const id = d.device_id || d.id;
-              const key = (d.ip && d.port) ? `${d.ip}:${d.port}` : '';
-              return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && (!key || !deletedDeviceIds.has(key));
-            });
           } else {
+            // 3. Default fallback
             finalDevs = defaultDevices.filter(d => {
               const id = d.device_id || d.id;
               const key = `${d.ip}:${d.port}`;
@@ -435,13 +434,11 @@ const appData = {
           }
 
           let finalShifts = [];
-          if (curShifts !== null) {
+          if (Array.isArray(this.shifts) && this.shifts.length > 0) {
+            // 1. CLOUD SERVER DATA HAS HIGHEST PRIORITY
+            finalShifts = this.shifts;
+          } else if (curShifts !== null && curShifts.length > 0) {
             finalShifts = curShifts.filter(s => {
-              const sid = s.shift_id || s.shift_code;
-              return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
-            });
-          } else if (Array.isArray(this.shifts) && this.shifts.length > 0) {
-            finalShifts = this.shifts.filter(s => {
               const sid = s.shift_id || s.shift_code;
               return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
             });

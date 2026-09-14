@@ -129,6 +129,28 @@ const appPWA = {
       if (window.appAttendance && typeof appAttendance.init === 'function') {
         await appAttendance.init();
       }
+
+      // Explicitly pull devices from Cloud API
+      try {
+        const devRes = await fetch('/api/attendance/devices?t=' + Date.now()).catch(() => null);
+        if (devRes && devRes.ok) {
+          const devData = await devRes.json();
+          if (devData && Array.isArray(devData.devices) && devData.devices.length > 0) {
+            if (window.appData) {
+              appData.attendanceDevices = devData.devices;
+              if (appData.tables) appData.tables['20_Attendance_Devices'] = devData.devices;
+            }
+            if (window.appAttendance) {
+              appAttendance.devices = devData.devices;
+              if (typeof appAttendance.renderDevices === 'function') {
+                appAttendance.renderDevices();
+              }
+            }
+            try { localStorage.setItem('hrm_attendance_devices', JSON.stringify(devData.devices)); } catch(e){}
+          }
+        }
+      } catch (e) {}
+
       // Re-render current active view
       if (window.app && typeof app.renderCurrentView === 'function') {
         app.renderCurrentView();

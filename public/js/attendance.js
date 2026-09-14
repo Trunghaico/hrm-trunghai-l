@@ -263,19 +263,18 @@ const appAttendance = {
       }
 
       let finalDevs = [];
-      if (existingDevs !== null) {
+      if (window.appData && Array.isArray(appData.attendanceDevices) && appData.attendanceDevices.length > 0) {
+        // 1. CLOUD SERVER DATA HAS HIGHEST PRIORITY
+        finalDevs = appData.attendanceDevices;
+      } else if (existingDevs !== null && existingDevs.length > 0) {
+        // 2. Offline local cache fallback
         finalDevs = existingDevs.filter(d => {
           const id = d.device_id || d.id;
           const key = (d.ip && d.port) ? `${d.ip}:${d.port}` : '';
           return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && (!key || !deletedDeviceIds.has(key));
         });
-      } else if (window.appData && Array.isArray(appData.attendanceDevices) && appData.attendanceDevices.length > 0) {
-        finalDevs = appData.attendanceDevices.filter(d => {
-          const id = d.device_id || d.id;
-          const key = (d.ip && d.port) ? `${d.ip}:${d.port}` : '';
-          return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && (!key || !deletedDeviceIds.has(key));
-        });
       } else {
+        // 3. Default fallback
         finalDevs = defaultDevices.filter(d => {
           const id = d.device_id || d.id;
           const key = `${d.ip}:${d.port}`;
@@ -385,17 +384,17 @@ const appAttendance = {
       }
 
       let finalShifts = [];
-      if (currentShifts !== null) {
+      if (window.appData && Array.isArray(appData.shifts) && appData.shifts.length > 0) {
+        // 1. CLOUD SERVER DATA HAS HIGHEST PRIORITY
+        finalShifts = appData.shifts;
+      } else if (currentShifts !== null && currentShifts.length > 0) {
+        // 2. Offline local cache fallback
         finalShifts = currentShifts.filter(s => {
           const sid = s.shift_id || s.shift_code;
           return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
         });
-      } else if (window.appData && Array.isArray(appData.shifts) && appData.shifts.length > 0) {
-        finalShifts = appData.shifts.filter(s => {
-          const sid = s.shift_id || s.shift_code;
-          return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
-        });
       } else {
+        // 3. Default fallback
         finalShifts = defaultStandardShifts.filter(s => {
           const sid = s.shift_id || s.shift_code;
           return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
@@ -2562,16 +2561,14 @@ const appAttendance = {
       sideZkCount.style.display = this.devices.length > 0 ? 'inline-block' : 'none';
     }
 
-    // Attempt API save in background if backend server is available
-    if (window.appData && appData.hasServerBackend) {
-      try {
-        fetch('/api/attendance/devices/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(deviceObj)
-        }).catch(() => {});
-      } catch (e) {}
-    }
+    // Always sync device save to cloud API
+    try {
+      fetch('/api/attendance/devices/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deviceObj)
+      }).catch(() => {});
+    } catch (e) {}
 
     this.closeDeviceModal();
     utils.showToast(`Đã lưu máy chấm công "${devName}" (${devIp}:${devPort}) thành công!`, 'success');
@@ -2618,16 +2615,14 @@ const appAttendance = {
       sideZkCount.style.display = this.devices.length > 0 ? 'inline-block' : 'none';
     }
 
-    // 5. Backend delete
-    if (window.appData && appData.hasServerBackend) {
-      try {
-        fetch('/api/attendance/devices/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ device_id: deviceId, id: deviceId })
-        }).catch(() => {});
-      } catch (e) {}
-    }
+    // Always sync device delete to cloud API
+    try {
+      fetch('/api/attendance/devices/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: deviceId, id: deviceId })
+      }).catch(() => {});
+    } catch (e) {}
 
     utils.showToast(`Đã xóa thành công máy chấm công "${devName}"!`, 'success');
     this.renderDevices();
