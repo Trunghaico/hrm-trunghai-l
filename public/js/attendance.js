@@ -95,11 +95,14 @@ const appAttendance = {
   init() {
     console.log('Initializing Time & Attendance Module...');
 
-    // Auto-align default date range to current month
+    // Auto-align default date range to the latest available month and date
     try {
-      const allTsDates = ((window.appData && appData.timesheets) || []).map(t => t.date).filter(Boolean).sort();
-      if (allTsDates.length > 0) {
-        const maxAvailable = allTsDates[allTsDates.length - 1];
+      const allDates = [];
+      ((window.appData && appData.timesheets) || []).forEach(t => { if (t.date) allDates.push(t.date); });
+      ((window.appData && appData.attendanceLogs) || []).forEach(l => { if (l.timestamp && l.timestamp.length >= 10) allDates.push(l.timestamp.substring(0, 10)); });
+      allDates.sort();
+      if (allDates.length > 0) {
+        const maxAvailable = allDates[allDates.length - 1];
         const startOfMonth = maxAvailable.substring(0, 7) + '-01';
         this.fromDate = startOfMonth;
         this.toDate = maxAvailable;
@@ -176,6 +179,16 @@ const appAttendance = {
 
     this.loadSoftwareDbConfig();
     this.bindEvents();
+
+    // Tự động tính toán bảng công nếu tháng hiện tại có log quẹt thẻ nhưng chưa có bảng công
+    try {
+      const currentMonthTs = ((window.appData && appData.timesheets) || []).filter(t => (t.date || '').startsWith(this.currentMonth));
+      const currentMonthLogs = ((window.appData && appData.attendanceLogs) || []).filter(l => (l.timestamp || '').startsWith(this.currentMonth));
+      if (currentMonthTs.length === 0 && currentMonthLogs.length > 0) {
+        this.recalculateClientSide();
+      }
+    } catch (e) {}
+
     this.render();
   },
 

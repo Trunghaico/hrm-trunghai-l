@@ -202,6 +202,46 @@ const appData = {
             } catch(e) {}
           }
 
+          // Tự động nạp cache nhật ký quẹt thẻ mới nhất từ mitaco_punches_cache.json
+          try {
+            let cacheRes = await fetch('mitaco_punches_cache.json?t=' + Date.now()).catch(() => null);
+            if (!cacheRes || !cacheRes.ok) {
+              cacheRes = await fetch('/mitaco_punches_cache.json?t=' + Date.now()).catch(() => null);
+            }
+            if (cacheRes && cacheRes.ok) {
+              const cacheData = await cacheRes.json();
+              if (cacheData && Array.isArray(cacheData.punches) && cacheData.punches.length > 0) {
+                if (!this.attendanceLogs) this.attendanceLogs = [];
+                const existingKeys = new Set(this.attendanceLogs.map(l => `${l.attendance_code}_${l.timestamp}`));
+                const masterMap = new Map((this.masterProfiles || []).map(m => [String(m.attendance_code || m.time_attendance_code || m['Mã chấm công'] || '').trim(), m]));
+                const empMap = new Map((this.employees || []).map(e => [String(e.attendance_code || e.time_attendance_code || e['Mã chấm công'] || '').trim(), e]));
+                
+                cacheData.punches.forEach(p => {
+                  const c = String(p.attendance_code || '').trim();
+                  const ts = String(p.timestamp || '').trim();
+                  if (!c || !ts) return;
+                  const k = `${c}_${ts}`;
+                  if (!existingKeys.has(k)) {
+                    const emp = empMap.get(c) || masterMap.get(c);
+                    this.attendanceLogs.push({
+                      log_id: p.log_id || `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                      attendance_code: c,
+                      employee_id: emp ? emp.employee_id : (p.employee_id || ''),
+                      employee_name: emp ? emp.full_name : (p.employee_name || ''),
+                      timestamp: ts,
+                      verify_type: p.verify_type || 'Khuon mat',
+                      device_name: p.device_name || 'Máy Ronald Jack Pro',
+                      device_ip: p.device_ip || '113.161.53.133'
+                    });
+                    existingKeys.add(k);
+                  }
+                });
+              }
+            }
+          } catch(e) {
+            console.warn('Auto-load mitaco_punches_cache non-fatal warning:', e);
+          }
+
           const localReqs = localStorage.getItem('hrm_attendance_requests');
           if (localReqs) {
             try {
