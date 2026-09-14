@@ -3685,17 +3685,20 @@ const appAttendance = {
             }
           }
 
+          let lateMins = 0;
+          let earlyMins = 0;
+          let totalHours = 0;
           let workUnits = 0;
           let otHours = 0;
           let status = 'VALID';
-          let note = `${matchedShiftName} đủ công`;
+          let note = `${shiftName} đủ công`;
 
-          if (inM > (shiftStartMins + 15)) lateMins = inM - shiftStartMins;
+          if (inM > (shiftStartMins + graceLate)) lateMins = inM - shiftStartMins;
 
           if (checkOut) {
             const [oh, om] = checkOut.split(':').map(Number);
             const outM = oh * 60 + om;
-            if (outM < (shiftEndMins - 15)) earlyMins = shiftEndMins - outM;
+            if (outM < (shiftEndMins - graceEarly)) earlyMins = shiftEndMins - outM;
             if (outM > (shiftEndMins + 30)) otHours = Math.round(((outM - shiftEndMins) / 60) * 10) / 10;
 
             let spanM = outM - inM;
@@ -3704,24 +3707,24 @@ const appAttendance = {
 
             if (totalHours >= (stdHours * 0.85)) {
               workUnits = stdWorkUnits;
-              if (lateMins > 0 && earlyMins > 0) { status = 'LATE'; note = `${matchedShiftName}: Muộn ${lateMins}p, về sớm ${earlyMins}p`; }
-              else if (lateMins > 0) { status = 'LATE'; note = `${matchedShiftName}: Muộn ${lateMins}p`; }
-              else if (earlyMins > 0) { status = 'EARLY'; note = `${matchedShiftName}: Về sớm ${earlyMins}p`; }
-              else { status = 'VALID'; note = `${matchedShiftName} hợp lệ`; }
+              if (lateMins > 0 && earlyMins > 0) { status = 'LATE'; note = `${shiftName}: Muộn ${lateMins}p, về sớm ${earlyMins}p`; }
+              else if (lateMins > 0) { status = 'LATE'; note = `${shiftName}: Muộn ${lateMins}p`; }
+              else if (earlyMins > 0) { status = 'EARLY'; note = `${shiftName}: Về sớm ${earlyMins}p`; }
+              else { status = 'VALID'; note = `${shiftName} hợp lệ`; }
             } else if (totalHours >= (stdHours * 0.4)) {
               workUnits = Math.round((stdWorkUnits * 0.5) * 100) / 100;
               status = 'HALF_DAY';
-              note = `${matchedShiftName} nửa ngày (${totalHours}h)`;
+              note = `${shiftName} nửa ngày (${totalHours}h)`;
             } else {
               workUnits = 0;
               status = 'UNDER_HOURS';
-              note = `${matchedShiftName} thiếu giờ (${totalHours}h)`;
+              note = `${shiftName} thiếu giờ (${totalHours}h)`;
             }
           } else {
             workUnits = Math.round((stdWorkUnits * 0.5) * 100) / 100;
             totalHours = Math.round((stdHours * 0.5) * 10) / 10;
             status = lateMins > 0 ? 'LATE' : 'VALID';
-            note = lateMins > 0 ? `${matchedShiftName}: Muộn ${lateMins}p (chưa chấm ra)` : `${matchedShiftName} (chưa chấm ra)`;
+            note = lateMins > 0 ? `${shiftName}: Muộn ${lateMins}p (chưa chấm ra)` : `${shiftName} (chưa chấm ra)`;
           }
 
           computedTimesheets.push({
@@ -3732,8 +3735,8 @@ const appAttendance = {
             department_name: deptCanonical,
             date: dt,
             day_name: dName,
-            shift_id: matchedShiftId,
-            shift_name: matchedShiftName,
+            shift_id: shiftId,
+            shift_name: shiftName,
             check_in: checkIn || '',
             check_out: checkOut || '',
             late_minutes: lateMins,
