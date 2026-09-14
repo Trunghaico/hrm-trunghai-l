@@ -295,15 +295,26 @@ const appAttendance = {
   getCanonicalDeptName(val) {
     if (!val) return '';
     const s = String(val).trim();
-    if (!s) return '';
-    if (appData.deptMap && appData.deptMap[s]) {
-      return appData.deptMap[s];
+    if (!s || s === '-') return '';
+    if (typeof appData !== 'undefined' && appData.getDepartmentName) {
+      const resolved = appData.getDepartmentName(s);
+      if (resolved && resolved !== '-' && resolved !== s) return resolved;
     }
-    const found = (appData.departments || []).find(d =>
-      (d.department_id && d.department_id.toLowerCase() === s.toLowerCase()) ||
-      (d.department_name && d.department_name.toLowerCase() === s.toLowerCase())
-    );
-    if (found && found.department_name) return found.department_name;
+    if (typeof appData !== 'undefined' && appData.deptMap) {
+      if (appData.deptMap[s]) return appData.deptMap[s];
+      if (appData.deptMap[s.toUpperCase()]) return appData.deptMap[s.toUpperCase()];
+      if (appData.deptMap[s.toLowerCase()]) return appData.deptMap[s.toLowerCase()];
+    }
+    if (typeof appData !== 'undefined' && appData.departments) {
+      const found = appData.departments.find(d =>
+        (d.department_id && d.department_id.toLowerCase() === s.toLowerCase()) ||
+        (d.department_name && d.department_name.toLowerCase() === s.toLowerCase())
+      );
+      if (found && found.department_name) return found.department_name;
+    }
+    if (typeof appData !== 'undefined' && appData.getDepartmentName) {
+      return appData.getDepartmentName(s);
+    }
     return s;
   },
 
@@ -693,6 +704,7 @@ const appAttendance = {
       const emp = (appData.employees || []).find(e => e.employee_id === item.employee_id) || {};
       const master = (appData.masterProfiles || []).find(m => m.employee_id === item.employee_id) || {};
       const codeVal = item.attendance_code || emp.time_attendance_code || emp['Mã chấm công'] || master['Mã chấm công'] || master.time_attendance_code || '';
+      const deptDisplay = this.getCanonicalDeptName(item.department_name || emp.department_name || emp.department_id || (master ? (master['Đơn vị công tác'] || master.department_name) : '')) || '---';
 
       const attCodeDisplay = codeVal
         ? `<strong style="color: #B45309; font-family: monospace; background: #FFFBEB; padding: 2px 6px; border-radius: 4px; border: 1px solid #FDE68A;">${codeVal}</strong>`
@@ -707,7 +719,7 @@ const appAttendance = {
             <strong>${item.full_name}</strong>
             ${manualEditedIndicator}
           </td>
-          <td><span class="badge badge-navy" title="${item.department_name}">${item.department_name}</span></td>
+          <td><span class="badge badge-navy" title="${deptDisplay}">${deptDisplay}</span></td>
           <td style="white-space: nowrap; font-family: monospace;">${item.date}</td>
           <td style="font-weight: 500; color: ${item.day_name === 'Chủ nhật' ? '#DC2626' : 'var(--text-secondary)'}">${item.day_name}</td>
           <td style="font-family: monospace; font-weight: 600; color: #047857; text-align: center;">${item.check_in || '-'}</td>
@@ -1700,7 +1712,7 @@ const appAttendance = {
           <td><strong style="color: var(--primary-navy); font-family: monospace;">${req.request_id}</strong></td>
           <td>
             <strong>${req.full_name}</strong>
-            <div style="font-size: 11px; color: var(--text-muted);">${req.employee_id} - ${req.department_name}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">${req.employee_id} - ${this.getCanonicalDeptName(req.department_name)}</div>
           </td>
           <td>${typeLabel}</td>
           <td style="font-family: monospace;">
@@ -1977,7 +1989,7 @@ const appAttendance = {
           <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${globalIdx}</td>
           <td><span style="font-family: monospace; color: #1E40AF; font-weight: 700; background: #EFF6FF; padding: 2px 6px; border-radius: 4px;">${l.attendance_code}</span></td>
           <td><strong>${emp ? emp.full_name : (l.employee_name || 'Chưa gán nhân sự')}</strong></td>
-          <td style="color: #64748B; font-size: 11.5px;">${emp ? (emp.department || emp.department_name || '---') : '---'}</td>
+          <td style="color: #64748B; font-size: 11.5px;">${emp ? (this.getCanonicalDeptName(emp.department_name || emp.department_id || emp.department) || '---') : '---'}</td>
           <td style="font-family: monospace; color: #047857; font-weight: 600;">${l.timestamp}</td>
           <td style="font-size: 11.5px;">${sourceBadge} <span style="color: #94A3B8; font-size: 10.5px;">${l.device_ip ? `(${l.device_ip}:${l.device_port || 5005})` : ''}</span></td>
           <td style="text-align: center;"><span class="badge" style="background: #F1F5F9; color: #334155;">${verifyTypeVn}</span></td>
@@ -2594,7 +2606,7 @@ const appAttendance = {
         l.attendance_code || '',
         emp ? emp.employee_id : '',
         emp ? emp.full_name : '',
-        emp ? (emp.department_name || emp.department_id || '') : '',
+        emp ? (this.getCanonicalDeptName(emp.department_name || emp.department_id) || '') : '',
         l.timestamp || '',
         l.device_name || '',
         l.device_ip ? `${l.device_ip}:${l.device_port || 5005}` : '',
@@ -2943,7 +2955,7 @@ const appAttendance = {
             employee_id: emp.employee_id,
             attendance_code: empCode || 'AUTO',
             full_name: emp.full_name,
-            department_name: emp.department_name,
+            department_name: this.getCanonicalDeptName(emp.department_name || emp.department_id),
             date: dt,
             day_name: dName,
             shift_id: shift.shift_id || assignedShiftId,
@@ -2971,7 +2983,7 @@ const appAttendance = {
             employee_id: emp.employee_id,
             attendance_code: '',
             full_name: emp.full_name,
-            department_name: emp.department_name,
+            department_name: this.getCanonicalDeptName(emp.department_name || emp.department_id),
             date: dt,
             day_name: dName,
             shift_id: 'CA-HC',
@@ -3122,7 +3134,7 @@ const appAttendance = {
           employee_id: emp.employee_id,
           attendance_code: empCode,
           full_name: emp.full_name,
-          department_name: emp.department_name,
+          department_name: this.getCanonicalDeptName(emp.department_name || emp.department_id),
           date: dt,
           day_name: dName,
           shift_id: shift.shift_id || assignedShiftId,
@@ -3955,26 +3967,36 @@ const appAttendance = {
       'REJECTED': 'Từ chối'
     };
 
-    const rows = list.map((item, idx) => [
-      idx + 1,
-      item.employee_id || '',
-      item.attendance_code || '',
-      item.full_name || '',
-      item.department_name || '',
-      item.date || '',
-      item.day_name || '',
-      item.check_in || '',
-      item.check_out || '',
-      item.late_minutes || 0,
-      item.early_minutes || 0,
-      item.work_units !== undefined ? item.work_units : 1.0,
-      item.total_work_hours || 0,
-      item.ot_hours || 0,
-      item.total_all_hours || 0,
-      item.shift_name || 'Ca Hành Chính',
-      statusVietnameseMap[item.status] || item.status || 'Hợp lệ',
-      item.note || ''
-    ]);
+    const empMap = new Map((appData.employees || []).map(e => [e.employee_id, e]));
+    const masterMap = new Map((appData.masterProfiles || []).map(m => [m.employee_id, m]));
+
+    const rows = list.map((item, idx) => {
+      const emp = empMap.get(item.employee_id) || {};
+      const master = masterMap.get(item.employee_id) || {};
+      const deptName = this.getCanonicalDeptName(item.department_name || emp.department_name || emp.department_id || master['Đơn vị công tác'] || master.department_name) || '';
+      const attCode = item.attendance_code || emp.time_attendance_code || emp['Mã chấm công'] || master['Mã chấm công'] || master.time_attendance_code || '';
+
+      return [
+        idx + 1,
+        item.employee_id || '',
+        attCode,
+        item.full_name || emp.full_name || '',
+        deptName,
+        item.date || '',
+        item.day_name || '',
+        item.check_in || '',
+        item.check_out || '',
+        item.late_minutes || 0,
+        item.early_minutes || 0,
+        item.work_units !== undefined ? item.work_units : 1.0,
+        item.total_work_hours || 0,
+        item.ot_hours || 0,
+        item.total_all_hours || 0,
+        item.shift_name || 'Ca Hành Chính',
+        statusVietnameseMap[item.status] || item.status || 'Hợp lệ',
+        item.note || ''
+      ];
+    });
 
     const cleanMonth = (this.currentMonth || '').replace('-', '_');
     const baseFileName = `Bang_Cham_Cong_Thang_${cleanMonth}_TRUNGHAI`;
