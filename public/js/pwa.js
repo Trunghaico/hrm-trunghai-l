@@ -77,13 +77,16 @@ const appPWA = {
           });
       });
 
-      // When mobile app comes to foreground, check for SW updates and reload fresh data
+      // When mobile app comes to foreground, check for SW updates and reload fresh data (debounced 20s)
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           if (this.swRegistration) {
             this.swRegistration.update().catch(() => {});
           }
-          this.syncAllCloudData(false).catch(() => {});
+          if (Date.now() - this.lastAutoSyncTime > 20000) {
+            this.lastAutoSyncTime = Date.now();
+            this.syncAllCloudData(false).catch(() => {});
+          }
         }
       });
 
@@ -91,10 +94,15 @@ const appPWA = {
         if (this.swRegistration) {
           this.swRegistration.update().catch(() => {});
         }
-        this.syncAllCloudData(false).catch(() => {});
+        if (Date.now() - this.lastAutoSyncTime > 20000) {
+          this.lastAutoSyncTime = Date.now();
+          this.syncAllCloudData(false).catch(() => {});
+        }
       });
     }
   },
+
+  lastAutoSyncTime: 0,
 
   showUpdateBanner() {
     let banner = document.getElementById('pwa-update-banner');
@@ -114,6 +122,7 @@ const appPWA = {
   },
 
   async syncAllCloudData(showFeedback = true) {
+    this.lastAutoSyncTime = Date.now();
     if (showFeedback && window.utils && window.utils.showToast) {
       window.utils.showToast('Đang đồng bộ dữ liệu với máy chủ Cloud...', 'info');
     }
