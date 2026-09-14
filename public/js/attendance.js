@@ -15,78 +15,88 @@ const appAttendance = {
   filterStatus: 'ALL',
   filterSearch: '',
   portalEmployeeId: '',
-  devices: [
-    {
-      device_id: 'MCC00012',
-      device_name: 'TẦNG TRỆT',
-      name: 'Máy Chấm Công - Tầng Trệt',
-      ip: '113.161.53.133',
-      port: 5007,
-      serial: 'AYSH02091522',
-      location: 'Sảnh / Lối vào Tầng Trệt (Xưởng & VP)',
-      in_out_mode: 'AUTO',
-      enabled: true,
-      last_sync: new Date().toLocaleString('vi-VN'),
-      status: 'ONLINE',
-      note: 'Máy Ronald Jack / Mitaco Tầng Trệt (Serial: AYSH02091522)'
-    },
-    {
-      device_id: 'MCC00003',
-      device_name: 'PHÚ MINH L2',
-      name: 'Máy Chấm Công - Phú Minh L2',
-      ip: '113.161.53.133',
-      port: 5005,
-      serial: 'AYSH02091571',
-      location: 'Tầng 2 - Khối Phú Minh',
-      in_out_mode: 'AUTO',
-      enabled: true,
-      last_sync: new Date().toLocaleString('vi-VN'),
-      status: 'ONLINE',
-      note: 'Máy Ronald Jack / Mitaco Phú Minh L2 (Serial: AYSH02091571)'
-    },
-    {
-      device_id: 'MCC00011',
-      device_name: 'THANH PHÁT L3',
-      name: 'Máy Chấm Công - Thanh Phát L3',
-      ip: '113.161.53.133',
-      port: 5006,
-      serial: 'AYSH02091575',
-      location: 'Tầng 3 - Khối Thanh Phát',
-      in_out_mode: 'AUTO',
-      enabled: true,
-      last_sync: new Date().toLocaleString('vi-VN'),
-      status: 'ONLINE',
-      note: 'Máy Ronald Jack / Mitaco Thanh Phát L3 (Serial: AYSH02091575)'
-    },
-    {
-      device_id: 'MCC00001',
-      device_name: 'TLMT-TP',
-      name: 'Máy Chấm Công - Chi Nhánh TLMT / TP.HCM',
-      ip: '113.161.201.71',
-      port: 5005,
-      serial: 'AYSH02091510',
-      location: 'Chi Nhánh TLMT / TP.HCM',
-      in_out_mode: 'AUTO',
-      enabled: true,
-      last_sync: new Date().toLocaleString('vi-VN'),
-      status: 'ONLINE',
-      note: 'Máy Ronald Jack Pro TLMT TP.HCM (CSDL Tlmt)'
-    },
-    {
-      device_id: 'MCC00002',
-      device_name: 'TLMT-TH',
-      name: 'Máy Chấm Công - Chi Nhánh Long An',
-      ip: '14.224.132.5',
-      port: 5005,
-      serial: 'AYSH02091588',
-      location: 'Chi Nhánh Xưởng Long An',
-      in_out_mode: 'AUTO',
-      enabled: true,
-      last_sync: new Date().toLocaleString('vi-VN'),
-      status: 'ONLINE',
-      note: 'Máy Ronald Jack Pro Chi Nhánh Long An (CSDL longan)'
-    }
-  ],
+  devices: [],
+
+  // Tracking deleted items so default templates never re-add them after user deletion
+  getDeletedDeviceIds() {
+    try {
+      const raw = localStorage.getItem('hrm_deleted_device_ids');
+      if (raw) return new Set(JSON.parse(raw));
+    } catch (e) {}
+    return new Set();
+  },
+
+  markDeviceAsDeleted(deviceId, devObj) {
+    try {
+      const deleted = this.getDeletedDeviceIds();
+      if (deviceId) deleted.add(String(deviceId));
+      if (devObj) {
+        if (devObj.device_id) deleted.add(String(devObj.device_id));
+        if (devObj.id) deleted.add(String(devObj.id));
+        if (devObj.serial) deleted.add(String(devObj.serial));
+        if (devObj.ip && devObj.port) deleted.add(`${devObj.ip}:${devObj.port}`);
+      }
+      localStorage.setItem('hrm_deleted_device_ids', JSON.stringify([...deleted]));
+      if (window.hrmStorage) {
+        window.hrmStorage.set('hrm_deleted_device_ids', [...deleted]).catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  unmarkDeviceAsDeleted(deviceId, devObj) {
+    try {
+      const deleted = this.getDeletedDeviceIds();
+      if (deviceId) deleted.delete(String(deviceId));
+      if (devObj) {
+        if (devObj.device_id) deleted.delete(String(devObj.device_id));
+        if (devObj.id) deleted.delete(String(devObj.id));
+        if (devObj.serial) deleted.delete(String(devObj.serial));
+        if (devObj.ip && devObj.port) deleted.delete(`${devObj.ip}:${devObj.port}`);
+      }
+      localStorage.setItem('hrm_deleted_device_ids', JSON.stringify([...deleted]));
+      if (window.hrmStorage) {
+        window.hrmStorage.set('hrm_deleted_device_ids', [...deleted]).catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  getDeletedShiftIds() {
+    try {
+      const raw = localStorage.getItem('hrm_deleted_shift_ids');
+      if (raw) return new Set(JSON.parse(raw));
+    } catch (e) {}
+    return new Set();
+  },
+
+  markShiftAsDeleted(shiftId, shiftObj) {
+    try {
+      const deleted = this.getDeletedShiftIds();
+      if (shiftId) deleted.add(String(shiftId));
+      if (shiftObj) {
+        if (shiftObj.shift_id) deleted.add(String(shiftObj.shift_id));
+        if (shiftObj.shift_code) deleted.add(String(shiftObj.shift_code));
+      }
+      localStorage.setItem('hrm_deleted_shift_ids', JSON.stringify([...deleted]));
+      if (window.hrmStorage) {
+        window.hrmStorage.set('hrm_deleted_shift_ids', [...deleted]).catch(() => {});
+      }
+    } catch (e) {}
+  },
+
+  unmarkShiftAsDeleted(shiftId, shiftObj) {
+    try {
+      const deleted = this.getDeletedShiftIds();
+      if (shiftId) deleted.delete(String(shiftId));
+      if (shiftObj) {
+        if (shiftObj.shift_id) deleted.delete(String(shiftObj.shift_id));
+        if (shiftObj.shift_code) deleted.delete(String(shiftObj.shift_code));
+      }
+      localStorage.setItem('hrm_deleted_shift_ids', JSON.stringify([...deleted]));
+      if (window.hrmStorage) {
+        window.hrmStorage.set('hrm_deleted_shift_ids', [...deleted]).catch(() => {});
+      }
+    } catch (e) {}
+  },
 
   currentZkSubTab: 'zk-hardware',
   timesheetPage: 1,
@@ -139,7 +149,7 @@ const appAttendance = {
       }
     } catch (e) {}
 
-    // Load devices and shifts: Smart-merge to guarantee all 5 enterprise devices exist on both web and phone
+    // Load devices and shifts: Smart-merge to guarantee enterprise devices exist while strictly respecting user deletions
     try {
       const defaultDevices = [
         {
@@ -215,11 +225,11 @@ const appAttendance = {
         {
           device_id: 'MCC00004',
           device_name: 'KHBMT',
-          name: 'Máy Chấm Công - Chi Nhánh Buôn Ma Thuột',
+          name: 'Máy Chấm Công - Buôn Ma Thuột',
           ip: '113.161.53.133',
           port: 5008,
           serial: 'AYSH02091601',
-          location: 'Chi Nhánh Buôn Ma Thuột (Đắk Lắk)',
+          location: 'Chi Nhánh Buôn Ma Thuột / Đắk Lắk',
           in_out_mode: 'AUTO',
           enabled: true,
           last_sync: new Date().toLocaleString('vi-VN'),
@@ -242,32 +252,43 @@ const appAttendance = {
         }
       ];
 
-      let existingDevs = [];
+      const deletedDeviceIds = this.getDeletedDeviceIds();
+      let existingDevs = null;
       const savedDevs = localStorage.getItem('hrm_attendance_devices');
-      if (savedDevs) {
-        try { existingDevs = JSON.parse(savedDevs) || []; } catch(e){}
-      } else if (window.appData && Array.isArray(appData.attendanceDevices) && appData.attendanceDevices.length > 0) {
-        existingDevs = appData.attendanceDevices;
+      if (savedDevs !== null) {
+        try {
+          const parsed = JSON.parse(savedDevs);
+          if (Array.isArray(parsed)) existingDevs = parsed;
+        } catch (e) {}
       }
 
-      const mergedDevs = [...defaultDevices];
-      existingDevs.forEach(ed => {
-        const foundIdx = mergedDevs.findIndex(d => 
-          (d.device_id && ed.device_id && d.device_id === ed.device_id) ||
-          (d.serial && ed.serial && d.serial === ed.serial) ||
-          (d.device_name && ed.device_name && d.device_name.toLowerCase() === ed.device_name.toLowerCase()) ||
-          (d.ip === ed.ip && d.port === ed.port)
-        );
-        if (foundIdx >= 0) {
-          mergedDevs[foundIdx] = { ...mergedDevs[foundIdx], ...ed };
-        } else {
-          mergedDevs.push(ed);
-        }
-      });
+      let finalDevs = [];
+      if (existingDevs !== null) {
+        finalDevs = existingDevs.filter(d => {
+          const id = d.device_id || d.id;
+          const key = (d.ip && d.port) ? `${d.ip}:${d.port}` : '';
+          return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && (!key || !deletedDeviceIds.has(key));
+        });
+      } else if (window.appData && Array.isArray(appData.attendanceDevices) && appData.attendanceDevices.length > 0) {
+        finalDevs = appData.attendanceDevices.filter(d => {
+          const id = d.device_id || d.id;
+          const key = (d.ip && d.port) ? `${d.ip}:${d.port}` : '';
+          return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && (!key || !deletedDeviceIds.has(key));
+        });
+      } else {
+        finalDevs = defaultDevices.filter(d => {
+          const id = d.device_id || d.id;
+          const key = `${d.ip}:${d.port}`;
+          return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && !deletedDeviceIds.has(key);
+        });
+      }
 
-      this.devices = mergedDevs;
-      if (window.appData) appData.attendanceDevices = mergedDevs;
-      try { localStorage.setItem('hrm_attendance_devices', JSON.stringify(mergedDevs)); } catch(e){}
+      this.devices = finalDevs;
+      if (window.appData) {
+        appData.attendanceDevices = finalDevs;
+        if (appData.tables) appData.tables['20_Attendance_Devices'] = finalDevs;
+      }
+      try { localStorage.setItem('hrm_attendance_devices', JSON.stringify(finalDevs)); } catch(e){}
 
       // 2. Load and Smart-Merge standard shifts (Ca Hành Chính, Ca Ngày 12h, Ca Đêm 12h, Ca Sáng, Ca Chiều)
       const defaultStandardShifts = [
@@ -353,32 +374,39 @@ const appAttendance = {
         }
       ];
 
-      let currentShifts = (window.appData && Array.isArray(appData.shifts)) ? appData.shifts : [];
+      const deletedShiftIds = this.getDeletedShiftIds();
+      let currentShifts = null;
       const savedShifts = localStorage.getItem('hrm_attendance_shifts');
-      if (savedShifts) {
+      if (savedShifts !== null) {
         try {
           const parsed = JSON.parse(savedShifts);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            currentShifts = parsed;
-          }
+          if (Array.isArray(parsed)) currentShifts = parsed;
         } catch(e){}
       }
 
-      const shiftMap = new Map();
-      defaultStandardShifts.forEach(ds => shiftMap.set(ds.shift_id, { ...ds }));
-      currentShifts.forEach(cs => {
-        const sid = cs.shift_id || cs.shift_code;
-        if (sid) {
-          if (shiftMap.has(sid)) {
-            shiftMap.set(sid, { ...shiftMap.get(sid), ...cs });
-          } else {
-            shiftMap.set(sid, cs);
-          }
-        }
-      });
-      const mergedShifts = Array.from(shiftMap.values());
-      if (window.appData) appData.shifts = mergedShifts;
-      try { localStorage.setItem('hrm_attendance_shifts', JSON.stringify(mergedShifts)); } catch(e){}
+      let finalShifts = [];
+      if (currentShifts !== null) {
+        finalShifts = currentShifts.filter(s => {
+          const sid = s.shift_id || s.shift_code;
+          return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
+        });
+      } else if (window.appData && Array.isArray(appData.shifts) && appData.shifts.length > 0) {
+        finalShifts = appData.shifts.filter(s => {
+          const sid = s.shift_id || s.shift_code;
+          return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
+        });
+      } else {
+        finalShifts = defaultStandardShifts.filter(s => {
+          const sid = s.shift_id || s.shift_code;
+          return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
+        });
+      }
+
+      if (window.appData) {
+        appData.shifts = finalShifts;
+        if (appData.tables) appData.tables['15_Attendance_Shifts'] = finalShifts;
+      }
+      try { localStorage.setItem('hrm_attendance_shifts', JSON.stringify(finalShifts)); } catch(e){}
 
       // Load auto-attendance employees from localStorage or defaults
       const savedAuto = localStorage.getItem('hrm_auto_attendance_employees');
@@ -1528,6 +1556,9 @@ const appAttendance = {
 
     if (!appData.shifts) appData.shifts = [];
 
+    // Unmark as deleted if it was previously marked
+    this.unmarkShiftAsDeleted(shiftObj.shift_id, shiftObj);
+
     const existingIdx = appData.shifts.findIndex(s => (s.shift_id || s.shift_code) === (shiftId || shiftCode));
     if (existingIdx >= 0) {
       appData.shifts[existingIdx] = { ...appData.shifts[existingIdx], ...shiftObj };
@@ -1535,10 +1566,19 @@ const appAttendance = {
       appData.shifts.push(shiftObj);
     }
 
-    // Save to localStorage for instant local persistence
+    if (appData.tables) {
+      appData.tables['15_Attendance_Shifts'] = appData.shifts;
+    }
+
+    // Save to localStorage and IndexedDB for instant local persistence
     try {
       localStorage.setItem('hrm_attendance_shifts', JSON.stringify(appData.shifts));
     } catch (e) {}
+    if (window.hrmStorage) {
+      try {
+        window.hrmStorage.set('hrm_attendance_shifts', appData.shifts).catch(() => {});
+      } catch (e) {}
+    }
 
     // Call API in background if backend server is available
     if (window.appData && appData.hasServerBackend) {
@@ -1558,27 +1598,41 @@ const appAttendance = {
 
   async deleteShift(shiftId) {
     const shift = (appData.shifts || []).find(s => (s.shift_id || s.shift_code) === shiftId);
-    const name = shift ? shift.shift_name : shiftId;
+    const name = shift ? (shift.shift_name || shiftId) : shiftId;
 
     if (!confirm(`Bạn có chắc chắn muốn xóa ca làm việc "${name}"?`)) return;
 
-    appData.shifts = (appData.shifts || []).filter(s => (s.shift_id || s.shift_code) !== shiftId);
+    // 1. Mark as deleted in tracking set so templates don't restore it
+    this.markShiftAsDeleted(shiftId, shift);
 
+    // 2. Remove from active memory
+    appData.shifts = (appData.shifts || []).filter(s => (s.shift_id || s.shift_code) !== shiftId);
+    if (appData.tables) {
+      appData.tables['15_Attendance_Shifts'] = appData.shifts;
+    }
+
+    // 3. Persist to storage
     try {
       localStorage.setItem('hrm_attendance_shifts', JSON.stringify(appData.shifts));
     } catch (e) {}
+    if (window.hrmStorage) {
+      try {
+        window.hrmStorage.set('hrm_attendance_shifts', appData.shifts).catch(() => {});
+      } catch (e) {}
+    }
 
+    // 4. Backend delete
     if (window.appData && appData.hasServerBackend) {
       try {
         fetch('/api/attendance/shifts/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ shift_id: shiftId })
+          body: JSON.stringify({ shift_id: shiftId, id: shiftId })
         }).catch(() => {});
       } catch (e) {}
     }
 
-    utils.showToast(`Đã xóa ca làm việc "${name}"!`, 'success');
+    utils.showToast(`Đã xóa ca làm việc "${name}" thành công!`, 'success');
     this.renderShifts();
   },
 
@@ -2010,7 +2064,7 @@ const appAttendance = {
 
   renderDevices() {
     // Synchronize devices with appData or localStorage
-    if (appData && appData.attendanceDevices && appData.attendanceDevices.length > 0) {
+    if (appData && Array.isArray(appData.attendanceDevices)) {
       this.devices = appData.attendanceDevices;
     }
 
@@ -2323,6 +2377,9 @@ const appAttendance = {
       last_sync: new Date().toLocaleString('vi-VN')
     };
 
+    // Unmark as deleted if it was previously marked
+    this.unmarkDeviceAsDeleted(deviceId, deviceObj);
+
     // Update state immediately
     const idx = this.devices.findIndex(d => (d.device_id || d.id) === deviceId);
     if (idx >= 0) {
@@ -2333,12 +2390,20 @@ const appAttendance = {
 
     if (window.appData) {
       appData.attendanceDevices = this.devices;
+      if (appData.tables) {
+        appData.tables['20_Attendance_Devices'] = this.devices;
+      }
     }
 
-    // Persist to localStorage for reliable offline support
+    // Persist to localStorage and IndexedDB for reliable offline support
     try {
       localStorage.setItem('hrm_attendance_devices', JSON.stringify(this.devices));
     } catch (e) {}
+    if (window.hrmStorage) {
+      try {
+        window.hrmStorage.set('hrm_attendance_devices', this.devices).catch(() => {});
+      } catch (e) {}
+    }
 
     // Update sidebar badge
     const sideZkCount = document.getElementById('sidebar-zk-devices-count');
@@ -2361,41 +2426,62 @@ const appAttendance = {
     this.closeDeviceModal();
     utils.showToast(`Đã lưu máy chấm công "${devName}" (${devIp}:${devPort}) thành công!`, 'success');
     this.renderDevices();
+    this.populateRawLogFilters();
   },
 
   async deleteDevice(deviceId) {
-    const dev = this.devices.find(d => (d.device_id || d.id) === deviceId);
-    const devName = dev ? (dev.device_name || dev.name) : deviceId;
+    const dev = this.devices.find(d => (d.device_id || d.id) === deviceId || d.device_id === deviceId || d.id === deviceId);
+    const devName = dev ? (dev.device_name || dev.name || deviceId) : deviceId;
 
-    if (!confirm(`Bạn có chắc chắn muốn xóa máy chấm công "${devName}"?`)) return;
+    if (!confirm(`Bạn có chắc chắn muốn xóa máy chấm công "${devName}" (${deviceId})?`)) return;
 
-    this.devices = this.devices.filter(d => (d.device_id || d.id) !== deviceId);
+    // 1. Mark as deleted in tracking set so templates don't restore it
+    this.markDeviceAsDeleted(deviceId, dev);
+
+    // 2. Remove from active memory
+    this.devices = this.devices.filter(d => {
+      const dId = d.device_id || d.id;
+      return dId !== deviceId && d.device_id !== deviceId && d.id !== deviceId;
+    });
+
     if (window.appData) {
       appData.attendanceDevices = this.devices;
+      if (appData.tables) {
+        appData.tables['20_Attendance_Devices'] = this.devices;
+      }
     }
 
+    // 3. Persist to storage
     try {
       localStorage.setItem('hrm_attendance_devices', JSON.stringify(this.devices));
     } catch (e) {}
+    if (window.hrmStorage) {
+      try {
+        window.hrmStorage.set('hrm_attendance_devices', this.devices).catch(() => {});
+      } catch (e) {}
+    }
 
+    // 4. Update sidebar counter
     const sideZkCount = document.getElementById('sidebar-zk-devices-count');
     if (sideZkCount) {
       sideZkCount.textContent = this.devices.length;
       sideZkCount.style.display = this.devices.length > 0 ? 'inline-block' : 'none';
     }
 
+    // 5. Backend delete
     if (window.appData && appData.hasServerBackend) {
       try {
         fetch('/api/attendance/devices/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ device_id: deviceId })
+          body: JSON.stringify({ device_id: deviceId, id: deviceId })
         }).catch(() => {});
       } catch (e) {}
     }
 
-    utils.showToast(`Đã xóa thiết bị ${deviceId} thành công!`, 'success');
+    utils.showToast(`Đã xóa thành công máy chấm công "${devName}"!`, 'success');
     this.renderDevices();
+    this.populateRawLogFilters();
   },
 
   // ========================================================================

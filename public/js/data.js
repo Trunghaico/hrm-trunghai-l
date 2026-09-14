@@ -359,29 +359,45 @@ const appData = {
             }
           ];
 
-          let existingDevs = this.attendanceDevices || [];
+          let deletedDeviceIds = new Set();
+          try {
+            const rawDel = localStorage.getItem('hrm_deleted_device_ids');
+            if (rawDel) deletedDeviceIds = new Set(JSON.parse(rawDel));
+          } catch(e) {}
+
+          let existingDevs = null;
           const localDevs = localStorage.getItem('hrm_attendance_devices');
-          if (localDevs) {
-            try { existingDevs = JSON.parse(localDevs) || existingDevs; } catch(e) {}
+          if (localDevs !== null) {
+            try { 
+              const parsed = JSON.parse(localDevs);
+              if (Array.isArray(parsed)) existingDevs = parsed;
+            } catch(e) {}
           }
 
-          const mergedDevs = [...defaultDevices];
-          existingDevs.forEach(ed => {
-            const foundIdx = mergedDevs.findIndex(d => 
-              (d.device_id && ed.device_id && d.device_id === ed.device_id) ||
-              (d.serial && ed.serial && d.serial === ed.serial) ||
-              (d.device_name && ed.device_name && d.device_name.toLowerCase() === ed.device_name.toLowerCase()) ||
-              (d.ip === ed.ip && d.port === ed.port)
-            );
-            if (foundIdx >= 0) {
-              mergedDevs[foundIdx] = { ...mergedDevs[foundIdx], ...ed };
-            } else {
-              mergedDevs.push(ed);
-            }
-          });
+          let finalDevs = [];
+          if (existingDevs !== null) {
+            finalDevs = existingDevs.filter(d => {
+              const id = d.device_id || d.id;
+              const key = (d.ip && d.port) ? `${d.ip}:${d.port}` : '';
+              return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && (!key || !deletedDeviceIds.has(key));
+            });
+          } else if (Array.isArray(this.attendanceDevices) && this.attendanceDevices.length > 0) {
+            finalDevs = this.attendanceDevices.filter(d => {
+              const id = d.device_id || d.id;
+              const key = (d.ip && d.port) ? `${d.ip}:${d.port}` : '';
+              return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && (!key || !deletedDeviceIds.has(key));
+            });
+          } else {
+            finalDevs = defaultDevices.filter(d => {
+              const id = d.device_id || d.id;
+              const key = `${d.ip}:${d.port}`;
+              return !deletedDeviceIds.has(String(id)) && (!d.serial || !deletedDeviceIds.has(String(d.serial))) && !deletedDeviceIds.has(key);
+            });
+          }
 
-          this.attendanceDevices = mergedDevs;
-          try { localStorage.setItem('hrm_attendance_devices', JSON.stringify(mergedDevs)); } catch(e){}
+          this.attendanceDevices = finalDevs;
+          if (this.tables) this.tables['20_Attendance_Devices'] = finalDevs;
+          try { localStorage.setItem('hrm_attendance_devices', JSON.stringify(finalDevs)); } catch(e){}
 
           const defaultStandardShifts = [
             { shift_id: 'CA-HC', shift_code: 'HC', shift_name: 'Ca Hành Chính', start_time: '08:00', end_time: '17:30', break_start: '12:00', break_end: '13:30', break_hours: 1.5, standard_hours: 8.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: '#2563EB', shift_type: 'standard' },
@@ -391,28 +407,44 @@ const appData = {
             { shift_id: 'CA-C', shift_code: 'C', shift_name: 'Ca Chiều', start_time: '13:30', end_time: '17:30', break_start: '', break_end: '', break_hours: 0, standard_hours: 4.0, work_units: 0.5, grace_late_minutes: 15, grace_early_minutes: 15, color: '#D97706', shift_type: 'standard' }
           ];
 
-          let curShifts = Array.isArray(this.shifts) && this.shifts.length > 0 ? this.shifts : [];
+          let deletedShiftIds = new Set();
+          try {
+            const rawShDel = localStorage.getItem('hrm_deleted_shift_ids');
+            if (rawShDel) deletedShiftIds = new Set(JSON.parse(rawShDel));
+          } catch(e) {}
+
+          let curShifts = null;
           const localShifts = localStorage.getItem('hrm_attendance_shifts');
-          if (localShifts) {
+          if (localShifts !== null) {
             try {
               const parsedShifts = JSON.parse(localShifts);
-              if (Array.isArray(parsedShifts) && parsedShifts.length > 0) {
+              if (Array.isArray(parsedShifts)) {
                 curShifts = parsedShifts;
               }
             } catch(e) {}
           }
 
-          const sMap = new Map();
-          defaultStandardShifts.forEach(s => sMap.set(s.shift_id, { ...s }));
-          curShifts.forEach(s => {
-            const sid = s.shift_id || s.shift_code;
-            if (sid) {
-              if (sMap.has(sid)) sMap.set(sid, { ...sMap.get(sid), ...s });
-              else sMap.set(sid, s);
-            }
-          });
-          this.shifts = Array.from(sMap.values());
-          try { localStorage.setItem('hrm_attendance_shifts', JSON.stringify(this.shifts)); } catch(e){}
+          let finalShifts = [];
+          if (curShifts !== null) {
+            finalShifts = curShifts.filter(s => {
+              const sid = s.shift_id || s.shift_code;
+              return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
+            });
+          } else if (Array.isArray(this.shifts) && this.shifts.length > 0) {
+            finalShifts = this.shifts.filter(s => {
+              const sid = s.shift_id || s.shift_code;
+              return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
+            });
+          } else {
+            finalShifts = defaultStandardShifts.filter(s => {
+              const sid = s.shift_id || s.shift_code;
+              return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
+            });
+          }
+
+          this.shifts = finalShifts;
+          if (this.tables) this.tables['15_Attendance_Shifts'] = finalShifts;
+          try { localStorage.setItem('hrm_attendance_shifts', JSON.stringify(finalShifts)); } catch(e){}
         } catch (e) {
           console.warn('Cannot read local attendance storage:', e);
         }
