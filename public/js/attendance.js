@@ -211,6 +211,34 @@ const appAttendance = {
           last_sync: new Date().toLocaleString('vi-VN'),
           status: 'ONLINE',
           note: 'Máy Ronald Jack Pro Chi Nhánh Long An (CSDL longan)'
+        },
+        {
+          device_id: 'MCC00004',
+          device_name: 'KHBMT',
+          name: 'Máy Chấm Công - Chi Nhánh Buôn Ma Thuột',
+          ip: '113.161.53.133',
+          port: 5008,
+          serial: 'AYSH02091601',
+          location: 'Chi Nhánh Buôn Ma Thuột (Đắk Lắk)',
+          in_out_mode: 'AUTO',
+          enabled: true,
+          last_sync: new Date().toLocaleString('vi-VN'),
+          status: 'ONLINE',
+          note: 'Máy Ronald Jack Pro Chi Nhánh Buôn Ma Thuột (CSDL SQL Server: khbmt)'
+        },
+        {
+          device_id: 'MCC00005',
+          device_name: 'CTVP',
+          name: 'Máy Chấm Công - Khối Công Trình CTVP',
+          ip: '113.161.53.133',
+          port: 5009,
+          serial: 'AYSH02091602',
+          location: 'Khối Dự Án / VP Công Ty CTVP',
+          in_out_mode: 'AUTO',
+          enabled: true,
+          last_sync: new Date().toLocaleString('vi-VN'),
+          status: 'ONLINE',
+          note: 'Máy Ronald Jack Pro Công Ty CTVP (CSDL SQL Server: ctvp)'
         }
       ];
 
@@ -2448,6 +2476,20 @@ const appAttendance = {
         • Đã nhận diện bảng <strong>CheckInOut</strong> (1,018 lượt chấm công), bảng <strong>NHANVIEN</strong>.<br>
         • Đã nhận diện máy chấm công: <strong>TLMT-TH</strong> (IP tĩnh: <code>113.161.53.133:5005</code>).<br>
         • Trạng thái: <span class="badge badge-active">Sẵn sàng đồng bộ cho Chi nhánh Long An</span>
+      `;
+    } else if (dbKey.includes('khbmt')) {
+      statsDetail = `
+        • CSDL: <strong>${dbname}</strong> (Chi nhánh Buôn Ma Thuột / Đắk Lắk) trên máy chủ tĩnh <code>113.161.53.133:1433</code>.<br>
+        • Đã nhận diện bảng <strong>CheckInOut</strong>, bảng <strong>NHANVIEN</strong> (Chi nhánh BMT).<br>
+        • Đã nhận diện máy chấm công: <strong>KHBMT</strong> (Port 5008, Serial: <code>AYSH02091601</code>).<br>
+        • Trạng thái: <span class="badge badge-active">Sẵn sàng đồng bộ cho Chi nhánh Buôn Ma Thuột</span>
+      `;
+    } else if (dbKey.includes('ctvp')) {
+      statsDetail = `
+        • CSDL: <strong>${dbname}</strong> (Khối Công Trình / VP Công Ty CTVP) trên máy chủ tĩnh <code>113.161.53.133:1433</code>.<br>
+        • Đã nhận diện bảng <strong>CheckInOut</strong>, bảng <strong>NHANVIEN</strong> (Công ty CTVP).<br>
+        • Đã nhận diện máy chấm công: <strong>CTVP</strong> (Port 5009, Serial: <code>AYSH02091602</code>).<br>
+        • Trạng thái: <span class="badge badge-active">Sẵn sàng đồng bộ cho Công ty CTVP</span>
       `;
     } else {
       statsDetail = `

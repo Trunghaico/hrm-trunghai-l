@@ -1,4 +1,4 @@
-﻿<#
+<#
 ================================================================================
  TRUNG HAI HRM - BACKGROUND AUTO-SYNC AGENT (MITACO & RONALD JACK PRO)
 ================================================================================
@@ -90,80 +90,91 @@ function Run-SyncCycle {
     $maxPunchTime = $lastSyncTime
 
     if ($Config.DatabaseType -eq "sql_server") {
-        $connStr = ""
-        if ($Config.UseWindowsAuth) {
-            $connStr = "Server=$($Config.SqlHost);Database=$($Config.SqlDatabase);Integrated Security=True;TrustServerCertificate=True;Connect Timeout=20;"
+        $dbList = @()
+        if ($Config.SqlDatabases -and $Config.SqlDatabases.Count -gt 0) {
+            $dbList = $Config.SqlDatabases
+        } elseif ($Config.SqlDatabase -eq "all" -or [string]::IsNullOrWhiteSpace($Config.SqlDatabase)) {
+            $dbList = @("mitaco", "Tlmt", "longan", "khbmt", "ctvp")
         } else {
-            $connStr = "Server=$($Config.SqlHost);Database=$($Config.SqlDatabase);User Id=$($Config.SqlUser);Password=$($Config.SqlPassword);TrustServerCertificate=True;Connect Timeout=20;"
+            $dbList = @($Config.SqlDatabase)
         }
 
-        try {
-            $conn = New-Object System.Data.SqlClient.SqlConnection($connStr)
-            $conn.Open()
-            Write-Log "Ket noi thanh cong SQL Server: $($Config.SqlHost) - CSDL: $($Config.SqlDatabase)" "SUCCESS"
-
-            # Kiem tra cau truc bang CheckInOut (Mitaco vs Ronald Jack Pro standard)
-            $colCheckCmd = $conn.CreateCommand()
-            $colCheckCmd.CommandText = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'CheckInOut'"
-            $colReader = $colCheckCmd.ExecuteReader()
-            $existingCols = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::OrdinalIgnoreCase)
-            while ($colReader.Read()) {
-                [void]$existingCols.Add($colReader["COLUMN_NAME"].ToString())
-            }
-            $colReader.Close()
-
-            $batchLimit = [int]$Config.BatchLimit
-            if ($batchLimit -le 0) { $batchLimit = 1000 }
-
-            $cmd = $conn.CreateCommand()
-
-            if ($existingCols.Contains("MaChamCong") -and $existingCols.Contains("GioCham")) {
-                Write-Log "Nhan dien cau truc CSDL: Mitaco 5v2 / Mitaco Pro (MaChamCong, GioCham, TenMay)" "INFO"
-                $cmd.CommandText = "SELECT TOP ($batchLimit) c.ID, c.MaChamCong AS AttCode, ISNULL(nv.MaNhanVien, '') AS EmpId, ISNULL(nv.TenNhanVien, '') AS EmpName, CONVERT(varchar(19), c.GioCham, 120) AS CheckTimeString, ISNULL(c.TenMay, 'Mitaco') AS DeviceName, ISNULL(c.MaSoMay, 1) AS MachineNo, ISNULL(c.KieuCham, '255') AS VerifyMode FROM CheckInOut c LEFT JOIN NHANVIEN nv ON c.MaChamCong = nv.MaChamCong WHERE c.GioCham >= @LastSyncTime ORDER BY c.GioCham ASC"
+        foreach ($dbName in $dbList) {
+            $connStr = ""
+            if ($Config.UseWindowsAuth) {
+                $connStr = "Server=$($Config.SqlHost);Database=$dbName;Integrated Security=True;TrustServerCertificate=True;Connect Timeout=15;"
             } else {
-                Write-Log "Nhan dien cau truc CSDL: Ronald Jack Pro Chuan (UserEnrollNumber, TimeStr)" "INFO"
-                $cmd.CommandText = "SELECT TOP ($batchLimit) c.UserEnrollNumber AS AttCode, '' AS EmpId, '' AS EmpName, CONVERT(varchar(19), c.TimeStr, 120) AS CheckTimeString, 'Ronald Jack Pro' AS DeviceName, ISNULL(c.MachineNo, 1) AS MachineNo, ISNULL(c.VerifyMode, 0) AS VerifyMode FROM CheckInOut c WHERE c.TimeStr >= @LastSyncTime ORDER BY c.TimeStr ASC"
+                $connStr = "Server=$($Config.SqlHost);Database=$dbName;User Id=$($Config.SqlUser);Password=$($Config.SqlPassword);TrustServerCertificate=True;Connect Timeout=15;"
             }
 
-            [void]$cmd.Parameters.AddWithValue("@LastSyncTime", [datetime]$lastSyncTime)
-            $adapter = New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
-            $dataset = New-Object System.Data.DataSet
-            [void]$adapter.Fill($dataset)
-            $conn.Close()
+            try {
+                $conn = New-Object System.Data.SqlClient.SqlConnection($connStr)
+                $conn.Open()
+                Write-Log "Ket noi thanh cong SQL Server: $($Config.SqlHost) - CSDL: $dbName" "SUCCESS"
 
-            $table = $dataset.Tables[0]
-            Write-Log "Trich xuat duoc $($table.Rows.Count) ban ghi quet the moi tu CSDL." "INFO"
+                # Kiem tra cau truc bang CheckInOut (Mitaco vs Ronald Jack Pro standard)
+                $colCheckCmd = $conn.CreateCommand()
+                $colCheckCmd.CommandText = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'CheckInOut'"
+                $colReader = $colCheckCmd.ExecuteReader()
+                $existingCols = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::OrdinalIgnoreCase)
+                while ($colReader.Read()) {
+                    [void]$existingCols.Add($colReader["COLUMN_NAME"].ToString())
+                }
+                $colReader.Close()
 
-            foreach ($row in $table.Rows) {
-                $attCode = [string]$row["AttCode"]
-                $empId   = [string]$row["EmpId"]
-                $empName = [string]$row["EmpName"]
-                $timeStr = [string]$row["CheckTimeString"]
-                $machNo  = [int]$row["MachineNo"]
-                $devName = [string]$row["DeviceName"]
-                $vMode   = [string]$row["VerifyMode"]
+                $batchLimit = [int]$Config.BatchLimit
+                if ($batchLimit -le 0) { $batchLimit = 1000 }
 
-                $vTypeName = "Khuon mat"
-                if ($vMode -eq "2") { $vTypeName = "Khuon mat" }
-                elseif ($vMode -eq "3") { $vTypeName = "The tu" }
-                elseif ($vMode -eq "4") { $vTypeName = "Mat ma" }
+                $cmd = $conn.CreateCommand()
 
-                $punchLogs += @{
-                    attendance_code = $attCode
-                    employee_id     = $empId
-                    employee_name   = $empName
-                    timestamp       = $timeStr
-                    device_id       = "MCC-M$machNo"
-                    device_name     = $devName
-                    verify_type     = $vTypeName
+                if ($existingCols.Contains("MaChamCong") -and $existingCols.Contains("GioCham")) {
+                    Write-Log "[$dbName] Nhan dien cau truc CSDL: Mitaco 5v2 / Mitaco Pro" "INFO"
+                    $cmd.CommandText = "SELECT TOP ($batchLimit) c.ID, c.MaChamCong AS AttCode, ISNULL(nv.MaNhanVien, '') AS EmpId, ISNULL(nv.TenNhanVien, '') AS EmpName, CONVERT(varchar(19), c.GioCham, 120) AS CheckTimeString, ISNULL(c.TenMay, '$dbName') AS DeviceName, ISNULL(c.MaSoMay, 1) AS MachineNo, ISNULL(c.KieuCham, '255') AS VerifyMode FROM CheckInOut c LEFT JOIN NHANVIEN nv ON c.MaChamCong = nv.MaChamCong WHERE c.GioCham >= @LastSyncTime ORDER BY c.GioCham ASC"
+                } else {
+                    Write-Log "[$dbName] Nhan dien cau truc CSDL: Ronald Jack Pro Chuan" "INFO"
+                    $cmd.CommandText = "SELECT TOP ($batchLimit) c.UserEnrollNumber AS AttCode, '' AS EmpId, '' AS EmpName, CONVERT(varchar(19), c.TimeStr, 120) AS CheckTimeString, '$dbName' AS DeviceName, ISNULL(c.MachineNo, 1) AS MachineNo, ISNULL(c.VerifyMode, 0) AS VerifyMode FROM CheckInOut c WHERE c.TimeStr >= @LastSyncTime ORDER BY c.TimeStr ASC"
                 }
 
-                if ([string]::Compare($timeStr, $maxPunchTime) -gt 0) {
-                    $maxPunchTime = $timeStr
+                [void]$cmd.Parameters.AddWithValue("@LastSyncTime", [datetime]$lastSyncTime)
+                $adapter = New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
+                $dataset = New-Object System.Data.DataSet
+                [void]$adapter.Fill($dataset)
+                $conn.Close()
+
+                $table = $dataset.Tables[0]
+                Write-Log "[$dbName] Trich xuat duoc $($table.Rows.Count) ban ghi quet the moi tu CSDL." "INFO"
+
+                foreach ($row in $table.Rows) {
+                    $attCode = [string]$row["AttCode"]
+                    $empId   = [string]$row["EmpId"]
+                    $empName = [string]$row["EmpName"]
+                    $timeStr = [string]$row["CheckTimeString"]
+                    $machNo  = [int]$row["MachineNo"]
+                    $devName = [string]$row["DeviceName"]
+                    $vMode   = [string]$row["VerifyMode"]
+
+                    $vTypeName = "Khuon mat"
+                    if ($vMode -eq "2") { $vTypeName = "Khuon mat" }
+                    elseif ($vMode -eq "3") { $vTypeName = "The tu" }
+                    elseif ($vMode -eq "4") { $vTypeName = "Mat ma" }
+
+                    $punchLogs += @{
+                        attendance_code = $attCode
+                        employee_id     = $empId
+                        employee_name   = $empName
+                        timestamp       = $timeStr
+                        device_id       = "MCC-$dbName-M$machNo"
+                        device_name     = "$devName ($dbName)"
+                        verify_type     = $vTypeName
+                    }
+
+                    if ([string]::Compare($timeStr, $maxPunchTime) -gt 0) {
+                        $maxPunchTime = $timeStr
+                    }
                 }
+            } catch {
+                Write-Log "Loi ket noi CSDL [$dbName]: $($_.Exception.Message)" "WARN"
             }
-        } catch {
-            Write-Log "Loi ket noi SQL Server: $($_.Exception.Message)" "ERROR"
         }
     }
 

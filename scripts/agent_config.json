@@ -4,11 +4,12 @@
   "DatabaseType": "sql_server",
   "SoftwareType": "mitaco",
   "SqlHost": "113.161.53.133,1433",
-  "SqlDatabase": "mitaco",
+  "SqlDatabase": "all",
+  "SqlDatabases": ["mitaco", "Tlmt", "longan", "khbmt", "ctvp"],
   "SqlUser": "sa",
   "SqlPassword": "THG@2026!",
   "UseWindowsAuth": false,
-  "BatchLimit": 1000,
+  "BatchLimit": 2000,
   "PollIntervalSeconds": 300,
   "AccessMdbPath": "C:\\Program Files (x86)\\Ronald Jack Pro\\att2000.mdb"
 }

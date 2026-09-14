@@ -328,6 +328,34 @@ const appData = {
               last_sync: new Date().toLocaleString('vi-VN'),
               status: 'ONLINE',
               note: 'Máy Ronald Jack Pro Chi Nhánh Long An (CSDL longan)'
+            },
+            {
+              device_id: 'MCC00004',
+              device_name: 'KHBMT',
+              name: 'Máy Chấm Công - Chi Nhánh Buôn Ma Thuột',
+              ip: '113.161.53.133',
+              port: 5008,
+              serial: 'AYSH02091601',
+              location: 'Chi Nhánh Buôn Ma Thuột (Đắk Lắk)',
+              in_out_mode: 'AUTO',
+              enabled: true,
+              last_sync: new Date().toLocaleString('vi-VN'),
+              status: 'ONLINE',
+              note: 'Máy Ronald Jack Pro Chi Nhánh Buôn Ma Thuột (CSDL SQL Server: khbmt)'
+            },
+            {
+              device_id: 'MCC00005',
+              device_name: 'CTVP',
+              name: 'Máy Chấm Công - Khối Công Trình CTVP',
+              ip: '113.161.53.133',
+              port: 5009,
+              serial: 'AYSH02091602',
+              location: 'Khối Dự Án / VP Công Ty CTVP',
+              in_out_mode: 'AUTO',
+              enabled: true,
+              last_sync: new Date().toLocaleString('vi-VN'),
+              status: 'ONLINE',
+              note: 'Máy Ronald Jack Pro Công Ty CTVP (CSDL SQL Server: ctvp)'
             }
           ];
 
