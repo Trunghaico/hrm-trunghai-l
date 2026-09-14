@@ -139,18 +139,107 @@ const appAttendance = {
       }
     } catch (e) {}
 
-    // Load devices and shifts from localStorage (offline fallback) or appData
+    // Load devices and shifts: Smart-merge to guarantee all 5 enterprise devices exist on both web and phone
     try {
+      const defaultDevices = [
+        {
+          device_id: 'MCC00012',
+          device_name: 'TẦNG TRỆT',
+          name: 'Máy Chấm Công - Tầng Trệt',
+          ip: '113.161.53.133',
+          port: 5007,
+          serial: 'AYSH02091522',
+          location: 'Sảnh / Lối vào Tầng Trệt (Xưởng & VP)',
+          in_out_mode: 'AUTO',
+          enabled: true,
+          last_sync: new Date().toLocaleString('vi-VN'),
+          status: 'ONLINE',
+          note: 'Máy Ronald Jack / Mitaco Tầng Trệt (Serial: AYSH02091522)'
+        },
+        {
+          device_id: 'MCC00003',
+          device_name: 'PHÚ MINH L2',
+          name: 'Máy Chấm Công - Phú Minh L2',
+          ip: '113.161.53.133',
+          port: 5005,
+          serial: 'AYSH02091571',
+          location: 'Tầng 2 - Khối Phú Minh',
+          in_out_mode: 'AUTO',
+          enabled: true,
+          last_sync: new Date().toLocaleString('vi-VN'),
+          status: 'ONLINE',
+          note: 'Máy Ronald Jack / Mitaco Phú Minh L2 (Serial: AYSH02091571)'
+        },
+        {
+          device_id: 'MCC00011',
+          device_name: 'THANH PHÁT L3',
+          name: 'Máy Chấm Công - Thanh Phát L3',
+          ip: '113.161.53.133',
+          port: 5006,
+          serial: 'AYSH02091575',
+          location: 'Tầng 3 - Khối Thanh Phát',
+          in_out_mode: 'AUTO',
+          enabled: true,
+          last_sync: new Date().toLocaleString('vi-VN'),
+          status: 'ONLINE',
+          note: 'Máy Ronald Jack / Mitaco Thanh Phát L3 (Serial: AYSH02091575)'
+        },
+        {
+          device_id: 'MCC00001',
+          device_name: 'TLMT-TP',
+          name: 'Máy Chấm Công - Chi Nhánh TLMT / TP.HCM',
+          ip: '113.161.201.71',
+          port: 5005,
+          serial: 'AYSH02091510',
+          location: 'Chi Nhánh TLMT / TP.HCM',
+          in_out_mode: 'AUTO',
+          enabled: true,
+          last_sync: new Date().toLocaleString('vi-VN'),
+          status: 'ONLINE',
+          note: 'Máy Ronald Jack Pro TLMT TP.HCM (CSDL Tlmt)'
+        },
+        {
+          device_id: 'MCC00002',
+          device_name: 'TLMT-TH',
+          name: 'Máy Chấm Công - Chi Nhánh Long An',
+          ip: '14.224.132.5',
+          port: 5005,
+          serial: 'AYSH02091588',
+          location: 'Chi Nhánh Xưởng Long An',
+          in_out_mode: 'AUTO',
+          enabled: true,
+          last_sync: new Date().toLocaleString('vi-VN'),
+          status: 'ONLINE',
+          note: 'Máy Ronald Jack Pro Chi Nhánh Long An (CSDL longan)'
+        }
+      ];
+
+      let existingDevs = [];
       const savedDevs = localStorage.getItem('hrm_attendance_devices');
       if (savedDevs) {
-        const parsed = JSON.parse(savedDevs);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          this.devices = parsed;
-          if (window.appData) appData.attendanceDevices = parsed;
-        }
-      } else if (window.appData && appData.attendanceDevices && appData.attendanceDevices.length > 0) {
-        this.devices = appData.attendanceDevices;
+        try { existingDevs = JSON.parse(savedDevs) || []; } catch(e){}
+      } else if (window.appData && Array.isArray(appData.attendanceDevices) && appData.attendanceDevices.length > 0) {
+        existingDevs = appData.attendanceDevices;
       }
+
+      const mergedDevs = [...defaultDevices];
+      existingDevs.forEach(ed => {
+        const foundIdx = mergedDevs.findIndex(d => 
+          (d.device_id && ed.device_id && d.device_id === ed.device_id) ||
+          (d.serial && ed.serial && d.serial === ed.serial) ||
+          (d.device_name && ed.device_name && d.device_name.toLowerCase() === ed.device_name.toLowerCase()) ||
+          (d.ip === ed.ip && d.port === ed.port)
+        );
+        if (foundIdx >= 0) {
+          mergedDevs[foundIdx] = { ...mergedDevs[foundIdx], ...ed };
+        } else {
+          mergedDevs.push(ed);
+        }
+      });
+
+      this.devices = mergedDevs;
+      if (window.appData) appData.attendanceDevices = mergedDevs;
+      try { localStorage.setItem('hrm_attendance_devices', JSON.stringify(mergedDevs)); } catch(e){}
 
       const savedShifts = localStorage.getItem('hrm_attendance_shifts');
       if (savedShifts && window.appData) {
