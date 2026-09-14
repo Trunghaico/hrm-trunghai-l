@@ -2244,11 +2244,14 @@ const appAttendance = {
 
   populateRawLogFilters() {
     const devSelect = document.getElementById('zk-log-device-select');
-    if (devSelect && devSelect.options.length <= 1) {
-      devSelect.innerHTML = '<option value="all">-- Tất cả thiết bị --</option>' +
-        this.devices.map(d => `<option value="${d.device_id || d.id}">${d.device_name || d.name} (${d.ip})</option>`).join('') +
-        '<option value="RJ-PRO-SQL">Ronald Jack Pro (CSDL Phần Mềm)</option>' +
-        '<option value="FILE-IMPORT">Nhập từ File Excel / CSV</option>';
+    if (devSelect) {
+      const currentVal = devSelect.value || 'all';
+      devSelect.innerHTML = '<option value="all">-- Tất cả 11 máy chấm công --</option>' +
+        (this.devices || []).map(d => {
+          const sId = d.device_id || d.id || d.device_name;
+          const isSel = sId === currentVal ? 'selected' : '';
+          return `<option value="${sId}" ${isSel}>${d.device_name || d.name} (${d.ip}:${d.port || 5005})</option>`;
+        }).join('');
     }
   },
 
@@ -2265,7 +2268,7 @@ const appAttendance = {
     let logs = (appData.attendanceLogs || []);
 
     if (devFilter !== 'all') {
-      const devObj = (this.devices || []).find(d => (d.device_id === devFilter || d.id === devFilter));
+      const devObj = (this.devices || []).find(d => (d.device_id === devFilter || d.id === devFilter || d.device_name === devFilter));
       const targetDevName = (devObj ? (devObj.device_name || devObj.name) : devFilter).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
       const rawFilter = devFilter.toLowerCase().trim();
       logs = logs.filter(l => {
@@ -2296,7 +2299,7 @@ const appAttendance = {
         <tr>
           <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">
             <i class="fa-solid fa-list-check" style="font-size: 24px; margin-bottom: 8px; display: block; color: #94A3B8;"></i>
-            Không có bản ghi chấm công nào. Bấm "Kéo Dữ Liệu" hoặc nạp file từ phần mềm Ronald Jack Pro.
+            Không có bản ghi chấm công nào. Bấm "Đồng Bộ Máy" để tải dữ liệu từ 11 máy chấm công.
           </td>
         </tr>
       `;
@@ -2344,6 +2347,26 @@ const appAttendance = {
     const nextBtn = document.getElementById('zk-log-btn-next');
     if (nextBtn) nextBtn.disabled = (this.rawLogPage >= totalPages);
 
+    const devDisplayNameMap = {
+      'MCC TANG TRET': 'MCC Tầng Trệt',
+      'TANG TRET': 'MCC Tầng Trệt',
+      'MCC T3': 'MCC Tầng 3 (T3)',
+      'THANH PHAT L3': 'MCC Tầng 3 (T3)',
+      'MCC T2': 'MCC Tầng 2 (T2)',
+      'PHU MINH L2': 'MCC Tầng 2 (T2)',
+      'TL-MT TP': 'TL-MT TP.HCM',
+      'TLMT-TP': 'TL-MT TP.HCM',
+      'TL-MT TH': 'TL-MT Long An',
+      'TLMT-TH': 'TL-MT Long An',
+      'NUI VUNG': 'Núi Vung',
+      'KH-BMT VP': 'KH-BMT Văn Phòng',
+      'MCC KH-BMT': 'KH-BMT Văn Phòng',
+      'KH-BMT HAM': 'KH-BMT Hầm',
+      'KH-BMT KHU D': 'KH-BMT Khu D',
+      'CTVP VP': 'CTVP Văn Phòng',
+      'CTVP DU AN': 'CTVP Dự Án'
+    };
+
     tbody.innerHTML = displayLogs.map((l, idx) => {
       const globalIdx = startIdx + idx + 1;
       const emp = (appData.employees || []).find(e =>
@@ -2362,13 +2385,10 @@ const appAttendance = {
       };
       const verifyTypeVn = verifyTypeMap[l.verify_type] || l.verify_type || 'Khuôn mặt';
 
-      let sourceBadge = '';
-      const devName = l.device_name || 'Ronald Jack';
-      if ((l.log_id && l.log_id.startsWith('SQL-')) || ['TANG TRET', 'THANH PHAT L3', 'PHU MINH L2', 'TLMT-TP', 'TLMT-TH'].includes(devName.toUpperCase())) {
-        sourceBadge = `<span class="badge" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 11px;" title="Nguồn: CSDL Mitaco / Ronald Jack SQL Server"><i class="fa-solid fa-database"></i> ${devName}</span>`;
-      } else {
-        sourceBadge = `<span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 11px;" title="Nguồn: Máy chấm công trực tiếp"><i class="fa-solid fa-fingerprint"></i> Máy ${devName}</span>`;
-      }
+      const rawDev = (l.device_name || 'MCC TANG TRET').toUpperCase().trim();
+      const displayDevName = devDisplayNameMap[rawDev] || (rawDev.startsWith('MCC ') ? rawDev : `MCC ${rawDev}`);
+      const ipPortStr = l.device_ip ? `${l.device_ip}:${l.device_port || 5005}` : '';
+      const sourceBadge = `<span class="badge" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 11.5px; font-weight: 600;" title="Thiết bị: ${displayDevName} (${ipPortStr})"><i class="fa-solid fa-fingerprint" style="margin-right: 4px; color: #2563EB;"></i> ${displayDevName}</span>`;
 
       return `
         <tr>
@@ -2377,7 +2397,7 @@ const appAttendance = {
           <td><strong>${emp ? emp.full_name : (l.employee_name || 'Chưa gán nhân sự')}</strong></td>
           <td style="color: #64748B; font-size: 11.5px;">${emp ? (this.getCanonicalDeptName(emp.department_name || emp.department_id || emp.department) || '---') : '---'}</td>
           <td style="font-family: monospace; color: #047857; font-weight: 600;">${l.timestamp}</td>
-          <td style="font-size: 11.5px;">${sourceBadge} <span style="color: #94A3B8; font-size: 10.5px;">${l.device_ip ? `(${l.device_ip}:${l.device_port || 5005})` : ''}</span></td>
+          <td style="font-size: 11.5px;">${sourceBadge} <span style="color: #94A3B8; font-size: 10.5px;">${ipPortStr ? `(${ipPortStr})` : ''}</span></td>
           <td style="text-align: center;"><span class="badge" style="background: #F1F5F9; color: #334155;">${verifyTypeVn}</span></td>
         </tr>
       `;
