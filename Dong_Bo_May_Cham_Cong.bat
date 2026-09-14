@@ -4,7 +4,7 @@ title DONG BO DU LIEU MAY CHAM CONG RONALD JACK - HRM TRUNG HAI
 echo ====================================================================
 echo  HRM TRUNG HAI - DONG BO DU LIEU QUET THE TRUC TIEP TU CSDL SQL
 echo ====================================================================
-echo  Dang ket noi toi CSDL SQL Server 113.161.53.133:1433 (Mitaco, Tlmt, longan)...
+echo  Dang ket noi toi CSDL SQL Server 113.161.53.133:1433 (Mitaco, Tlmt, longan, khbmt, ctvp)...
 echo.
 
 powershell -ExecutionPolicy Bypass -File "%~dp0scripts\sync_live_sql.ps1"

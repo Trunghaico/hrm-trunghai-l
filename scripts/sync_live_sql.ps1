@@ -6,7 +6,7 @@ $serverHost = "113.161.53.133,1433"
 $serverUser = "sa"
 $serverPass = "THG@2026!"
 
-$databases = if ($TargetDatabase) { @($TargetDatabase) } else { @("Mitaco", "Tlmt", "longan") }
+$databases = if ($TargetDatabase) { @($TargetDatabase) } else { @("Mitaco", "Tlmt", "longan", "khbmt", "ctvp") }
 
 $allRawPunches = @()
 $allDevices = @()
@@ -35,6 +35,15 @@ foreach ($dbName in $databases) {
                 $kDev = "${mName}_${mPort}"
                 if (-not $devMap.ContainsKey($kDev)) {
                     $devMap[$kDev] = $true
+                    $devLocation = "Văn Phòng / Xưởng"
+                    if ($mName -like "*TLMT*" -or $mName -like "*MCC00001*") { $devLocation = "Chi Nhánh TLMT / TP.HCM" }
+                    elseif ($mName -like "*TANG TRET*") { $devLocation = "Tầng Trệt Xưởng" }
+                    elseif ($mName -like "*PHU MINH*") { $devLocation = "Phú Minh Lầu 2" }
+                    elseif ($mName -like "*THANH PHAT*") { $devLocation = "Thanh Phát Lầu 3" }
+                    elseif ($mName -like "*TH*" -or $mName -like "*LONG AN*") { $devLocation = "Chi Nhánh Long An" }
+                    elseif ($mName -like "*KHBMT*" -or $mName -like "*BUON MA THUOT*" -or $dbName -eq "khbmt") { $devLocation = "Chi Nhánh Buôn Ma Thuột / Đắk Lắk" }
+                    elseif ($mName -like "*CTVP*" -or $mName -like "*CONG TRINH*" -or $dbName -eq "ctvp") { $devLocation = "Khối Công Trình / VP Công Ty CTVP" }
+
                     $allDevices += [PSCustomObject]@{
                         device_id = if ($mCode) { $mCode } else { "DEV-" + ($allDevices.Count + 1) }
                         device_name = if ($mName -like "*MCC00001*") { "Máy MCC00001 (TP)" } elseif ($mName) { $mName } else { "Máy Chấm Công" }
@@ -42,7 +51,7 @@ foreach ($dbName in $databases) {
                         ip = $mIp
                         port = if ($mPort -gt 0) { $mPort } else { 5005 }
                         comm_key = 0
-                        location = if ($mName -like "*TLMT*" -or $mName -like "*MCC00001*") { "Chi Nhánh TLMT / TP.HCM" } elseif ($mName -like "*TANG TRET*") { "Tầng Trệt Xưởng" } elseif ($mName -like "*PHU MINH*") { "Phú Minh Lầu 2" } elseif ($mName -like "*THANH PHAT*") { "Thanh Phát Lầu 3" } elseif ($mName -like "*TH*") { "Chi Nhánh Long An" } else { "Văn Phòng / Xưởng" }
+                        location = $devLocation
                         serial_number = $mSerial
                         database_source = $dbName
                         enabled = $true
@@ -123,6 +132,8 @@ foreach ($r in $allRawPunches) {
     elseif ($dName -like "*TANG TRET*") { $dPort = 5007; $dIp = "113.161.53.133"; $dName = "TẦNG TRỆT" }
     elseif ($dName -like "*TLMT-TP*" -or $dName -like "*MCC00001*") { $dPort = 5005; $dIp = "113.161.201.71"; $dName = "TLMT-TP" }
     elseif ($dName -like "*TLMT-TH*") { $dPort = 5005; $dIp = "14.224.132.5"; $dName = "TLMT-TH" }
+    elseif ($dName -like "*KHBMT*" -or $dName -like "*BUON MA THUOT*" -or $r.DbSource -eq "khbmt") { $dPort = 5008; $dIp = "113.161.53.133"; $dName = "KHBMT" }
+    elseif ($dName -like "*CTVP*" -or $dName -like "*CONG TRINH*" -or $r.DbSource -eq "ctvp") { $dPort = 5009; $dIp = "113.161.53.133"; $dName = "CTVP" }
 
     $punches += [PSCustomObject]@{
         log_id = "SQL-$($r.DbSource)-$($r.ID)"
@@ -157,7 +168,7 @@ try {
     $apiPayload = @{
         db_type = "sql_server"
         server_host = $serverHost
-        database_name = if ($TargetDatabase) { $TargetDatabase } else { "Tlmt,Mitaco,longan" }
+        database_name = if ($TargetDatabase) { $TargetDatabase } else { "Mitaco,Tlmt,longan,khbmt,ctvp" }
         punch_logs = $punches
     } | ConvertTo-Json -Depth 5
     $res = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json; charset=utf-8" -Body $apiPayload -TimeoutSec 15 -ErrorAction SilentlyContinue
