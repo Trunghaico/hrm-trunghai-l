@@ -93,12 +93,14 @@ foreach ($d in $devices) {
             if ($dName -eq "MCC TANG TRET" -and ($rDev -like "*TANG TRET*" -or $rDev -like "*TRET*")) { $matched = $true }
             elseif ($dName -eq "MCC T2" -and ($rDev -like "*PHU MINH*" -or $rDev -like "*T2*")) { $matched = $true }
             elseif ($dName -eq "MCC T3" -and ($rDev -like "*THANH PHAT*" -or $rDev -like "*T3*")) { $matched = $true }
-            elseif ($dName -eq "TL-MT TP" -and ($dbName -eq "Tlmt" -or $rDev -like "*TLMT*")) { $matched = $true }
-            elseif ($dName -eq "TL-MT TH" -and ($dbName -eq "longan" -or $rDev -like "*LONG AN*")) { $matched = $true }
-            elseif ($dName -like "KH-BMT*" -and ($dbName -eq "khbmt" -or $rDev -like "*BMT*" -or $rDev -like "*BUON MA THUOT*")) { $matched = $true }
-            elseif ($dName -like "CTVP*" -and ($dbName -eq "ctvp" -or $rDev -like "*CTVP*" -or $rDev -like "*CONG TRINH*")) { $matched = $true }
-            elseif ($dName -eq "NUI VUNG" -and ($rDev -like "*VUNG*" -or $rDev -like "*NUI*")) { $matched = $true }
-            elseif ($dbName -eq "Mitaco" -and -not ($rDev -like "*TANG TRET*" -or $rDev -like "*PHU MINH*" -or $rDev -like "*THANH PHAT*")) { $matched = $true }
+            elseif ($dName -eq "TL-MT TP" -and ($dbName -eq "Tlmt" -or $rDev -like "*TLMT-TP*" -or $rDev -like "*TLMT*")) { $matched = $true }
+            elseif ($dName -eq "TL-MT TH" -and ($dbName -eq "longan" -or $rDev -like "*TLMT-TH*" -or $rDev -like "*LONG AN*")) { $matched = $true }
+            elseif ($dName -eq "NUI VUNG" -and ($rDev -like "*NUI VUNG*" -or $rDev -like "*VUNG*" -or ($dbName -eq "Mitaco" -and $rDev -like "*MCC00001*"))) { $matched = $true }
+            elseif ($dName -eq "KH-BMT VP" -and ($dbName -eq "khbmt" -and ($rDev -like "*MCC KH-BMT*" -or $rDev -like "*KH-BMT VP*" -or $rDev -like "*VP*"))) { $matched = $true }
+            elseif ($dName -eq "KH-BMT HAM" -and ($dbName -eq "khbmt" -and ($rDev -like "*HAM*" -or $rDev -like "*HẦM*"))) { $matched = $true }
+            elseif ($dName -eq "KH-BMT KHU D" -and ($dbName -eq "khbmt" -and ($rDev -like "*KHU D*" -or $rDev -like "*KHUD*"))) { $matched = $true }
+            elseif ($dName -eq "CTVP VP" -and ($dbName -eq "ctvp" -and ($rDev -like "*MCC00001*" -or $rDev -like "*CTVP VP*" -or ($rDev -like "*CTVP*" -and -not ($rDev -like "*MCC00002*" -or $rDev -like "*CT-VP 2*" -or $rDev -like "*DU AN*"))))) { $matched = $true }
+            elseif ($dName -eq "CTVP DU AN" -and ($dbName -eq "ctvp" -and ($rDev -like "*MCC00002*" -or $rDev -like "*CT-VP 2*" -or $rDev -like "*DU AN*" -or $rDev -like "*CT-DH*"))) { $matched = $true }
 
             if ($matched) {
                 $allRawPunches += [PSCustomObject]@{
