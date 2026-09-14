@@ -296,29 +296,57 @@ const appAttendance = {
         } catch(e){}
       }
 
-      let finalShifts = [];
-      if (window.appData && Array.isArray(appData.shifts) && appData.shifts.length > 0) {
-        // 1. CLOUD SERVER DATA HAS HIGHEST PRIORITY
-        finalShifts = appData.shifts;
-      } else if (currentShifts !== null && currentShifts.length > 0) {
-        // 2. Offline local cache fallback
-        finalShifts = currentShifts.filter(s => {
+      const shiftMap = new Map();
+      defaultStandardShifts.forEach(s => {
+        const sid = s.shift_id || s.shift_code;
+        if (!deletedShiftIds.has(String(sid))) shiftMap.set(sid, s);
+      });
+      if (window.appData && Array.isArray(appData.shifts)) {
+        appData.shifts.forEach(s => {
           const sid = s.shift_id || s.shift_code;
-          return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
-        });
-      } else {
-        // 3. Default fallback
-        finalShifts = defaultStandardShifts.filter(s => {
-          const sid = s.shift_id || s.shift_code;
-          return !deletedShiftIds.has(String(sid)) && (!s.shift_code || !deletedShiftIds.has(String(s.shift_code)));
+          if (sid && !deletedShiftIds.has(String(sid))) {
+            shiftMap.set(sid, { ...(shiftMap.get(sid) || {}), ...s });
+          }
         });
       }
+      if (Array.isArray(currentShifts)) {
+        currentShifts.forEach(s => {
+          const sid = s.shift_id || s.shift_code;
+          if (sid && !deletedShiftIds.has(String(sid))) {
+            shiftMap.set(sid, { ...(shiftMap.get(sid) || {}), ...s });
+          }
+        });
+      }
+      const finalShifts = Array.from(shiftMap.values());
 
       if (window.appData) {
         appData.shifts = finalShifts;
         if (appData.tables) appData.tables['15_Attendance_Shifts'] = finalShifts;
       }
       try { localStorage.setItem('hrm_attendance_shifts', JSON.stringify(finalShifts)); } catch(e){}
+
+      // Restore department schedules and employee shifts setup
+      try {
+        const localSched = localStorage.getItem('hrm_attendance_schedules');
+        if (localSched && window.appData) {
+          const parsedSched = JSON.parse(localSched);
+          if (Array.isArray(parsedSched)) {
+            appData.schedules = parsedSched;
+            if (appData.tables) appData.tables['16_Attendance_Schedules'] = parsedSched;
+          }
+        }
+        const localEmpShifts = localStorage.getItem('hrm_employees_shifts');
+        if (localEmpShifts && window.appData) {
+          const empShiftMap = JSON.parse(localEmpShifts);
+          if (empShiftMap && typeof empShiftMap === 'object') {
+            (appData.employees || []).forEach(emp => {
+              if (empShiftMap[emp.employee_id]) {
+                emp.shift_id = empShiftMap[emp.employee_id];
+              }
+            });
+          }
+        }
+      } catch (e) {}
 
       // Load auto-attendance employees from localStorage or defaults
       const savedAuto = localStorage.getItem('hrm_auto_attendance_employees');
