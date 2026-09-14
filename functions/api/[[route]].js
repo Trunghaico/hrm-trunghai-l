@@ -2491,7 +2491,7 @@ export async function onRequest(context) {
         const targetMonth = body.month || new Date().toISOString().substring(0, 7);
         const employees = (data.tables["03_Employees"] || []).filter(e => e.employment_status !== "Đã nghỉ việc");
         
-        // Nhóm logs theo ngày và mã nhân viên
+        // 1. Nhóm logs theo mã nhân viên
         const uniqueDates = new Set();
         logs.forEach(l => {
           if (l.timestamp && l.timestamp.startsWith(targetMonth)) {
@@ -2502,26 +2502,45 @@ export async function onRequest(context) {
           uniqueDates.add(new Date().toISOString().substring(0, 10));
         }
 
-        const logsByDateAndCode = {};
+        const sortedDates = Array.from(uniqueDates).sort();
+        const logsByCode = {};
         logs.forEach(l => {
           if (!l.timestamp) return;
-          const dt = l.timestamp.substring(0, 10);
           const code = String(l.attendance_code || l.employee_id || '').trim();
           if (!code) return;
-          const k = `${code}_${dt}`;
-          if (!logsByDateAndCode[k]) logsByDateAndCode[k] = [];
-          logsByDateAndCode[k].push(l);
+          if (!logsByCode[code]) logsByCode[code] = [];
+          logsByCode[code].push(l);
         });
 
         const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
         const newTimesheets = [];
 
-        uniqueDates.forEach(dt => {
-          const dObj = new Date(dt + 'T00:00:00');
-          const dName = dayNames[dObj.getDay()] || 'Thứ 2';
+        employees.forEach(emp => {
+          const empCode = String(emp.attendance_code || emp.time_attendance_code || '').trim();
+          const deptClean = String(emp.department_name || emp.department_id || '').toLowerCase();
+          const posClean = String(emp.position_name || emp.position || '').toLowerCase();
 
-          employees.forEach(emp => {
-            const empCode = String(emp.attendance_code || emp.time_attendance_code || '').trim();
+          const isProjectDirect = deptClean.includes('trực tiếp') || deptClean.includes('dự án') || deptClean.includes('công trường') ||
+                                  deptClean.includes('tructiep') || deptClean.includes('bdhda') || deptClean.includes('thi công') ||
+                                  deptClean.includes('sản xuất') || deptClean.includes('kho') || deptClean.includes('xưởng') ||
+                                  deptClean.includes('nhà máy') || posClean.includes('công nhân') || posClean.includes('thợ') ||
+                                  posClean.includes('vận hành') || posClean.includes('kỹ thuật') || posClean.includes('chỉ huy') ||
+                                  posClean.includes('lái xe') || posClean.includes('bảo vệ') || emp.shift_id === 'CA-DA-NGAY' || emp.shift_id === 'CA-DA-DEM';
+
+          let allEmpLogs = [];
+          if (empCode && logsByCode[empCode]) allEmpLogs = allEmpLogs.concat(logsByCode[empCode]);
+          if (emp.employee_id && emp.employee_id !== empCode && logsByCode[emp.employee_id]) {
+            logsByCode[emp.employee_id].forEach(l => {
+              if (!allEmpLogs.includes(l)) allEmpLogs.push(l);
+            });
+          }
+          allEmpLogs.sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
+
+          const consumedTimestamps = new Set();
+
+          sortedDates.forEach(dt => {
+            const dObj = new Date(dt + 'T00:00:00');
+            const dName = dayNames[dObj.getDay()] || 'Thứ 2';
 
             if (!empCode) {
               newTimesheets.push({
@@ -2532,8 +2551,8 @@ export async function onRequest(context) {
                 department_name: emp.department_name,
                 date: dt,
                 day_name: dName,
-                shift_id: 'CA-HC',
-                shift_name: 'Ca Hành Chính',
+                shift_id: isProjectDirect ? 'CA-DA-NGAY' : 'CA-HC',
+                shift_name: isProjectDirect ? 'Ca Ngày (06:00 - 18:00)' : 'Ca Hành Chính',
                 check_in: '',
                 check_out: '',
                 late_minutes: 0,
@@ -2550,91 +2569,287 @@ export async function onRequest(context) {
               return;
             }
 
-            const k = `${empCode}_${dt}`;
-            let empLogs = logsByDateAndCode[k] || [];
-
-            empLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-            let checkIn = '';
-            let checkOut = '';
-            if (empLogs.length > 0) {
-              checkIn = empLogs[0].timestamp.substring(11, 16);
-              if (empLogs.length > 1) {
-                const last = empLogs[empLogs.length - 1].timestamp.substring(11, 16);
-                if (last !== checkIn) checkOut = last;
-              }
-            }
-
             const req = requests.find(r => (r.employee_id === emp.employee_id || r.employee_id === emp.id) && r.status === 'APPROVED' && (r.date === dt || (r.start_date <= dt && r.end_date >= dt)));
-
-            let status = 'ABSENT';
-            let workUnits = 0;
-            let totalHours = 0;
-            let lateMins = 0;
-            let earlyMins = 0;
-            let otHours = 0;
-            let note = 'Không chấm công';
+            const dayLogs = allEmpLogs.filter(l => l.timestamp && l.timestamp.startsWith(dt) && !consumedTimestamps.has(l.timestamp));
 
             if (req) {
-              status = 'LEAVE';
-              workUnits = 1.0;
-              totalHours = 8.0;
-              note = `Nghỉ phép (${req.reason || 'Đã duyệt'})`;
-            } else if (checkIn && checkOut) {
-              const [ih, im] = checkIn.split(':').map(Number);
-              const [oh, om] = checkOut.split(':').map(Number);
-              const inM = ih * 60 + im;
-              const outM = oh * 60 + om;
-              if (inM > (8 * 60 + 15)) lateMins = inM - (8 * 60);
-              if (outM < (17 * 60 + 15)) earlyMins = (17 * 60 + 30) - outM;
-              let span = outM - inM;
-              if (inM <= (12 * 60) && outM >= (13 * 60 + 30)) span -= 90;
-              totalHours = Math.round(Math.max(0, span / 60) * 10) / 10;
-              if (totalHours >= 7.0) {
-                workUnits = 1.0;
-                status = lateMins > 0 ? 'LATE' : (earlyMins > 0 ? 'EARLY' : 'VALID');
-                note = lateMins > 0 ? `Đi muộn ${lateMins}p` : 'Hợp lệ';
-              } else if (totalHours >= 3.5) {
-                workUnits = 0.5;
-                status = 'HALF_DAY';
-                note = `Làm nửa ngày (${totalHours}h)`;
-              }
-              if (outM > (17 * 60 + 30 + 30)) {
-                otHours = Math.round(((outM - (17 * 60 + 30)) / 60) * 10) / 10;
-              }
-            } else if (checkIn && !checkOut) {
-              const [ih, im] = checkIn.split(':').map(Number);
-              const inM = ih * 60 + im;
-              if (inM > (8 * 60 + 15)) lateMins = inM - (8 * 60);
-              workUnits = 0.5;
-              totalHours = 4.0;
-              status = lateMins > 0 ? 'LATE' : 'VALID';
-              note = lateMins > 0 ? `Đi muộn ${lateMins}p (chưa chấm ra)` : 'Đang làm việc (chưa chấm ra)';
+              const stdHours = isProjectDirect ? 12.0 : 8.0;
+              newTimesheets.push({
+                timesheet_id: `TS_${emp.employee_id}_${dt}`,
+                employee_id: emp.employee_id,
+                attendance_code: empCode,
+                full_name: emp.full_name,
+                department_name: emp.department_name,
+                date: dt,
+                day_name: dName,
+                shift_id: isProjectDirect ? 'CA-DA-NGAY' : 'CA-HC',
+                shift_name: isProjectDirect ? 'Ca Ngày (06:00 - 18:00)' : 'Ca Hành Chính',
+                check_in: '',
+                check_out: '',
+                late_minutes: 0,
+                early_minutes: 0,
+                work_units: 1.0,
+                total_work_hours: stdHours,
+                ot_hours: 0,
+                total_all_hours: stdHours,
+                status: 'LEAVE',
+                is_locked: false,
+                is_manual_edited: false,
+                note: `Nghỉ phép (${req.reason || 'Đã duyệt'})`
+              });
+              return;
             }
 
-            newTimesheets.push({
-              timesheet_id: `TS_${emp.employee_id}_${dt}`,
-              employee_id: emp.employee_id,
-              attendance_code: empCode,
-              full_name: emp.full_name,
-              department_name: emp.department_name,
-              date: dt,
-              day_name: dName,
-              shift_id: 'CA-HC',
-              shift_name: 'Ca Hành Chính',
-              check_in: checkIn || '',
-              check_out: checkOut || '',
-              late_minutes: lateMins,
-              early_minutes: earlyMins,
-              work_units: workUnits,
-              total_work_hours: totalHours,
-              ot_hours: otHours,
-              total_all_hours: Math.round((totalHours + otHours) * 10) / 10,
-              status: status,
-              is_locked: false,
-              is_manual_edited: false,
-              note: note
-            });
+            if (dayLogs.length === 0) {
+              newTimesheets.push({
+                timesheet_id: `TS_${emp.employee_id}_${dt}`,
+                employee_id: emp.employee_id,
+                attendance_code: empCode,
+                full_name: emp.full_name,
+                department_name: emp.department_name,
+                date: dt,
+                day_name: dName,
+                shift_id: isProjectDirect ? 'CA-DA-NGAY' : 'CA-HC',
+                shift_name: isProjectDirect ? 'Ca Ngày (06:00 - 18:00)' : 'Ca Hành Chính',
+                check_in: '',
+                check_out: '',
+                late_minutes: 0,
+                early_minutes: 0,
+                work_units: 0,
+                total_work_hours: 0,
+                ot_hours: 0,
+                total_all_hours: 0,
+                status: 'ABSENT',
+                is_locked: false,
+                is_manual_edited: false,
+                note: 'Không chấm công'
+              });
+              return;
+            }
+
+            // Cơ chế 1: Tự động nhận diện ca
+            const firstLog = dayLogs[0];
+            const rawIn = firstLog.timestamp.substring(11, 16);
+            const [ih, im] = rawIn.split(':').map(Number);
+            const inM = ih * 60 + im;
+
+            const isNightShiftPunch = inM >= 900 || emp.shift_id === 'CA-DA-DEM' || (inM >= 870 && isProjectDirect);
+
+            if (isNightShiftPunch) {
+              // Ca Đêm (18:00 - 06:00)
+              let checkIn = rawIn;
+              let checkOut = '';
+              let outM = 0;
+
+              const nextD = new Date(dObj.getTime() + 86400000);
+              const nextDtStr = nextD.toISOString().substring(0, 10);
+              const nextDayLogs = allEmpLogs.filter(l => l.timestamp && l.timestamp.startsWith(nextDtStr) && !consumedTimestamps.has(l.timestamp));
+              const morningPunches = nextDayLogs.filter(l => {
+                const [h, m] = l.timestamp.substring(11, 16).split(':').map(Number);
+                const mVal = h * 60 + m;
+                return mVal >= 240 && mVal <= 630;
+              });
+
+              if (morningPunches.length > 0) {
+                const outLog = morningPunches[morningPunches.length - 1];
+                checkOut = outLog.timestamp.substring(11, 16);
+                consumedTimestamps.add(outLog.timestamp);
+                const [oh, om] = checkOut.split(':').map(Number);
+                outM = oh * 60 + om;
+              } else if (dayLogs.length > 1) {
+                const lastLog = dayLogs[dayLogs.length - 1];
+                if (lastLog !== firstLog) {
+                  checkOut = lastLog.timestamp.substring(11, 16);
+                  const [oh, om] = checkOut.split(':').map(Number);
+                  outM = oh * 60 + om;
+                }
+              }
+
+              dayLogs.forEach(l => consumedTimestamps.add(l.timestamp));
+
+              let lateMins = 0;
+              let earlyMins = 0;
+              let totalHours = 0;
+              let workUnits = 0;
+              let otHours = 0;
+              let status = 'VALID';
+              let note = 'Ca Đêm (18:00 - 06:00)';
+
+              if (inM > (1080 + 15)) lateMins = inM - 1080;
+
+              if (checkOut) {
+                let spanM = 0;
+                if (outM < inM) {
+                  if (outM < (360 - 15)) earlyMins = 360 - outM;
+                  if (outM > (360 + 30)) otHours = Math.round(((outM - 360) / 60) * 10) / 10;
+                  spanM = (1440 - inM) + outM;
+                } else {
+                  spanM = outM - inM;
+                  earlyMins = Math.max(0, 1800 - (1440 + outM));
+                }
+
+                if (spanM >= 360) spanM -= 60;
+                totalHours = Math.round(Math.max(0, spanM / 60) * 10) / 10;
+
+                if (totalHours >= 9.5) {
+                  workUnits = 1.0;
+                  if (lateMins > 0 && earlyMins > 0) { status = 'LATE'; note = `Ca Đêm (18h-06h): Muộn ${lateMins}p, về sớm ${earlyMins}p`; }
+                  else if (lateMins > 0) { status = 'LATE'; note = `Ca Đêm (18h-06h): Muộn ${lateMins}p`; }
+                  else if (earlyMins > 0) { status = 'EARLY'; note = `Ca Đêm (18h-06h): Về sớm ${earlyMins}p`; }
+                  else { status = 'VALID'; note = 'Ca Đêm (18:00 - 06:00) đủ công'; }
+                } else if (totalHours >= 4.0) {
+                  workUnits = 0.5;
+                  status = 'HALF_DAY';
+                  note = `Ca Đêm nửa ca (${totalHours}h)`;
+                } else {
+                  workUnits = 0;
+                  status = 'UNDER_HOURS';
+                  note = `Ca Đêm không đủ giờ (${totalHours}h)`;
+                }
+              } else {
+                workUnits = 0.5;
+                totalHours = 6.0;
+                status = lateMins > 0 ? 'LATE' : 'VALID';
+                note = lateMins > 0 ? `Ca Đêm: Muộn ${lateMins}p (chưa chấm ra)` : 'Ca Đêm (chưa chấm ra)';
+              }
+
+              newTimesheets.push({
+                timesheet_id: `TS_${emp.employee_id}_${dt}`,
+                employee_id: emp.employee_id,
+                attendance_code: empCode,
+                full_name: emp.full_name,
+                department_name: emp.department_name,
+                date: dt,
+                day_name: dName,
+                shift_id: 'CA-DA-DEM',
+                shift_name: 'Ca Đêm (18:00 - 06:00)',
+                check_in: checkIn || '',
+                check_out: checkOut || '',
+                late_minutes: lateMins,
+                early_minutes: earlyMins,
+                work_units: workUnits,
+                total_work_hours: totalHours,
+                ot_hours: otHours,
+                total_all_hours: Math.round((totalHours + otHours) * 10) / 10,
+                status: status,
+                is_locked: false,
+                is_manual_edited: false,
+                note: note
+              });
+            } else {
+              // Ca Ngày (06:00 - 18:00) hoặc Ca Hành Chính (08:00 - 17:30)
+              dayLogs.forEach(l => consumedTimestamps.add(l.timestamp));
+
+              let checkIn = rawIn;
+              let checkOut = '';
+              if (dayLogs.length > 1) {
+                const lastLog = dayLogs[dayLogs.length - 1];
+                if (lastLog !== firstLog) {
+                  checkOut = lastLog.timestamp.substring(11, 16);
+                }
+              }
+
+              const isEarlyIn = inM <= 435;
+              let matchedShiftId = 'CA-HC';
+              let matchedShiftName = 'Ca Hành Chính';
+              let shiftStartMins = 480;
+              let shiftEndMins = 1050;
+              let breakMins = 90;
+              let stdHours = 8.0;
+              let stdWorkUnits = 1.0;
+
+              if (isProjectDirect || isEarlyIn || emp.shift_id === 'CA-DA-NGAY') {
+                matchedShiftId = 'CA-DA-NGAY';
+                matchedShiftName = 'Ca Ngày (06:00 - 18:00)';
+                shiftStartMins = 360;
+                shiftEndMins = 1080;
+                breakMins = 60;
+                stdHours = 12.0;
+                stdWorkUnits = 1.0;
+              } else if (emp.shift_id === 'CA-S' || (checkOut && (checkOut.split(':').map(Number)[0] * 60 + checkOut.split(':').map(Number)[1]) <= 750 && inM >= 450)) {
+                matchedShiftId = 'CA-S';
+                matchedShiftName = 'Ca Sáng';
+                shiftStartMins = 480;
+                shiftEndMins = 720;
+                breakMins = 0;
+                stdHours = 4.0;
+                stdWorkUnits = 0.5;
+              } else if (emp.shift_id === 'CA-C' || inM >= 750) {
+                matchedShiftId = 'CA-C';
+                matchedShiftName = 'Ca Chiều';
+                shiftStartMins = 810;
+                shiftEndMins = 1050;
+                breakMins = 0;
+                stdHours = 4.0;
+                stdWorkUnits = 0.5;
+              }
+
+              let lateMins = 0;
+              let earlyMins = 0;
+              let totalHours = 0;
+              let workUnits = 0;
+              let otHours = 0;
+              let status = 'VALID';
+              let note = `${matchedShiftName} đủ công`;
+
+              if (inM > (shiftStartMins + 15)) lateMins = inM - shiftStartMins;
+
+              if (checkOut) {
+                const [oh, om] = checkOut.split(':').map(Number);
+                const outM = oh * 60 + om;
+                if (outM < (shiftEndMins - 15)) earlyMins = shiftEndMins - outM;
+                if (outM > (shiftEndMins + 30)) otHours = Math.round(((outM - shiftEndMins) / 60) * 10) / 10;
+
+                let spanM = outM - inM;
+                if (spanM >= (breakMins + 120)) spanM -= breakMins;
+                totalHours = Math.round(Math.max(0, spanM / 60) * 10) / 10;
+
+                if (totalHours >= (stdHours * 0.85)) {
+                  workUnits = stdWorkUnits;
+                  if (lateMins > 0 && earlyMins > 0) { status = 'LATE'; note = `${matchedShiftName}: Muộn ${lateMins}p, về sớm ${earlyMins}p`; }
+                  else if (lateMins > 0) { status = 'LATE'; note = `${matchedShiftName}: Muộn ${lateMins}p`; }
+                  else if (earlyMins > 0) { status = 'EARLY'; note = `${matchedShiftName}: Về sớm ${earlyMins}p`; }
+                  else { status = 'VALID'; note = `${matchedShiftName} hợp lệ`; }
+                } else if (totalHours >= (stdHours * 0.4)) {
+                  workUnits = Math.round((stdWorkUnits * 0.5) * 100) / 100;
+                  status = 'HALF_DAY';
+                  note = `${matchedShiftName} nửa ngày (${totalHours}h)`;
+                } else {
+                  workUnits = 0;
+                  status = 'UNDER_HOURS';
+                  note = `${matchedShiftName} thiếu giờ (${totalHours}h)`;
+                }
+              } else {
+                workUnits = Math.round((stdWorkUnits * 0.5) * 100) / 100;
+                totalHours = Math.round((stdHours * 0.5) * 10) / 10;
+                status = lateMins > 0 ? 'LATE' : 'VALID';
+                note = lateMins > 0 ? `${matchedShiftName}: Muộn ${lateMins}p (chưa chấm ra)` : `${matchedShiftName} (chưa chấm ra)`;
+              }
+
+              newTimesheets.push({
+                timesheet_id: `TS_${emp.employee_id}_${dt}`,
+                employee_id: emp.employee_id,
+                attendance_code: empCode,
+                full_name: emp.full_name,
+                department_name: emp.department_name,
+                date: dt,
+                day_name: dName,
+                shift_id: matchedShiftId,
+                shift_name: matchedShiftName,
+                check_in: checkIn || '',
+                check_out: checkOut || '',
+                late_minutes: lateMins,
+                early_minutes: earlyMins,
+                work_units: workUnits,
+                total_work_hours: totalHours,
+                ot_hours: otHours,
+                total_all_hours: Math.round((totalHours + otHours) * 10) / 10,
+                status: status,
+                is_locked: false,
+                is_manual_edited: false,
+                note: note
+              });
+            }
           });
         });
 
@@ -2642,7 +2857,7 @@ export async function onRequest(context) {
         const otherTimesheets = timesheets.filter(t => !(t.date || '').startsWith(targetMonth));
         timesheets = [...newTimesheets, ...otherTimesheets];
         await saveTableToD1(db, "19_Attendance_Timesheets", timesheets);
-        return jsonResponse({ success: true, message: `Đã đối soát và tính toán công thực tế cho ${employees.length} nhân sự trên ${uniqueDates.size} ngày!`, count: newTimesheets.length, timesheets: newTimesheets });
+        return jsonResponse({ success: true, message: `Đã tự động nhận diện ca (Cơ chế 1) & đối soát công thực tế cho ${employees.length} nhân sự trên ${uniqueDates.size} ngày!`, count: newTimesheets.length, timesheets: newTimesheets });
       }
 
       // POST /api/attendance/zk/test-connection

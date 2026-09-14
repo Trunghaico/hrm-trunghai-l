@@ -355,15 +355,36 @@ const appData = {
           this.attendanceDevices = mergedDevs;
           try { localStorage.setItem('hrm_attendance_devices', JSON.stringify(mergedDevs)); } catch(e){}
 
+          const defaultStandardShifts = [
+            { shift_id: 'CA-HC', shift_code: 'HC', shift_name: 'Ca Hành Chính', start_time: '08:00', end_time: '17:30', break_start: '12:00', break_end: '13:30', break_hours: 1.5, standard_hours: 8.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: '#2563EB', shift_type: 'standard' },
+            { shift_id: 'CA-DA-NGAY', shift_code: 'DA-NGAY', shift_name: 'Ca Ngày (06:00 - 18:00)', start_time: '06:00', end_time: '18:00', break_start: '11:30', break_end: '12:30', break_hours: 1.0, standard_hours: 12.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: '#059669', shift_type: 'project_day' },
+            { shift_id: 'CA-DA-DEM', shift_code: 'DA-DEM', shift_name: 'Ca Đêm (18:00 - 06:00)', start_time: '18:00', end_time: '06:00', break_start: '23:30', break_end: '00:30', break_hours: 1.0, standard_hours: 12.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: '#7C3AED', shift_type: 'night' },
+            { shift_id: 'CA-S', shift_code: 'S', shift_name: 'Ca Sáng', start_time: '08:00', end_time: '12:00', break_start: '', break_end: '', break_hours: 0, standard_hours: 4.0, work_units: 0.5, grace_late_minutes: 15, grace_early_minutes: 15, color: '#10B981', shift_type: 'standard' },
+            { shift_id: 'CA-C', shift_code: 'C', shift_name: 'Ca Chiều', start_time: '13:30', end_time: '17:30', break_start: '', break_end: '', break_hours: 0, standard_hours: 4.0, work_units: 0.5, grace_late_minutes: 15, grace_early_minutes: 15, color: '#D97706', shift_type: 'standard' }
+          ];
+
+          let curShifts = Array.isArray(this.shifts) && this.shifts.length > 0 ? this.shifts : [];
           const localShifts = localStorage.getItem('hrm_attendance_shifts');
           if (localShifts) {
             try {
               const parsedShifts = JSON.parse(localShifts);
               if (Array.isArray(parsedShifts) && parsedShifts.length > 0) {
-                this.shifts = parsedShifts;
+                curShifts = parsedShifts;
               }
             } catch(e) {}
           }
+
+          const sMap = new Map();
+          defaultStandardShifts.forEach(s => sMap.set(s.shift_id, { ...s }));
+          curShifts.forEach(s => {
+            const sid = s.shift_id || s.shift_code;
+            if (sid) {
+              if (sMap.has(sid)) sMap.set(sid, { ...sMap.get(sid), ...s });
+              else sMap.set(sid, s);
+            }
+          });
+          this.shifts = Array.from(sMap.values());
+          try { localStorage.setItem('hrm_attendance_shifts', JSON.stringify(this.shifts)); } catch(e){}
         } catch (e) {
           console.warn('Cannot read local attendance storage:', e);
         }

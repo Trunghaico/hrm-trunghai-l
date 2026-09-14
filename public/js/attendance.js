@@ -241,13 +241,116 @@ const appAttendance = {
       if (window.appData) appData.attendanceDevices = mergedDevs;
       try { localStorage.setItem('hrm_attendance_devices', JSON.stringify(mergedDevs)); } catch(e){}
 
-      const savedShifts = localStorage.getItem('hrm_attendance_shifts');
-      if (savedShifts && window.appData) {
-        const parsed = JSON.parse(savedShifts);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          appData.shifts = parsed;
+      // 2. Load and Smart-Merge standard shifts (Ca Hành Chính, Ca Ngày 12h, Ca Đêm 12h, Ca Sáng, Ca Chiều)
+      const defaultStandardShifts = [
+        {
+          shift_id: 'CA-HC',
+          shift_code: 'HC',
+          shift_name: 'Ca Hành Chính',
+          start_time: '08:00',
+          end_time: '17:30',
+          break_start: '12:00',
+          break_end: '13:30',
+          break_hours: 1.5,
+          standard_hours: 8.0,
+          work_units: 1.0,
+          grace_late_minutes: 15,
+          grace_early_minutes: 15,
+          color: '#2563EB',
+          shift_type: 'standard'
+        },
+        {
+          shift_id: 'CA-DA-NGAY',
+          shift_code: 'DA-NGAY',
+          shift_name: 'Ca Ngày (06:00 - 18:00)',
+          start_time: '06:00',
+          end_time: '18:00',
+          break_start: '11:30',
+          break_end: '12:30',
+          break_hours: 1.0,
+          standard_hours: 12.0,
+          work_units: 1.0,
+          grace_late_minutes: 15,
+          grace_early_minutes: 15,
+          color: '#059669',
+          shift_type: 'project_day'
+        },
+        {
+          shift_id: 'CA-DA-DEM',
+          shift_code: 'DA-DEM',
+          shift_name: 'Ca Đêm (18:00 - 06:00)',
+          start_time: '18:00',
+          end_time: '06:00',
+          break_start: '23:30',
+          break_end: '00:30',
+          break_hours: 1.0,
+          standard_hours: 12.0,
+          work_units: 1.0,
+          grace_late_minutes: 15,
+          grace_early_minutes: 15,
+          color: '#7C3AED',
+          shift_type: 'night'
+        },
+        {
+          shift_id: 'CA-S',
+          shift_code: 'S',
+          shift_name: 'Ca Sáng',
+          start_time: '08:00',
+          end_time: '12:00',
+          break_start: '',
+          break_end: '',
+          break_hours: 0,
+          standard_hours: 4.0,
+          work_units: 0.5,
+          grace_late_minutes: 15,
+          grace_early_minutes: 15,
+          color: '#10B981',
+          shift_type: 'standard'
+        },
+        {
+          shift_id: 'CA-C',
+          shift_code: 'C',
+          shift_name: 'Ca Chiều',
+          start_time: '13:30',
+          end_time: '17:30',
+          break_start: '',
+          break_end: '',
+          break_hours: 0,
+          standard_hours: 4.0,
+          work_units: 0.5,
+          grace_late_minutes: 15,
+          grace_early_minutes: 15,
+          color: '#D97706',
+          shift_type: 'standard'
         }
+      ];
+
+      let currentShifts = (window.appData && Array.isArray(appData.shifts)) ? appData.shifts : [];
+      const savedShifts = localStorage.getItem('hrm_attendance_shifts');
+      if (savedShifts) {
+        try {
+          const parsed = JSON.parse(savedShifts);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            currentShifts = parsed;
+          }
+        } catch(e){}
       }
+
+      const shiftMap = new Map();
+      defaultStandardShifts.forEach(ds => shiftMap.set(ds.shift_id, { ...ds }));
+      currentShifts.forEach(cs => {
+        const sid = cs.shift_id || cs.shift_code;
+        if (sid) {
+          if (shiftMap.has(sid)) {
+            shiftMap.set(sid, { ...shiftMap.get(sid), ...cs });
+          } else {
+            shiftMap.set(sid, cs);
+          }
+        }
+      });
+      const mergedShifts = Array.from(shiftMap.values());
+      if (window.appData) appData.shifts = mergedShifts;
+      try { localStorage.setItem('hrm_attendance_shifts', JSON.stringify(mergedShifts)); } catch(e){}
 
       // Load auto-attendance employees from localStorage or defaults
       const savedAuto = localStorage.getItem('hrm_auto_attendance_employees');
@@ -824,7 +927,19 @@ const appAttendance = {
           <td style="text-align: right; font-weight: 600;">${item.total_work_hours || 0}h</td>
           <td style="text-align: center;">${otBadge}</td>
           <td style="text-align: right; font-weight: 700; color: var(--primary-navy);">${item.total_all_hours || 0}h</td>
-          <td><span class="badge" style="background: #F1F5F9; color: #334155; font-size: 10.5px;">${item.shift_name || 'Hành chính'}</span></td>
+          <td>
+            ${(() => {
+              const sName = item.shift_name || 'Ca Hành Chính';
+              const sId = item.shift_id || '';
+              if (sId === 'CA-DA-DEM' || sName.toLowerCase().includes('đêm')) {
+                return `<span class="badge" style="background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; font-weight: 600; font-size: 11px;"><i class="fa-solid fa-moon"></i> ${sName}</span>`;
+              } else if (sId === 'CA-DA-NGAY' || sName.toLowerCase().includes('ca ngày')) {
+                return `<span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 600; font-size: 11px;"><i class="fa-solid fa-sun"></i> ${sName}</span>`;
+              } else {
+                return `<span class="badge" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 11px;"><i class="fa-solid fa-briefcase"></i> ${sName}</span>`;
+              }
+            })()}
+          </td>
           <td style="text-align: center;">${statusBadge}</td>
           <td style="text-align: center; white-space: nowrap;">
             <button class="btn btn-icon btn-sm" onclick="appAttendance.openManualEditModal('${item.timesheet_id}')" title="Chỉnh sửa công thủ công" ${isLocked ? 'disabled style="opacity:0.4;"' : ''}>
@@ -2955,13 +3070,13 @@ const appAttendance = {
   },
 
   recalculateClientSide(silent = false) {
-    if (!silent) utils.showToast('Đang tính toán lại bảng công từ dữ liệu chấm công thực tế...', 'info');
+    if (!silent) utils.showToast('Đang nhận diện ca thông minh (Cơ chế 1) và tính toán lại bảng công...', 'info');
     const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
     const logs = appData.attendanceLogs || appData.rawAttendanceLogs || [];
     const requests = (appData.attendanceRequests || []).filter(r => r.status === 'APPROVED');
     const shifts = appData.shifts || [];
 
-    // Lấy danh sách tất cả các ngày có trong log chấm công
+    // 1. Lấy danh sách tất cả các ngày duy nhất có trong dữ liệu log chấm công
     const uniqueDates = new Set();
     logs.forEach(l => {
       if (l.timestamp && l.timestamp.length >= 10) {
@@ -2974,72 +3089,70 @@ const appAttendance = {
       uniqueDates.add(this.selectedDate || new Date().toISOString().split('T')[0]);
     }
 
+    const sortedDates = Array.from(uniqueDates).sort();
     const computedTimesheets = [];
 
-    // Nhóm logs theo ngày và mã chấm công / employee_id
-    const logsByDateAndCode = {};
+    // 2. Gom nhóm logs theo mã chấm công / mã nhân viên
+    const logsByCode = {};
     logs.forEach(l => {
       if (!l.timestamp) return;
-      const dt = l.timestamp.substring(0, 10);
       const code = String(l.attendance_code || l.employee_id || '').trim();
       if (!code) return;
-      const k = `${code}_${dt}`;
-      if (!logsByDateAndCode[k]) logsByDateAndCode[k] = [];
-      logsByDateAndCode[k].push(l);
+      if (!logsByCode[code]) logsByCode[code] = [];
+      logsByCode[code].push(l);
     });
 
     const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
-    uniqueDates.forEach(dt => {
-      const dObj = new Date(dt + 'T00:00:00');
-      const dName = dayNames[dObj.getDay()] || 'Thứ 2';
+    // 3. Xử lý tính toán công và tự động nhận diện ca thông minh (Cơ chế 1)
+    employees.forEach(emp => {
+      const master = (appData.masterProfiles || []).find(m => m.employee_id === emp.employee_id) || {};
+      const empCode = String(emp.attendance_code || emp.time_attendance_code || emp['Mã chấm công'] || master['Mã chấm công'] || master.time_attendance_code || master.attendance_code || '').trim();
+      const deptCanonical = this.getCanonicalDeptName(emp.department_name || emp.department_id || master['Đơn vị công tác'] || master.department_name || '');
+      const deptClean = deptCanonical.toLowerCase();
+      const posClean = (emp.position_name || emp.position || master.position || '').toLowerCase();
 
-      employees.forEach(emp => {
-        const master = (appData.masterProfiles || []).find(m => m.employee_id === emp.employee_id) || {};
-        const empCode = String(emp.attendance_code || emp.time_attendance_code || emp['Mã chấm công'] || master['Mã chấm công'] || master.time_attendance_code || master.attendance_code || '').trim();
+      // Nhận diện khối trực tiếp dự án / công trường / sản xuất / vận hành xoay ca
+      const isProjectDirect = deptClean.includes('trực tiếp') || deptClean.includes('dự án') || deptClean.includes('công trường') ||
+                              deptClean.includes('tructiep') || deptClean.includes('bdhda') || deptClean.includes('thi công') ||
+                              deptClean.includes('sản xuất') || deptClean.includes('kho') || deptClean.includes('xưởng') ||
+                              deptClean.includes('nhà máy') || posClean.includes('công nhân') || posClean.includes('thợ') ||
+                              posClean.includes('vận hành') || posClean.includes('kỹ thuật') || posClean.includes('chỉ huy') ||
+                              posClean.includes('lái xe') || posClean.includes('bảo vệ') || posClean.includes('đội trưởng') ||
+                              posClean.includes('giám sát') || emp.shift_id === 'CA-DA-NGAY' || emp.shift_id === 'CA-DA-DEM';
 
-        // 1. Kiểm tra nếu nhân viên thuộc danh sách ĐẶC CÁCH TỰ ĐỘNG ĐỦ CÔNG
+      // Toàn bộ logs của nhân sự sắp xếp theo thời gian
+      let allEmpLogs = [];
+      if (empCode && logsByCode[empCode]) allEmpLogs = allEmpLogs.concat(logsByCode[empCode]);
+      if (emp.employee_id && emp.employee_id !== empCode && logsByCode[emp.employee_id]) {
+        logsByCode[emp.employee_id].forEach(l => {
+          if (!allEmpLogs.includes(l)) allEmpLogs.push(l);
+        });
+      }
+      allEmpLogs.sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
+
+      // Tập hợp các timestamp lượt quẹt đã được ghép vào ca đêm hôm trước (để tránh đếm trùng ca sáng hôm sau)
+      const consumedTimestamps = new Set();
+
+      sortedDates.forEach(dt => {
+        const dObj = new Date(dt + 'T00:00:00');
+        const dName = dayNames[dObj.getDay()] || 'Thứ 2';
+
+        // 3.1. Đặc cách tự động đủ công
         const autoConfig = this.isAutoAttendanceEmployee(emp.employee_id);
         if (autoConfig) {
-          const deptCanonical = this.getCanonicalDeptName(emp.department_name || emp.department_id).toLowerCase().trim();
-          const deptSchedule = (appData.schedules || []).find(sc => {
-            const d = (sc.department_name || sc.department_id || '').toLowerCase().trim();
-            return d === deptCanonical || d === 'all';
-          });
-          const assignedShiftId = emp.shift_id || (deptSchedule ? deptSchedule.shift_id : 'CA-HC');
-          const shift = (appData.shifts || []).find(s => (s.shift_id || s.shift_code) === assignedShiftId) || {
-            shift_id: 'CA-HC',
-            shift_name: 'Ca Hành Chính',
-            start_time: '08:00',
-            end_time: '17:30',
-            work_units: 1.0,
-            standard_hours: 8.0
-          };
+          const stdWorkUnits = parseFloat(autoConfig.work_units) || 1.0;
+          const stdHours = parseFloat(autoConfig.standard_hours) || (isProjectDirect ? 12.0 : 8.0);
+          const shiftId = isProjectDirect ? 'CA-DA-NGAY' : 'CA-HC';
+          const shiftName = isProjectDirect ? 'Ca Ngày (06:00 - 18:00)' : 'Ca Hành Chính';
 
-          const stdWorkUnits = parseFloat(autoConfig.work_units) || parseFloat(shift.work_units) || 1.0;
-          const stdHours = parseFloat(autoConfig.standard_hours) || parseFloat(shift.standard_hours) || 8.0;
-
-          let empLogs = [];
-          if (empCode) {
-            const k1 = `${empCode}_${dt}`;
-            empLogs = empLogs.concat(logsByDateAndCode[k1] || []);
-          }
-          if (emp.employee_id) {
-            const k2 = `${emp.employee_id}_${dt}`;
-            if (logsByDateAndCode[k2]) {
-              logsByDateAndCode[k2].forEach(l => {
-                if (!empLogs.includes(l)) empLogs.push(l);
-              });
-            }
-          }
-          empLogs.sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
-
-          let checkIn = shift.start_time || '08:00';
-          let checkOut = shift.end_time || '17:30';
-          if (empLogs.length > 0) {
-            checkIn = empLogs[0].timestamp.substring(11, 16);
-            if (empLogs.length > 1) {
-              const last = empLogs[empLogs.length - 1].timestamp.substring(11, 16);
+          const dayLogs = allEmpLogs.filter(l => l.timestamp && l.timestamp.startsWith(dt));
+          let checkIn = isProjectDirect ? '06:00' : '08:00';
+          let checkOut = isProjectDirect ? '18:00' : '17:30';
+          if (dayLogs.length > 0) {
+            checkIn = dayLogs[0].timestamp.substring(11, 16);
+            if (dayLogs.length > 1) {
+              const last = dayLogs[dayLogs.length - 1].timestamp.substring(11, 16);
               if (last !== checkIn) checkOut = last;
             }
           }
@@ -3049,11 +3162,11 @@ const appAttendance = {
             employee_id: emp.employee_id,
             attendance_code: empCode || 'AUTO',
             full_name: emp.full_name,
-            department_name: this.getCanonicalDeptName(emp.department_name || emp.department_id),
+            department_name: deptCanonical,
             date: dt,
             day_name: dName,
-            shift_id: shift.shift_id || assignedShiftId,
-            shift_name: shift.shift_name || 'Ca Hành Chính',
+            shift_id: shiftId,
+            shift_name: shiftName,
             check_in: checkIn,
             check_out: checkOut,
             late_minutes: 0,
@@ -3070,18 +3183,18 @@ const appAttendance = {
           return;
         }
 
-        // Nếu nhân viên không có mã chấm công -> Không áp dụng chấm công máy
+        // 3.2. Không có mã chấm công
         if (!empCode) {
           computedTimesheets.push({
             timesheet_id: `TS_${emp.employee_id}_${dt}`,
             employee_id: emp.employee_id,
             attendance_code: '',
             full_name: emp.full_name,
-            department_name: this.getCanonicalDeptName(emp.department_name || emp.department_id),
+            department_name: deptCanonical,
             date: dt,
             day_name: dName,
-            shift_id: 'CA-HC',
-            shift_name: 'Ca Hành Chính',
+            shift_id: isProjectDirect ? 'CA-DA-NGAY' : 'CA-HC',
+            shift_name: isProjectDirect ? 'Ca Ngày (06:00 - 18:00)' : 'Ca Hành Chính',
             check_in: '',
             check_out: '',
             late_minutes: 0,
@@ -3098,160 +3211,307 @@ const appAttendance = {
           return;
         }
 
-        let empLogs = [];
-        if (empCode) {
-          const k1 = `${empCode}_${dt}`;
-          empLogs = empLogs.concat(logsByDateAndCode[k1] || []);
-        }
-        if (emp.employee_id) {
-          const k2 = `${emp.employee_id}_${dt}`;
-          if (logsByDateAndCode[k2]) {
-            logsByDateAndCode[k2].forEach(l => {
-              if (!empLogs.includes(l)) empLogs.push(l);
-            });
-          }
-        }
-
-        // Sắp xếp tăng dần theo timestamp (chuẩn xác 100% không bị lỗi NaN)
-        empLogs.sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')));
-
-        let checkIn = '';
-        let checkOut = '';
-
-        if (empLogs.length > 0) {
-          checkIn = empLogs[0].timestamp.substring(11, 16);
-          if (empLogs.length > 1) {
-            const last = empLogs[empLogs.length - 1].timestamp.substring(11, 16);
-            if (last !== checkIn) checkOut = last;
-          }
-        }
-
-        // Kiểm tra đơn từ
+        // 3.3. Kiểm tra đơn từ nghỉ phép
         const req = requests.find(r => (r.employee_id === emp.employee_id || r.employee_id === emp.id) && (r.date === dt || (r.start_date <= dt && r.end_date >= dt)));
 
-        // Lấy ca làm việc đã phân cho nhân viên hoặc phòng ban
-        const deptCanonical = this.getCanonicalDeptName(emp.department_name || emp.department_id).toLowerCase().trim();
-        const deptSchedule = (appData.schedules || []).find(sc => {
-          const d = (sc.department_name || sc.department_id || '').toLowerCase().trim();
-          return d === deptCanonical || d === 'all';
-        });
-        const assignedShiftId = emp.shift_id || (deptSchedule ? deptSchedule.shift_id : 'CA-HC');
-        const shift = (appData.shifts || []).find(s => (s.shift_id || s.shift_code) === assignedShiftId) || {
-          shift_id: 'CA-HC',
-          shift_name: 'Ca Hành Chính',
-          start_time: '08:00',
-          end_time: '17:30',
-          break_start: '12:00',
-          break_end: '13:30',
-          break_hours: 1.5,
-          grace_late_minutes: 15,
-          grace_early_minutes: 15,
-          work_units: 1.0,
-          standard_hours: 8.0
-        };
-
-        let status = 'ABSENT';
-        let workUnits = 0;
-        let totalHours = 0;
-        let lateMins = 0;
-        let earlyMins = 0;
-        let otHours = 0;
-        let note = 'Không chấm công';
-
-        const shiftStartParts = (shift.start_time || '08:00').split(':').map(Number);
-        const shiftEndParts = (shift.end_time || '17:30').split(':').map(Number);
-        const shiftStartMins = shiftStartParts[0] * 60 + shiftStartParts[1];
-        const shiftEndMins = shiftEndParts[0] * 60 + shiftEndParts[1];
-        const graceLate = parseInt(shift.grace_late_minutes, 10) || 15;
-        const graceEarly = parseInt(shift.grace_early_minutes, 10) || 15;
-        const stdWorkUnits = parseFloat(shift.work_units) || 1.0;
-        const stdHours = parseFloat(shift.standard_hours) || 8.0;
+        // 3.4. Lấy các lượt quẹt trong ngày dt chưa bị tiêu thụ bởi ca đêm hôm trước
+        const dayLogs = allEmpLogs.filter(l => l.timestamp && l.timestamp.startsWith(dt) && !consumedTimestamps.has(l.timestamp));
 
         if (req) {
-          status = 'LEAVE';
-          workUnits = stdWorkUnits;
-          totalHours = stdHours;
-          note = `Nghỉ phép (${req.reason || 'Đã duyệt'})`;
-        } else if (checkIn && checkOut) {
-          const [ih, im] = checkIn.split(':').map(Number);
-          const [oh, om] = checkOut.split(':').map(Number);
-          const inM = ih * 60 + im;
-          const outM = oh * 60 + om;
-
-          if (inM > (shiftStartMins + graceLate)) lateMins = inM - shiftStartMins;
-          if (outM < (shiftEndMins - graceEarly)) earlyMins = shiftEndMins - outM;
-
-          let span = outM - inM;
-          if (shift.break_start && shift.break_end) {
-            const [bsh, bsm] = shift.break_start.split(':').map(Number);
-            const [beh, bem] = shift.break_end.split(':').map(Number);
-            const bsM = bsh * 60 + bsm;
-            const beM = beh * 60 + bem;
-            if (inM <= bsM && outM >= beM) span -= (beM - bsM);
-          } else if (shift.break_hours > 0) {
-            span -= (shift.break_hours * 60);
-          }
-
-          totalHours = Math.round(Math.max(0, span / 60) * 10) / 10;
-
-          if (totalHours >= (stdHours * 0.85)) {
-            workUnits = stdWorkUnits;
-            if (lateMins > 0 && earlyMins > 0) { status = 'LATE'; note = `Đi muộn ${lateMins}p, về sớm ${earlyMins}p`; }
-            else if (lateMins > 0) { status = 'LATE'; note = `Đi muộn ${lateMins}p`; }
-            else if (earlyMins > 0) { status = 'EARLY'; note = `Về sớm ${earlyMins}p`; }
-            else { status = 'VALID'; note = 'Hợp lệ'; }
-          } else if (totalHours >= (stdHours * 0.4)) {
-            workUnits = Math.round((stdWorkUnits * 0.5) * 100) / 100;
-            status = 'HALF_DAY';
-            note = `Làm nửa ngày (${totalHours}h)`;
-          } else {
-            workUnits = 0;
-            status = 'UNDER_HOURS';
-            note = `Không đủ giờ làm (${totalHours}h)`;
-          }
-
-          if (outM > (shiftEndMins + 30)) {
-            otHours = Math.round(((outM - shiftEndMins) / 60) * 10) / 10;
-          }
-        } else if (checkIn && !checkOut) {
-          const [ih, im] = checkIn.split(':').map(Number);
-          const inM = ih * 60 + im;
-          if (inM > (shiftStartMins + graceLate)) lateMins = inM - shiftStartMins;
-          workUnits = Math.round((stdWorkUnits * 0.5) * 100) / 100;
-          totalHours = Math.round((stdHours * 0.5) * 10) / 10;
-          status = lateMins > 0 ? 'LATE' : 'VALID';
-          note = lateMins > 0 ? `Đi muộn ${lateMins}p (chưa chấm ra)` : 'Đang làm việc (chưa chấm ra)';
+          const stdHours = isProjectDirect ? 12.0 : 8.0;
+          computedTimesheets.push({
+            timesheet_id: `TS_${emp.employee_id}_${dt}`,
+            employee_id: emp.employee_id,
+            attendance_code: empCode,
+            full_name: emp.full_name,
+            department_name: deptCanonical,
+            date: dt,
+            day_name: dName,
+            shift_id: isProjectDirect ? 'CA-DA-NGAY' : 'CA-HC',
+            shift_name: isProjectDirect ? 'Ca Ngày (06:00 - 18:00)' : 'Ca Hành Chính',
+            check_in: '',
+            check_out: '',
+            late_minutes: 0,
+            early_minutes: 0,
+            work_units: 1.0,
+            total_work_hours: stdHours,
+            ot_hours: 0,
+            total_all_hours: stdHours,
+            status: 'LEAVE',
+            is_locked: false,
+            is_manual_edited: false,
+            note: `Nghỉ phép (${req.reason || 'Đã duyệt'})`
+          });
+          return;
         }
 
-        computedTimesheets.push({
-          timesheet_id: `TS_${emp.employee_id}_${dt}`,
-          employee_id: emp.employee_id,
-          attendance_code: empCode,
-          full_name: emp.full_name,
-          department_name: this.getCanonicalDeptName(emp.department_name || emp.department_id),
-          date: dt,
-          day_name: dName,
-          shift_id: shift.shift_id || assignedShiftId,
-          shift_name: shift.shift_name || 'Ca Hành Chính',
-          check_in: checkIn || '',
-          check_out: checkOut || '',
-          late_minutes: lateMins,
-          early_minutes: earlyMins,
-          work_units: workUnits,
-          total_work_hours: totalHours,
-          ot_hours: otHours,
-          total_all_hours: Math.round((totalHours + otHours) * 10) / 10,
-          status: status,
-          is_locked: false,
-          is_manual_edited: false,
-          note: note
-        });
+        if (dayLogs.length === 0) {
+          computedTimesheets.push({
+            timesheet_id: `TS_${emp.employee_id}_${dt}`,
+            employee_id: emp.employee_id,
+            attendance_code: empCode,
+            full_name: emp.full_name,
+            department_name: deptCanonical,
+            date: dt,
+            day_name: dName,
+            shift_id: isProjectDirect ? 'CA-DA-NGAY' : 'CA-HC',
+            shift_name: isProjectDirect ? 'Ca Ngày (06:00 - 18:00)' : 'Ca Hành Chính',
+            check_in: '',
+            check_out: '',
+            late_minutes: 0,
+            early_minutes: 0,
+            work_units: 0,
+            total_work_hours: 0,
+            ot_hours: 0,
+            total_all_hours: 0,
+            status: 'ABSENT',
+            is_locked: false,
+            is_manual_edited: false,
+            note: 'Không chấm công'
+          });
+          return;
+        }
+
+        // ====================================================================
+        // CƠ CHẾ 1: TỰ ĐỘNG NHẬN DIỆN CA THEO GIỜ QUẸT THẺ (SMART SHIFT DETECTION)
+        // ====================================================================
+        const firstLog = dayLogs[0];
+        const rawIn = firstLog.timestamp.substring(11, 16);
+        const [ih, im] = rawIn.split(':').map(Number);
+        const inM = ih * 60 + im;
+
+        // KIỂM TRA CA ĐÊM (18:00 - 06:00, Qua ngày): Quẹt vào từ 15:00 trở đi
+        const isNightShiftPunch = inM >= 900 || emp.shift_id === 'CA-DA-DEM' || (inM >= 870 && isProjectDirect);
+
+        if (isNightShiftPunch) {
+          // --- CA ĐÊM (18:00 - 06:00) ---
+          let checkIn = rawIn;
+          let checkOut = '';
+          let outM = 0;
+
+          // Tìm lượt quẹt ra vào sáng ngày hôm sau (dt + 1) trong khoảng 04:00 - 10:30
+          const nextD = new Date(dObj.getTime() + 86400000);
+          const nextDtStr = nextD.toISOString().substring(0, 10);
+          const nextDayLogs = allEmpLogs.filter(l => l.timestamp && l.timestamp.startsWith(nextDtStr) && !consumedTimestamps.has(l.timestamp));
+          const morningPunches = nextDayLogs.filter(l => {
+            const [h, m] = l.timestamp.substring(11, 16).split(':').map(Number);
+            const mVal = h * 60 + m;
+            return mVal >= 240 && mVal <= 630; // 04:00 - 10:30
+          });
+
+          if (morningPunches.length > 0) {
+            // Lấy lượt quẹt sáng ngày hôm sau ghép làm check-out của ca đêm
+            const outLog = morningPunches[morningPunches.length - 1];
+            checkOut = outLog.timestamp.substring(11, 16);
+            consumedTimestamps.add(outLog.timestamp); // Đánh dấu đã tiêu thụ để hôm sau không đếm thành check-in ca mới
+            const [oh, om] = checkOut.split(':').map(Number);
+            outM = oh * 60 + om;
+          } else if (dayLogs.length > 1) {
+            // Quẹt ra cùng ngày trước nửa đêm
+            const lastLog = dayLogs[dayLogs.length - 1];
+            if (lastLog !== firstLog) {
+              checkOut = lastLog.timestamp.substring(11, 16);
+              const [oh, om] = checkOut.split(':').map(Number);
+              outM = oh * 60 + om;
+            }
+          }
+
+          // Tiêu thụ các lượt quẹt chiều/tối hôm nay
+          dayLogs.forEach(l => consumedTimestamps.add(l.timestamp));
+
+          let lateMins = 0;
+          let earlyMins = 0;
+          let totalHours = 0;
+          let workUnits = 0;
+          let otHours = 0;
+          let status = 'VALID';
+          let note = 'Ca Đêm (18:00 - 06:00)';
+
+          // Tính trễ theo mốc 18:00 (1080p, ân hạn 15p -> 18:15)
+          if (inM > (1080 + 15)) lateMins = inM - 1080;
+
+          if (checkOut) {
+            let spanM = 0;
+            if (outM < inM) {
+              // Quẹt ra sáng hôm sau
+              if (outM < (360 - 15)) earlyMins = 360 - outM; // Về sớm trước 05:45
+              if (outM > (360 + 30)) otHours = Math.round(((outM - 360) / 60) * 10) / 10; // Tăng ca sau 06:30
+              spanM = (1440 - inM) + outM;
+            } else {
+              // Quẹt ra trong đêm cùng ngày
+              spanM = outM - inM;
+              earlyMins = Math.max(0, 1800 - (1440 + outM));
+            }
+
+            if (spanM >= 360) spanM -= 60; // Trừ 1h nghỉ giữa ca
+            totalHours = Math.round(Math.max(0, spanM / 60) * 10) / 10;
+
+            if (totalHours >= 9.5) {
+              workUnits = 1.0;
+              if (lateMins > 0 && earlyMins > 0) { status = 'LATE'; note = `Ca Đêm (18h-06h): Muộn ${lateMins}p, về sớm ${earlyMins}p`; }
+              else if (lateMins > 0) { status = 'LATE'; note = `Ca Đêm (18h-06h): Muộn ${lateMins}p`; }
+              else if (earlyMins > 0) { status = 'EARLY'; note = `Ca Đêm (18h-06h): Về sớm ${earlyMins}p`; }
+              else { status = 'VALID'; note = 'Ca Đêm (18:00 - 06:00) đủ công'; }
+            } else if (totalHours >= 4.0) {
+              workUnits = 0.5;
+              status = 'HALF_DAY';
+              note = `Ca Đêm nửa ca (${totalHours}h)`;
+            } else {
+              workUnits = 0;
+              status = 'UNDER_HOURS';
+              note = `Ca Đêm không đủ giờ (${totalHours}h)`;
+            }
+          } else {
+            workUnits = 0.5;
+            totalHours = 6.0;
+            status = lateMins > 0 ? 'LATE' : 'VALID';
+            note = lateMins > 0 ? `Ca Đêm: Muộn ${lateMins}p (chưa chấm ra)` : 'Ca Đêm (chưa chấm ra)';
+          }
+
+          computedTimesheets.push({
+            timesheet_id: `TS_${emp.employee_id}_${dt}`,
+            employee_id: emp.employee_id,
+            attendance_code: empCode,
+            full_name: emp.full_name,
+            department_name: deptCanonical,
+            date: dt,
+            day_name: dName,
+            shift_id: 'CA-DA-DEM',
+            shift_name: 'Ca Đêm (18:00 - 06:00)',
+            check_in: checkIn || '',
+            check_out: checkOut || '',
+            late_minutes: lateMins,
+            early_minutes: earlyMins,
+            work_units: workUnits,
+            total_work_hours: totalHours,
+            ot_hours: otHours,
+            total_all_hours: Math.round((totalHours + otHours) * 10) / 10,
+            status: status,
+            is_locked: false,
+            is_manual_edited: false,
+            note: note
+          });
+        } else {
+          // --- CA NGÀY (06:00 - 18:00) HOẶC CA HÀNH CHÍNH (08:00 - 17:30) ---
+          dayLogs.forEach(l => consumedTimestamps.add(l.timestamp));
+
+          let checkIn = rawIn;
+          let checkOut = '';
+          if (dayLogs.length > 1) {
+            const lastLog = dayLogs[dayLogs.length - 1];
+            if (lastLog !== firstLog) {
+              checkOut = lastLog.timestamp.substring(11, 16);
+            }
+          }
+
+          const isEarlyIn = inM <= 435; // Quẹt vào <= 07:15 sáng
+          let matchedShiftId = 'CA-HC';
+          let matchedShiftName = 'Ca Hành Chính';
+          let shiftStartMins = 480; // 08:00
+          let shiftEndMins = 1050; // 17:30
+          let breakMins = 90; // 1.5h
+          let stdHours = 8.0;
+          let stdWorkUnits = 1.0;
+
+          // Nếu thuộc khối trực tiếp hoặc vào sớm <= 07:15 hoặc được phân ca ngày -> Nhận diện Ca Ngày Dự Án (06:00 - 18:00)
+          if (isProjectDirect || isEarlyIn || emp.shift_id === 'CA-DA-NGAY') {
+            matchedShiftId = 'CA-DA-NGAY';
+            matchedShiftName = 'Ca Ngày (06:00 - 18:00)';
+            shiftStartMins = 360; // 06:00
+            shiftEndMins = 1080; // 18:00
+            breakMins = 60; // 1h
+            stdHours = 12.0;
+            stdWorkUnits = 1.0;
+          } else if (emp.shift_id === 'CA-S' || (checkOut && (checkOut.split(':').map(Number)[0] * 60 + checkOut.split(':').map(Number)[1]) <= 750 && inM >= 450)) {
+            matchedShiftId = 'CA-S';
+            matchedShiftName = 'Ca Sáng';
+            shiftStartMins = 480;
+            shiftEndMins = 720;
+            breakMins = 0;
+            stdHours = 4.0;
+            stdWorkUnits = 0.5;
+          } else if (emp.shift_id === 'CA-C' || inM >= 750) {
+            matchedShiftId = 'CA-C';
+            matchedShiftName = 'Ca Chiều';
+            shiftStartMins = 810;
+            shiftEndMins = 1050;
+            breakMins = 0;
+            stdHours = 4.0;
+            stdWorkUnits = 0.5;
+          }
+
+          let lateMins = 0;
+          let earlyMins = 0;
+          let totalHours = 0;
+          let workUnits = 0;
+          let otHours = 0;
+          let status = 'VALID';
+          let note = `${matchedShiftName} đủ công`;
+
+          if (inM > (shiftStartMins + 15)) lateMins = inM - shiftStartMins;
+
+          if (checkOut) {
+            const [oh, om] = checkOut.split(':').map(Number);
+            const outM = oh * 60 + om;
+            if (outM < (shiftEndMins - 15)) earlyMins = shiftEndMins - outM;
+            if (outM > (shiftEndMins + 30)) otHours = Math.round(((outM - shiftEndMins) / 60) * 10) / 10;
+
+            let spanM = outM - inM;
+            if (spanM >= (breakMins + 120)) spanM -= breakMins;
+            totalHours = Math.round(Math.max(0, spanM / 60) * 10) / 10;
+
+            if (totalHours >= (stdHours * 0.85)) {
+              workUnits = stdWorkUnits;
+              if (lateMins > 0 && earlyMins > 0) { status = 'LATE'; note = `${matchedShiftName}: Muộn ${lateMins}p, về sớm ${earlyMins}p`; }
+              else if (lateMins > 0) { status = 'LATE'; note = `${matchedShiftName}: Muộn ${lateMins}p`; }
+              else if (earlyMins > 0) { status = 'EARLY'; note = `${matchedShiftName}: Về sớm ${earlyMins}p`; }
+              else { status = 'VALID'; note = `${matchedShiftName} hợp lệ`; }
+            } else if (totalHours >= (stdHours * 0.4)) {
+              workUnits = Math.round((stdWorkUnits * 0.5) * 100) / 100;
+              status = 'HALF_DAY';
+              note = `${matchedShiftName} nửa ngày (${totalHours}h)`;
+            } else {
+              workUnits = 0;
+              status = 'UNDER_HOURS';
+              note = `${matchedShiftName} thiếu giờ (${totalHours}h)`;
+            }
+          } else {
+            workUnits = Math.round((stdWorkUnits * 0.5) * 100) / 100;
+            totalHours = Math.round((stdHours * 0.5) * 10) / 10;
+            status = lateMins > 0 ? 'LATE' : 'VALID';
+            note = lateMins > 0 ? `${matchedShiftName}: Muộn ${lateMins}p (chưa chấm ra)` : `${matchedShiftName} (chưa chấm ra)`;
+          }
+
+          computedTimesheets.push({
+            timesheet_id: `TS_${emp.employee_id}_${dt}`,
+            employee_id: emp.employee_id,
+            attendance_code: empCode,
+            full_name: emp.full_name,
+            department_name: deptCanonical,
+            date: dt,
+            day_name: dName,
+            shift_id: matchedShiftId,
+            shift_name: matchedShiftName,
+            check_in: checkIn || '',
+            check_out: checkOut || '',
+            late_minutes: lateMins,
+            early_minutes: earlyMins,
+            work_units: workUnits,
+            total_work_hours: totalHours,
+            ot_hours: otHours,
+            total_all_hours: Math.round((totalHours + otHours) * 10) / 10,
+            status: status,
+            is_locked: false,
+            is_manual_edited: false,
+            note: note
+          });
+        }
       });
     });
 
     appData.timesheets = computedTimesheets;
     this.saveLocalAttendanceState();
-    if (!silent) utils.showToast(`Đã tính toán thành công ${computedTimesheets.length} bản ghi công thực tế!`, 'success');
+    if (!silent) utils.showToast(`Đã tự động nhận diện ca & tính toán thành công ${computedTimesheets.length} bản ghi công!`, 'success');
     this.renderTimesheets();
     this.renderDashboard();
   },
@@ -3896,80 +4156,8 @@ const appAttendance = {
     const existing = appData.timesheets.filter(t => (t.date || '').startsWith(targetMonth));
     if (existing.length > 0) return existing;
 
-    const logs = (appData.attendanceLogs || []).filter(l => (l.timestamp || '').startsWith(targetMonth));
-    if (logs.length === 0) return [];
-
-    const groups = {};
-    logs.forEach(l => {
-      const code = String(l.attendance_code || '').trim();
-      const date = (l.timestamp || '').substring(0, 10);
-      if (!code || !date) return;
-      const key = `${code}_${date}`;
-      if (!groups[key]) {
-        groups[key] = { code, date, times: [] };
-      }
-      const timePart = (l.timestamp || '').split(' ')[1] || (l.timestamp || '').substring(11, 16);
-      if (timePart) groups[key].times.push(timePart);
-    });
-
-    const newTimesheets = [];
-    const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-
-    Object.values(groups).forEach(g => {
-      g.times.sort();
-      const checkIn = g.times[0] ? g.times[0].substring(0, 5) : '';
-      const checkOut = g.times.length > 1 ? g.times[g.times.length - 1].substring(0, 5) : (g.times[0] > '12:00' ? g.times[0].substring(0, 5) : '');
-      const actualIn = checkIn || '';
-      const actualOut = checkOut || '';
-
-      const emp = (appData.employees || []).find(e =>
-        (e.attendance_code && String(e.attendance_code).trim() === g.code) ||
-        (e.time_attendance_code && String(e.time_attendance_code).trim() === g.code) ||
-        String(e.employee_id || '').trim() === g.code
-      );
-
-      const dObj = new Date(g.date);
-      const dayName = isNaN(dObj.getDay()) ? 'Thứ 2' : dayNames[dObj.getDay()];
-
-      let lateMinutes = 0;
-      if (actualIn && actualIn > '08:00') {
-        const [h, m] = actualIn.split(':').map(Number);
-        lateMinutes = Math.max(0, (h * 60 + m) - (8 * 60));
-      }
-
-      let earlyMinutes = 0;
-      if (actualOut && actualOut < '17:00') {
-        const [h, m] = actualOut.split(':').map(Number);
-        earlyMinutes = Math.max(0, (17 * 60) - (h * 60 + m));
-      }
-
-      const status = lateMinutes > 0 ? 'LATE' : (earlyMinutes > 0 ? 'EARLY' : 'PRESENT');
-
-      const tsItem = {
-        timesheet_id: `TS_${emp ? emp.employee_id : g.code}_${g.date}`,
-        employee_id: emp ? emp.employee_id : g.code,
-        full_name: emp ? emp.full_name : `Nhân Viên (${g.code})`,
-        department_name: emp ? (emp.department_name || emp.department_id || 'Chưa phân bổ') : 'Chưa phân bổ',
-        date: g.date,
-        day_name: dayName,
-        check_in: actualIn,
-        check_out: actualOut,
-        late_minutes: lateMinutes,
-        early_minutes: earlyMinutes,
-        work_units: 1.0,
-        total_work_hours: 8,
-        ot_hours: 0,
-        total_all_hours: 8,
-        shift_name: 'Ca Hành Chính',
-        shift_id: 'CA-HC',
-        status: status,
-        note: lateMinutes > 0 ? `Đi muộn ${lateMinutes} phút` : (earlyMinutes > 0 ? `Về sớm ${earlyMinutes} phút` : 'Đúng giờ')
-      };
-      newTimesheets.push(tsItem);
-      appData.timesheets.push(tsItem);
-    });
-
-    return newTimesheets;
+    this.recalculateClientSide(true);
+    return (appData.timesheets || []).filter(t => (t.date || '').startsWith(targetMonth));
   },
 
   // ========================================================================
