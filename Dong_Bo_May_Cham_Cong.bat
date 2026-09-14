@@ -1,23 +1,23 @@
 @echo off
 chcp 65001 >nul
-title DONG BO DU LIEU MAY CHAM CONG RONALD JACK - HRM TRUNG HAI
+title TAI DU LIEU 11 MAY CHAM CONG THUC TE - HRM TRUNG HAI
 echo ====================================================================
-echo  HRM TRUNG HAI - DONG BO DU LIEU QUET THE TRUC TIEP TU CSDL SQL
+echo  HRM TRUNG HAI - TAI DU LIEU QUET THE 11 MAY CHAM CONG VE CLOUDFLARE
 echo ====================================================================
-echo  Dang ket noi toi CSDL SQL Server 113.161.53.133:1433 (Mitaco, Tlmt, longan, khbmt, ctvp)...
+echo  Dang ket noi va lay du lieu cham cong tu 11 may cham cong thuc te...
 echo.
 
-powershell -ExecutionPolicy Bypass -File "%~dp0scripts\sync_live_sql.ps1"
+powershell -ExecutionPolicy Bypass -File "%~dp0scripts\sync_devices.ps1"
 
 echo.
-echo  Dang day du lieu cham cong len GitHub va Cloudflare Pages...
+echo  Dang dong bo du lieu len GitHub va Cloudflare Pages...
 git add public/mitaco_punches_cache.json
-git commit -m "sync(attendance): cap nhat du lieu quet the moi nhat tu SQL Server"
+git commit -m "sync(attendance): cap nhat du lieu quet the tu 11 may cham cong thuc te"
 git push origin main
 
 echo.
 echo ====================================================================
-echo  HOAN TAT DONG BO DU LIEU VA CAP NHAT HE THONG CLOUDFLARE!
-echo  Hay mo lai trang Web HRM va nhan Ctrl + F5 de xem ket qua moi nhat.
+echo  HOAN TAT TAI DU LIEU VA DONG BO LEN CLOUDFLARE THANH CONG!
+echo  Hay mo Website hoac App HRM va bam "Dong bo Cloud" de xem ket qua.
 echo ====================================================================
 pause
