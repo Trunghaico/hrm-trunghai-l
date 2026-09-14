@@ -31,12 +31,33 @@ const appPWA = {
     }
   },
 
+  swRegistration: null,
+  isRefreshing: false,
+
   registerServiceWorker() {
     if ('serviceWorker' in navigator) {
+      // Auto reload when controller changes to new service worker
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!this.isRefreshing) {
+          this.isRefreshing = true;
+          console.log('[PWA] Service Worker controller changed. Reloading page...');
+          window.location.reload();
+        }
+      });
+
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
           .then((registration) => {
             console.log('[PWA] Service Worker registered successfully:', registration.scope);
+            this.swRegistration = registration;
+
+            // Trigger immediate check for update
+            registration.update().catch(() => {});
+
+            // Auto-check for updates every 10 minutes
+            setInterval(() => {
+              registration.update().catch(() => {});
+            }, 10 * 60 * 1000);
 
             // Listen for service worker updates
             registration.addEventListener('updatefound', () => {
@@ -44,7 +65,8 @@ const appPWA = {
               if (newWorker) {
                 newWorker.addEventListener('statechange', () => {
                   if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    console.log('[PWA] Có phiên bản mới. Ứng dụng đã sẵn sàng cập nhật!');
+                    console.log('[PWA] Có phiên bản mới. Hiển thị thông báo cập nhật!');
+                    this.showUpdateBanner();
                   }
                 });
               }
@@ -54,6 +76,65 @@ const appPWA = {
             console.warn('[PWA] Service Worker registration failed:', error);
           });
       });
+
+      // When mobile app comes to foreground, check for SW updates and reload fresh data
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          if (this.swRegistration) {
+            this.swRegistration.update().catch(() => {});
+          }
+          if (window.appData && typeof appData.init === 'function') {
+            appData.init().catch(() => {});
+          }
+        }
+      });
+
+      window.addEventListener('focus', () => {
+        if (this.swRegistration) {
+          this.swRegistration.update().catch(() => {});
+        }
+      });
+    }
+  },
+
+  showUpdateBanner() {
+    let banner = document.getElementById('pwa-update-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'pwa-update-banner';
+      banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; z-index: 999999; background: #1E40AF; color: #FFFFFF; padding: 10px 16px; font-size: 13px; font-weight: 600; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; gap: 12px;';
+      banner.innerHTML = `
+        <span><i class="fa-solid fa-wand-magic-sparkles"></i> Ứng dụng đã có bản cập nhật mới nhất!</span>
+        <button onclick="appPWA.forceRefresh()" style="background: #FFFFFF; color: #1E40AF; border: none; padding: 5px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;">Cập nhật ngay</button>
+        <button onclick="this.parentElement.remove()" style="background: transparent; color: #FFFFFF; border: none; font-size: 18px; cursor: pointer; padding: 0 4px;">&times;</button>
+      `;
+      document.body.appendChild(banner);
+    } else {
+      banner.style.display = 'flex';
+    }
+  },
+
+  async forceRefresh() {
+    if (window.utils && window.utils.showToast) {
+      window.utils.showToast('Đang xóa bộ nhớ đệm và tải lại bản mới nhất...', 'info');
+    }
+    try {
+      // Clear CacheStorage
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      // Unregister Service Worker
+      if (this.swRegistration) {
+        await this.swRegistration.unregister().catch(() => {});
+      } else if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      // Reload page cleanly without cache
+      window.location.reload(true);
+    } catch (e) {
+      window.location.reload(true);
     }
   },
 

@@ -486,7 +486,19 @@ export default {
       // 1. If not an /api/ route, serve static assets (HTML, CSS, JS, images)
       if (!url.pathname.startsWith("/api")) {
         if (env.ASSETS) {
-          return env.ASSETS.fetch(request);
+          const assetRes = await env.ASSETS.fetch(request);
+          if (url.pathname.endsWith("sw.js") || url.pathname.endsWith("manifest.webmanifest") || url.pathname.endsWith("mitaco_punches_cache.json")) {
+            const newHeaders = new Headers(assetRes.headers);
+            newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+            newHeaders.set("Pragma", "no-cache");
+            newHeaders.set("Expires", "0");
+            return new Response(assetRes.body, {
+              status: assetRes.status,
+              statusText: assetRes.statusText,
+              headers: newHeaders
+            });
+          }
+          return assetRes;
         }
         return new Response("Not Found", { status: 404 });
       }

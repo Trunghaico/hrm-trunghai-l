@@ -148,6 +148,10 @@
       </button>
 
       <div class="nav-section-title"><i class="fa-solid fa-mobile-screen"></i> Ứng dụng</div>
+      <button class="nav-item" id="nav-item-refresh-pwa" onclick="appPWA.forceRefresh()" data-title="Làm mới App" title="Tải lại phiên bản mới nhất & xóa cache" style="color: #2563EB;">
+        <i class="fa-solid fa-rotate"></i>
+        <span>Làm mới App</span>
+      </button>
       <button class="nav-item" id="nav-item-install-pwa" data-title="Cài đặt App" title="Cài đặt App" style="display: none; color: #10B981;">
         <i class="fa-solid fa-mobile-screen-button"></i>
         <span>Cài đặt App</span>
@@ -197,6 +201,11 @@
         <button class="btn btn-secondary btn-sm" id="btn-quick-export">
           <i class="fa-solid fa-file-excel" style="color: #10B981;"></i>
           <span>Xuất Excel</span>
+        </button>
+
+        <button class="btn btn-secondary btn-sm" id="btn-topbar-refresh" onclick="appPWA.forceRefresh()" title="Tải lại phiên bản mới nhất & xóa cache">
+          <i class="fa-solid fa-rotate" style="color: #2563EB;"></i>
+          <span>Làm mới</span>
         </button>
 
         <!-- User Profile Badge & Logout -->
