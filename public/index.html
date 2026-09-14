@@ -27,11 +27,11 @@
   
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- SheetJS for client-side Excel export/import (Local with CDN fallback) -->
-  <script src="js/xlsx.full.min.js"></script>
+  <!-- SheetJS with style support for client-side Excel export/import (xlsx-js-style) -->
+  <script src="js/xlsx.bundle.js"></script>
   <script>
-    if (typeof XLSX === 'undefined') {
-      document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"><\/script>');
+    if (typeof XLSX === 'undefined' || !XLSX.style_version) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"><\/script>');
     }
   </script>
   <!-- PizZip, Docxtemplater, JSZip for Word (.docx) Mail Merge -->

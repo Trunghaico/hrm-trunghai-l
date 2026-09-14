@@ -2629,6 +2629,78 @@ const appAttendance = {
           { wch: 22 },
           { wch: 16 }
         ];
+
+        // Áp dụng đóng khung từng ô & tô xám nhạt dòng tiêu đề
+        const borderThin = {
+          top: { style: 'thin', color: { rgb: '9CA3AF' } },
+          bottom: { style: 'thin', color: { rgb: '9CA3AF' } },
+          left: { style: 'thin', color: { rgb: '9CA3AF' } },
+          right: { style: 'thin', color: { rgb: '9CA3AF' } }
+        };
+
+        const borderHeader = {
+          top: { style: 'medium', color: { rgb: '4B5563' } },
+          bottom: { style: 'medium', color: { rgb: '4B5563' } },
+          left: { style: 'thin', color: { rgb: '9CA3AF' } },
+          right: { style: 'thin', color: { rgb: '9CA3AF' } }
+        };
+
+        const headerStyle = {
+          fill: { fgColor: { rgb: 'E5E7EB' } }, // Tô xám nhạt tiêu đề
+          font: { name: 'Arial', sz: 11, bold: true, color: { rgb: '1F2937' } },
+          alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+          border: borderHeader
+        };
+
+        const range = XLSX.utils.decode_range(ws['!ref']);
+
+        const titleCell = ws['A1'];
+        if (titleCell) {
+          titleCell.s = {
+            font: { name: 'Arial', sz: 14, bold: true, color: { rgb: '1E3A8A' } },
+            alignment: { vertical: 'center', horizontal: 'left' }
+          };
+        }
+        const subTitleCell = ws['A2'];
+        if (subTitleCell) {
+          subTitleCell.s = {
+            font: { name: 'Arial', sz: 10, italic: true, color: { rgb: '4B5563' } },
+            alignment: { vertical: 'center', horizontal: 'left' }
+          };
+        }
+
+        // Header Row (r = 3)
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const addr = XLSX.utils.encode_cell({ r: 3, c: c });
+          if (!ws[addr]) ws[addr] = { t: 's', v: headers[c] || '' };
+          ws[addr].s = headerStyle;
+        }
+
+        // Data Rows (r >= 4) - Đóng khung từng ô
+        for (let r = 4; r <= range.e.r; r++) {
+          for (let c = range.s.c; c <= range.e.c; c++) {
+            const addr = XLSX.utils.encode_cell({ r: r, c: c });
+            if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+            let align = 'center';
+            if (c === 3 || c === 4 || c === 6) align = 'left';
+            ws[addr].s = {
+              font: { name: 'Arial', sz: 10, color: { rgb: '111827' } },
+              alignment: { vertical: 'center', horizontal: align },
+              border: borderThin
+            };
+          }
+        }
+
+        ws['!rows'] = [
+          { hpt: 26 },
+          { hpt: 18 },
+          { hpt: 8 },
+          { hpt: 28 }
+        ];
+        for (let i = 4; i <= range.e.r; i++) {
+          ws['!rows'].push({ hpt: 20 });
+        }
+
         XLSX.utils.book_append_sheet(wb, ws, 'Nhat_Ky_Quet_The_Goc');
         XLSX.writeFile(wb, `${baseFileName}.xlsx`);
         utils.showToast('Đã xuất file Excel nhật ký chấm công gốc thành công!', 'success');
@@ -3927,22 +3999,99 @@ const appAttendance = {
         ws['!cols'] = [
           { wch: 6 },
           { wch: 14 },
+          { wch: 14 },
           { wch: 24 },
           { wch: 28 },
-          { wch: 14 },
-          { wch: 12 },
+          { wch: 13 },
+          { wch: 10 },
           { wch: 10 },
           { wch: 10 },
           { wch: 12 },
           { wch: 12 },
           { wch: 8 },
-          { wch: 14 },
-          { wch: 14 },
-          { wch: 14 },
+          { wch: 13 },
+          { wch: 13 },
+          { wch: 13 },
           { wch: 20 },
-          { wch: 16 },
-          { wch: 30 }
+          { wch: 18 },
+          { wch: 26 }
         ];
+
+        // Áp dụng đóng khung từng ô & tô xám nhạt dòng tiêu đề
+        const borderThin = {
+          top: { style: 'thin', color: { rgb: '9CA3AF' } },
+          bottom: { style: 'thin', color: { rgb: '9CA3AF' } },
+          left: { style: 'thin', color: { rgb: '9CA3AF' } },
+          right: { style: 'thin', color: { rgb: '9CA3AF' } }
+        };
+
+        const borderHeader = {
+          top: { style: 'medium', color: { rgb: '4B5563' } },
+          bottom: { style: 'medium', color: { rgb: '4B5563' } },
+          left: { style: 'thin', color: { rgb: '9CA3AF' } },
+          right: { style: 'thin', color: { rgb: '9CA3AF' } }
+        };
+
+        const headerStyle = {
+          fill: { fgColor: { rgb: 'E5E7EB' } }, // Tô xám nhạt sang trọng
+          font: { name: 'Arial', sz: 11, bold: true, color: { rgb: '1F2937' } },
+          alignment: { vertical: 'center', horizontal: 'center', wrapText: true },
+          border: borderHeader
+        };
+
+        const range = XLSX.utils.decode_range(ws['!ref']);
+
+        const titleCell = ws['A1'];
+        if (titleCell) {
+          titleCell.s = {
+            font: { name: 'Arial', sz: 14, bold: true, color: { rgb: '1E3A8A' } },
+            alignment: { vertical: 'center', horizontal: 'left' }
+          };
+        }
+        const subTitleCell = ws['A2'];
+        if (subTitleCell) {
+          subTitleCell.s = {
+            font: { name: 'Arial', sz: 10, italic: true, color: { rgb: '4B5563' } },
+            alignment: { vertical: 'center', horizontal: 'left' }
+          };
+        }
+
+        // Dòng tiêu đề cột (Row index 3 - A4:R4)
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const addr = XLSX.utils.encode_cell({ r: 3, c: c });
+          if (!ws[addr]) ws[addr] = { t: 's', v: headers[c] || '' };
+          ws[addr].s = headerStyle;
+        }
+
+        // Đóng khung toàn bộ các ô dữ liệu (Row index 4 trở đi)
+        for (let r = 4; r <= range.e.r; r++) {
+          for (let c = range.s.c; c <= range.e.c; c++) {
+            const addr = XLSX.utils.encode_cell({ r: r, c: c });
+            if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+            let align = 'center';
+            if (c === 3 || c === 4 || c === 15 || c === 17) {
+              align = 'left'; // Tên nhân viên, phòng ban, ca làm, ghi chú
+            } else if (c >= 9 && c <= 14) {
+              align = 'right'; // Các cột số liệu (trễ, sớm, công, tổng giờ, OT)
+            }
+            ws[addr].s = {
+              font: { name: 'Arial', sz: 10, color: { rgb: '111827' } },
+              alignment: { vertical: 'center', horizontal: align },
+              border: borderThin
+            };
+          }
+        }
+
+        // Chiều cao các dòng
+        ws['!rows'] = [
+          { hpt: 26 }, // Title
+          { hpt: 18 }, // Subtitle
+          { hpt: 8 },  // Gap
+          { hpt: 28 }  // Header
+        ];
+        for (let i = 4; i <= range.e.r; i++) {
+          ws['!rows'].push({ hpt: 20 });
+        }
 
         XLSX.utils.book_append_sheet(wb, ws, `Bang_Cong_${cleanMonth}`);
         XLSX.writeFile(wb, `${baseFileName}.xlsx`);
