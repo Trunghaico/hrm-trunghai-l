@@ -208,12 +208,17 @@ const appAttendance = {
     this.loadSoftwareDbConfig();
     this.bindEvents();
 
-    // Tự động tính toán bảng công nếu tháng hiện tại có log quẹt thẻ nhưng chưa có bảng công
+    // Tự động tính toán bảng công nếu có log quẹt thẻ hoặc ngày mới nhất chưa được tính
     try {
-      const currentMonthTs = ((window.appData && appData.timesheets) || []).filter(t => (t.date || '').startsWith(this.currentMonth));
-      const currentMonthLogs = ((window.appData && appData.attendanceLogs) || []).filter(l => (l.timestamp || '').startsWith(this.currentMonth));
-      if (currentMonthTs.length === 0 && currentMonthLogs.length > 0) {
-        this.recalculateClientSide();
+      const logs = (window.appData && appData.attendanceLogs) || [];
+      const timesheets = (window.appData && appData.timesheets) || [];
+      if (logs.length > 0) {
+        const latestLog = logs.reduce((max, l) => (l.timestamp > max ? l.timestamp : max), '');
+        const latestTsDate = timesheets.reduce((max, t) => (t.date > max ? t.date : max), '');
+        const logDate = latestLog ? latestLog.substring(0, 10) : '';
+        if (!latestTsDate || logDate > latestTsDate || timesheets.length === 0) {
+          this.recalculateClientSide(true);
+        }
       }
     } catch (e) {}
 
@@ -2860,8 +2865,8 @@ const appAttendance = {
     }
   },
 
-  recalculateClientSide() {
-    utils.showToast('Đang tính toán lại bảng công từ dữ liệu chấm công thực tế...', 'info');
+  recalculateClientSide(silent = false) {
+    if (!silent) utils.showToast('Đang tính toán lại bảng công từ dữ liệu chấm công thực tế...', 'info');
     const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
     const logs = appData.attendanceLogs || appData.rawAttendanceLogs || [];
     const requests = (appData.attendanceRequests || []).filter(r => r.status === 'APPROVED');
@@ -3157,7 +3162,7 @@ const appAttendance = {
 
     appData.timesheets = computedTimesheets;
     this.saveLocalAttendanceState();
-    utils.showToast(`Đã tính toán thành công ${computedTimesheets.length} bản ghi công thực tế!`, 'success');
+    if (!silent) utils.showToast(`Đã tính toán thành công ${computedTimesheets.length} bản ghi công thực tế!`, 'success');
     this.renderTimesheets();
     this.renderDashboard();
   },
