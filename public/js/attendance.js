@@ -23,7 +23,7 @@ const appAttendance = {
       ip: '113.161.53.133',
       port: 5007,
       serial: 'AYSH02091522',
-      location: 'Sảnh / Lối vào Tầng Trệt',
+      location: 'Sảnh / Lối vào Tầng Trệt (Xưởng & VP)',
       in_out_mode: 'AUTO',
       enabled: true,
       last_sync: new Date().toLocaleString('vi-VN'),
@@ -57,6 +57,34 @@ const appAttendance = {
       last_sync: new Date().toLocaleString('vi-VN'),
       status: 'ONLINE',
       note: 'Máy Ronald Jack / Mitaco Thanh Phát L3 (Serial: AYSH02091575)'
+    },
+    {
+      device_id: 'MCC00001',
+      device_name: 'TLMT-TP',
+      name: 'Máy Chấm Công - Chi Nhánh TLMT / TP.HCM',
+      ip: '113.161.201.71',
+      port: 5005,
+      serial: 'AYSH02091510',
+      location: 'Chi Nhánh TLMT / TP.HCM',
+      in_out_mode: 'AUTO',
+      enabled: true,
+      last_sync: new Date().toLocaleString('vi-VN'),
+      status: 'ONLINE',
+      note: 'Máy Ronald Jack Pro TLMT TP.HCM (CSDL Tlmt)'
+    },
+    {
+      device_id: 'MCC00002',
+      device_name: 'TLMT-TH',
+      name: 'Máy Chấm Công - Chi Nhánh Long An',
+      ip: '14.224.132.5',
+      port: 5005,
+      serial: 'AYSH02091588',
+      location: 'Chi Nhánh Xưởng Long An',
+      in_out_mode: 'AUTO',
+      enabled: true,
+      last_sync: new Date().toLocaleString('vi-VN'),
+      status: 'ONLINE',
+      note: 'Máy Ronald Jack Pro Chi Nhánh Long An (CSDL longan)'
     }
   ],
 
@@ -1839,7 +1867,14 @@ const appAttendance = {
     let logs = (appData.attendanceLogs || []);
 
     if (devFilter !== 'all') {
-      logs = logs.filter(l => (l.device_id || '').includes(devFilter) || (l.device_name || '').includes(devFilter));
+      const devObj = (this.devices || []).find(d => (d.device_id === devFilter || d.id === devFilter));
+      const targetDevName = (devObj ? (devObj.device_name || devObj.name) : devFilter).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const rawFilter = devFilter.toLowerCase().trim();
+      logs = logs.filter(l => {
+        const dId = (l.device_id || '').toLowerCase();
+        const dName = (l.device_name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        return dId.includes(rawFilter) || (targetDevName && (dName.includes(targetDevName) || targetDevName.includes(dName)));
+      });
     }
     if (dateFilter) {
       logs = logs.filter(l => (l.timestamp || '').startsWith(dateFilter));
