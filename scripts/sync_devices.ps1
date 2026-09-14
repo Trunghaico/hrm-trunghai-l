@@ -1,10 +1,16 @@
 param(
-    [string]$TargetDeviceId = ""
+    [string]$TargetDeviceId = "",
+    [string]$StartDate = ""
 )
 
 # ================================================================================
 # TAI DU LIEU CHAM CONG 11 MAY CHAM CONG THUC TE VE CLOUDFLARE
 # ================================================================================
+
+if (-not $StartDate) {
+    # Mac dinh lay tu dau thang truoc den thoi diem hien tai (ngay hom nay)
+    $StartDate = (Get-Date).AddMonths(-1).ToString("yyyy-MM-01 00:00:00")
+}
 
 $serverHost = "113.161.53.133,1433"
 $serverUser = "sa"
@@ -57,7 +63,7 @@ foreach ($dbName in $dbList) {
         $conn.Open()
 
         $cmd = $conn.CreateCommand()
-        $cmd.CommandText = "SELECT c.ID, c.MaChamCong AS AttCode, ISNULL(nv.MaNhanVien, '') AS EmpId, ISNULL(nv.TenNhanVien, '') AS EmpName, CONVERT(varchar(19), c.GioCham, 120) AS CheckTimeString, ISNULL(c.TenMay, '$dbName') AS DeviceName, ISNULL(c.MaSoMay, 1) AS MachineNo, ISNULL(c.KieuCham, '255') AS VerifyMode FROM CheckInOut c LEFT JOIN NHANVIEN nv ON c.MaChamCong = nv.MaChamCong WHERE c.GioCham >= '2026-08-01 00:00:00' ORDER BY c.GioCham ASC"
+        $cmd.CommandText = "SELECT c.ID, c.MaChamCong AS AttCode, ISNULL(nv.MaNhanVien, '') AS EmpId, ISNULL(nv.TenNhanVien, '') AS EmpName, CONVERT(varchar(19), c.GioCham, 120) AS CheckTimeString, ISNULL(c.TenMay, '$dbName') AS DeviceName, ISNULL(c.MaSoMay, 1) AS MachineNo, ISNULL(c.KieuCham, '255') AS VerifyMode FROM CheckInOut c LEFT JOIN NHANVIEN nv ON c.MaChamCong = nv.MaChamCong WHERE c.GioCham >= '$StartDate' ORDER BY c.GioCham ASC"
         $adapter = New-Object System.Data.SqlClient.SqlDataAdapter($cmd)
         $ds = New-Object System.Data.DataSet
         $adapter.Fill($ds) | Out-Null
