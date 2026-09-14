@@ -83,9 +83,7 @@ const appPWA = {
           if (this.swRegistration) {
             this.swRegistration.update().catch(() => {});
           }
-          if (window.appData && typeof appData.init === 'function') {
-            appData.init().catch(() => {});
-          }
+          this.syncAllCloudData(false).catch(() => {});
         }
       });
 
@@ -93,6 +91,7 @@ const appPWA = {
         if (this.swRegistration) {
           this.swRegistration.update().catch(() => {});
         }
+        this.syncAllCloudData(false).catch(() => {});
       });
     }
   },
@@ -111,6 +110,41 @@ const appPWA = {
       document.body.appendChild(banner);
     } else {
       banner.style.display = 'flex';
+    }
+  },
+
+  async syncAllCloudData(showFeedback = true) {
+    if (showFeedback && window.utils && window.utils.showToast) {
+      window.utils.showToast('Đang đồng bộ dữ liệu với máy chủ Cloud...', 'info');
+    }
+    try {
+      if (this.swRegistration) {
+        this.swRegistration.update().catch(() => {});
+      }
+      // Re-initialize appData with cache-busting
+      if (window.appData && typeof appData.init === 'function') {
+        await appData.init();
+      }
+      // Re-initialize appAttendance if on attendance view or loaded
+      if (window.appAttendance && typeof appAttendance.init === 'function') {
+        await appAttendance.init();
+      }
+      // Re-render current active view
+      if (window.app && typeof app.renderCurrentView === 'function') {
+        app.renderCurrentView();
+      }
+      // Update sidebar badge counts
+      if (window.app && typeof app.updateSidebarCounts === 'function') {
+        app.updateSidebarCounts();
+      }
+      if (showFeedback && window.utils && window.utils.showToast) {
+        window.utils.showToast('Đã đồng bộ dữ liệu mới nhất từ Cloud thành công!', 'success');
+      }
+    } catch (e) {
+      console.warn('Lỗi đồng bộ dữ liệu:', e);
+      if (showFeedback && window.utils && window.utils.showToast) {
+        window.utils.showToast('Không thể kết nối máy chủ Cloud, đang dùng dữ liệu offline.', 'warning');
+      }
     }
   },
 

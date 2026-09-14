@@ -157,10 +157,17 @@ const appData = {
         try {
           if (window.hrmStorage) {
             try {
-              const idbTs = await window.hrmStorage.get('hrm_attendance_timesheets');
-              if (idbTs && Array.isArray(idbTs) && idbTs.length > 0) {
-                this.timesheets = idbTs;
+              // Chỉ lấy từ IndexedDB nếu server chưa có bảng công (offline hoặc dữ liệu trống)
+              if (!this.timesheets || this.timesheets.length === 0) {
+                const idbTs = await window.hrmStorage.get('hrm_attendance_timesheets');
+                if (idbTs && Array.isArray(idbTs) && idbTs.length > 0) {
+                  this.timesheets = idbTs;
+                }
+              } else {
+                // Đã có bảng công từ Cloud -> Đồng bộ cập nhật lại vào IndexedDB
+                window.hrmStorage.set('hrm_attendance_timesheets', this.timesheets).catch(() => {});
               }
+
               const idbLogs = await window.hrmStorage.get('hrm_attendance_logs');
               if (idbLogs && Array.isArray(idbLogs) && idbLogs.length > 0) {
                 const existingKeys = new Set((this.attendanceLogs || []).map(l => `${l.attendance_code}_${l.timestamp}`));
@@ -192,14 +199,17 @@ const appData = {
             } catch(e) {}
           }
 
-          const localTs = localStorage.getItem('hrm_attendance_timesheets');
-          if (localTs) {
-            try {
-              const parsedTs = JSON.parse(localTs);
-              if (Array.isArray(parsedTs) && parsedTs.length > 0) {
-                this.timesheets = parsedTs;
-              }
-            } catch(e) {}
+          // Chỉ nạp từ localStorage nếu server chưa có dữ liệu bảng công
+          if (!this.timesheets || this.timesheets.length === 0) {
+            const localTs = localStorage.getItem('hrm_attendance_timesheets');
+            if (localTs) {
+              try {
+                const parsedTs = JSON.parse(localTs);
+                if (Array.isArray(parsedTs) && parsedTs.length > 0) {
+                  this.timesheets = parsedTs;
+                }
+              } catch(e) {}
+            }
           }
 
           // Tự động nạp cache nhật ký quẹt thẻ mới nhất từ mitaco_punches_cache.json

@@ -40,7 +40,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <!-- Core App Stylesheet -->
-  <link rel="stylesheet" href="css/main.css?v=3.8.5">
+  <link rel="stylesheet" href="css/main.css?v=3.9.35">
 
   <script>
     // Kiểm tra phiên đăng nhập tức thì trước khi render để chống nháy màn hình Dashboard
@@ -148,9 +148,9 @@
       </button>
 
       <div class="nav-section-title"><i class="fa-solid fa-mobile-screen"></i> Ứng dụng</div>
-      <button class="nav-item" id="nav-item-refresh-pwa" onclick="appPWA.forceRefresh()" data-title="Làm mới App" title="Tải lại phiên bản mới nhất & xóa cache" style="color: #2563EB;">
-        <i class="fa-solid fa-rotate"></i>
-        <span>Làm mới App</span>
+      <button class="nav-item" id="nav-item-refresh-pwa" onclick="appPWA.syncAllCloudData()" data-title="Đồng bộ & Làm mới" title="Đồng bộ dữ liệu đám mây & tải mới" style="color: #2563EB;">
+        <i class="fa-solid fa-cloud-arrow-down"></i>
+        <span>Đồng bộ Cloud</span>
       </button>
       <button class="nav-item" id="nav-item-install-pwa" data-title="Cài đặt App" title="Cài đặt App" style="display: none; color: #10B981;">
         <i class="fa-solid fa-mobile-screen-button"></i>
@@ -203,9 +203,9 @@
           <span>Xuất Excel</span>
         </button>
 
-        <button class="btn btn-secondary btn-sm" id="btn-topbar-refresh" onclick="appPWA.forceRefresh()" title="Tải lại phiên bản mới nhất & xóa cache">
-          <i class="fa-solid fa-rotate" style="color: #2563EB;"></i>
-          <span>Làm mới</span>
+        <button class="btn btn-secondary btn-sm" id="btn-topbar-refresh" onclick="appPWA.syncAllCloudData()" title="Đồng bộ dữ liệu tức thì từ Cloud">
+          <i class="fa-solid fa-cloud-arrow-down" style="color: #2563EB;"></i>
+          <span>Đồng bộ Cloud</span>
         </button>
 
         <!-- User Profile Badge & Logout -->
@@ -5035,26 +5035,26 @@
 </div>
 
 <!-- JavaScript Application Modules -->
-<script src="js/data.js?v=3.9.24"></script>
-<script src="js/auth.js?v=3.9.24"></script>
-<script src="js/company.js?v=3.9.24"></script>
-<script src="js/dashboard.js?v=3.9.24"></script>
-<script src="js/profile-fields.js?v=3.9.24"></script>
-<script src="js/employees.js?v=3.9.24"></script>
-<script src="js/import.js?v=3.9.24"></script>
-<script src="js/resigned.js?v=3.9.24"></script>
-<script src="js/template-trunghai.js?v=3.9.24"></script>
-<script src="js/contract-merge.js?v=3.9.24"></script>
-<script src="js/contracts.js?v=3.9.24"></script>
-<script src="js/organization.js?v=3.9.24"></script>
-<script src="js/org-import.js?v=3.9.24"></script>
-<script src="js/reports.js?v=3.9.24"></script>
-<script src="js/attendance.js?v=3.9.24"></script>
-<script src="js/accounts.js?v=3.9.24"></script>
-<script src="js/logs.js?v=3.9.24"></script>
-<script src="js/trash.js?v=3.9.24"></script>
-<script src="js/app.js?v=3.9.24"></script>
-<script src="js/pwa.js?v=3.9.24"></script>
+<script src="js/data.js?v=3.9.35"></script>
+<script src="js/auth.js?v=3.9.35"></script>
+<script src="js/company.js?v=3.9.35"></script>
+<script src="js/dashboard.js?v=3.9.35"></script>
+<script src="js/profile-fields.js?v=3.9.35"></script>
+<script src="js/employees.js?v=3.9.35"></script>
+<script src="js/import.js?v=3.9.35"></script>
+<script src="js/resigned.js?v=3.9.35"></script>
+<script src="js/template-trunghai.js?v=3.9.35"></script>
+<script src="js/contract-merge.js?v=3.9.35"></script>
+<script src="js/contracts.js?v=3.9.35"></script>
+<script src="js/organization.js?v=3.9.35"></script>
+<script src="js/org-import.js?v=3.9.35"></script>
+<script src="js/reports.js?v=3.9.35"></script>
+<script src="js/attendance.js?v=3.9.35"></script>
+<script src="js/accounts.js?v=3.9.35"></script>
+<script src="js/logs.js?v=3.9.35"></script>
+<script src="js/trash.js?v=3.9.35"></script>
+<script src="js/app.js?v=3.9.35"></script>
+<script src="js/pwa.js?v=3.9.35"></script>
 
 </body>
 </html>
