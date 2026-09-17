@@ -3377,27 +3377,42 @@ const appAttendance = {
   // ========================================================================
   // ANNUAL LEAVE CRUD & EXCEL IMPORT ACTIONS
   // ========================================================================
-  openAddAnnualLeaveModal() {
+  // ========================================================================
+  // ANNUAL LEAVE CRUD & EXCEL IMPORT ACTIONS
+  // ========================================================================
+  openAddAnnualLeaveModal(empId) {
     const modal = document.getElementById('modal-att-annual-leave-edit');
     if (!modal) return;
 
+    if (empId) {
+      this.portalEmployeeId = empId;
+    }
+
+    const targetEmpId = this.portalEmployeeId || (appData.employees && appData.employees.length > 0 ? appData.employees[0].employee_id : '');
     const empSelect = document.getElementById('att-aleave-emp-id');
     if (empSelect) {
       empSelect.innerHTML = (appData.employees || []).map(e => `
-        <option value="${e.employee_id}" ${e.employee_id === this.portalEmployeeId ? 'selected' : ''}>
+        <option value="${e.employee_id}" ${e.employee_id === targetEmpId ? 'selected' : ''}>
           ${e.employee_id} - ${e.full_name} (${e.department_name || e.department_id || 'Công ty'})
         </option>
       `).join('');
+      empSelect.value = targetEmpId;
     }
 
-    document.getElementById('modal-att-aleave-title').textContent = 'Thêm Ngày Nghỉ Phép Năm';
-    document.getElementById('att-aleave-id').value = '';
-    document.getElementById('att-aleave-date').value = this.selectedDate || new Date().toISOString().substring(0, 10);
-    document.getElementById('att-aleave-duration').value = '1.0';
-    document.getElementById('att-aleave-reason').value = '';
-    document.getElementById('att-aleave-status').value = 'APPROVED';
+    const titleEl = document.getElementById('modal-att-aleave-title');
+    if (titleEl) titleEl.textContent = 'Thêm Ngày Nghỉ Phép Năm';
+    const idInput = document.getElementById('att-aleave-id');
+    if (idInput) idInput.value = '';
+    const dateInput = document.getElementById('att-aleave-date');
+    if (dateInput) dateInput.value = this.selectedDate || new Date().toISOString().substring(0, 10);
+    const durInput = document.getElementById('att-aleave-duration');
+    if (durInput) durInput.value = '1.0';
+    const reasonInput = document.getElementById('att-aleave-reason');
+    if (reasonInput) reasonInput.value = '';
+    const stInput = document.getElementById('att-aleave-status');
+    if (stInput) stInput.value = 'APPROVED';
 
-    modal.style.display = 'flex';
+    modal.classList.add('active');
   },
 
   openEditAnnualLeaveModal(requestId) {
@@ -3410,6 +3425,7 @@ const appAttendance = {
       return;
     }
 
+    this.portalEmployeeId = req.employee_id;
     const empSelect = document.getElementById('att-aleave-emp-id');
     if (empSelect) {
       empSelect.innerHTML = (appData.employees || []).map(e => `
@@ -3417,21 +3433,28 @@ const appAttendance = {
           ${e.employee_id} - ${e.full_name} (${e.department_name || e.department_id || 'Công ty'})
         </option>
       `).join('');
+      empSelect.value = req.employee_id;
     }
 
-    document.getElementById('modal-att-aleave-title').textContent = 'Chỉnh Sửa Ngày Nghỉ Phép Năm';
-    document.getElementById('att-aleave-id').value = req.request_id || req.id;
-    document.getElementById('att-aleave-date').value = req.date || req.start_date || '';
-    document.getElementById('att-aleave-duration').value = String(req.duration_days || req.days || '1.0');
-    document.getElementById('att-aleave-reason').value = req.reason || '';
-    document.getElementById('att-aleave-status').value = req.status || 'APPROVED';
+    const titleEl = document.getElementById('modal-att-aleave-title');
+    if (titleEl) titleEl.textContent = 'Chỉnh Sửa Ngày Nghỉ Phép Năm';
+    const idInput = document.getElementById('att-aleave-id');
+    if (idInput) idInput.value = req.request_id || req.id;
+    const dateInput = document.getElementById('att-aleave-date');
+    if (dateInput) dateInput.value = req.date || req.start_date || '';
+    const durInput = document.getElementById('att-aleave-duration');
+    if (durInput) durInput.value = String(req.duration_days || req.days || '1.0');
+    const reasonInput = document.getElementById('att-aleave-reason');
+    if (reasonInput) reasonInput.value = req.reason || '';
+    const stInput = document.getElementById('att-aleave-status');
+    if (stInput) stInput.value = req.status || 'APPROVED';
 
-    modal.style.display = 'flex';
+    modal.classList.add('active');
   },
 
   closeAnnualLeaveModal() {
     const modal = document.getElementById('modal-att-annual-leave-edit');
-    if (modal) modal.style.display = 'none';
+    if (modal) modal.classList.remove('active');
   },
 
   saveAnnualLeaveRecord(e) {
@@ -3580,18 +3603,23 @@ const appAttendance = {
     utils.showToast('Đã xóa bản ghi phép năm thành công!', 'success');
   },
 
-  openEditQuotaModal() {
+  openEditQuotaModal(empId) {
     const modal = document.getElementById('modal-att-quota-edit');
     if (!modal) return;
 
-    const empId = this.portalEmployeeId;
-    const emp = (appData.employees || []).find(e => e.employee_id === empId);
+    if (empId) {
+      this.portalEmployeeId = empId;
+    }
+
+    const targetEmpId = this.portalEmployeeId || (appData.employees && appData.employees.length > 0 ? appData.employees[0].employee_id : '');
+    const emp = (appData.employees || []).find(e => e.employee_id === targetEmpId);
     if (!emp) {
       utils.showToast('Vui lòng chọn nhân viên!', 'warning');
       return;
     }
 
-    const quota = this.getEmployeeLeaveQuota(empId);
+    this.portalEmployeeId = targetEmpId;
+    const quota = this.getEmployeeLeaveQuota(targetEmpId);
     document.getElementById('att-quota-emp-display').textContent = `${emp.employee_id} - ${emp.full_name} (${emp.department_name || emp.department_id || 'Công ty'})`;
     document.getElementById('att-quota-standard').value = quota.standard;
     document.getElementById('att-quota-seniority').value = quota.seniority;
@@ -3599,12 +3627,12 @@ const appAttendance = {
     document.getElementById('att-quota-total-display').textContent = `${quota.total} ngày`;
     document.getElementById('att-quota-note').value = quota.note || '';
 
-    modal.style.display = 'flex';
+    modal.classList.add('active');
   },
 
   closeEditQuotaModal() {
     const modal = document.getElementById('modal-att-quota-edit');
-    if (modal) modal.style.display = 'none';
+    if (modal) modal.classList.remove('active');
   },
 
   recalculateTotalQuota() {
@@ -3724,12 +3752,12 @@ const appAttendance = {
     document.getElementById('att-aleave-confirm-count').textContent = '0';
     document.getElementById('btn-confirm-aleave-import').disabled = true;
 
-    modal.style.display = 'flex';
+    modal.classList.add('active');
   },
 
   closeImportAnnualLeaveModal() {
     const modal = document.getElementById('modal-att-annual-leave-import');
-    if (modal) modal.style.display = 'none';
+    if (modal) modal.classList.remove('active');
   },
 
   handleAnnualLeaveFile(event) {
@@ -5447,12 +5475,12 @@ const appAttendance = {
 
   openMappingGuideModal() {
     const m = document.getElementById('modal-att-mapping-guide');
-    if (m) m.style.display = 'flex';
+    if (m) m.classList.add('active');
   },
 
   closeMappingGuideModal() {
     const m = document.getElementById('modal-att-mapping-guide');
-    if (m) m.style.display = 'none';
+    if (m) m.classList.remove('active');
   },
 
   recalculateSummary() {
@@ -5769,8 +5797,10 @@ const appAttendance = {
         return `
           <tr style="border-bottom: 1px solid #E2E8F0;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
             <td style="text-align: center; color: #64748B; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${rowNum}</td>
-            <td style="text-align: center; font-weight: 700; color: #1E40AF; border-right: 1px solid #E2E8F0; padding: 6px;">${item.employee_id}</td>
-            <td style="font-weight: 600; color: #1E293B; border-right: 1px solid #E2E8F0; padding: 6px 8px;">${item.full_name}</td>
+            <td style="text-align: center; font-weight: 700; color: #1E40AF; border-right: 1px solid #E2E8F0; padding: 6px; cursor: pointer;" onclick="appAttendance.portalEmployeeId='${item.employee_id}'; appAttendance.switchSubTab('portal');" title="Xem cổng chấm công cá nhân của ${item.full_name}">${item.employee_id}</td>
+            <td style="font-weight: 600; color: #1E293B; border-right: 1px solid #E2E8F0; padding: 6px 8px; cursor: pointer;" onclick="appAttendance.portalEmployeeId='${item.employee_id}'; appAttendance.switchSubTab('portal');" title="Xem cổng chấm công & danh sách phép của ${item.full_name}">
+              <span style="color: #1E40AF; text-decoration: underline; text-underline-offset: 2px;">${item.full_name}</span>
+            </td>
             <td style="color: #475569; font-size: 11.5px; border-right: 1px solid #CBD5E1; padding: 6px 8px;">${item.department_name}</td>
 
             <!-- CÔNG CHUẨN -->
@@ -5778,7 +5808,9 @@ const appAttendance = {
 
             <!-- CÔNG HƯỞNG NGUYÊN LƯƠNG -->
             <td style="text-align: center; font-weight: 800; color: #047857; background: #F0FDF4; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.cong_tt > 0 ? item.cong_tt : '-'}</td>
-            <td style="text-align: center; color: #1D4ED8; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.phep_nam > 0 ? item.phep_nam : '-'}</td>
+            <td style="text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; cursor: pointer;" onclick="appAttendance.openAddAnnualLeaveModal('${item.employee_id}')" title="Bấm để thêm/chỉnh sửa phép năm cho ${item.full_name}">
+              ${item.phep_nam > 0 ? `<span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-weight: 700; border: 1px solid #BFDBFE;">${item.phep_nam} <i class="fa-solid fa-pen" style="font-size: 8.5px; margin-left: 2px;"></i></span>` : `<span style="color: #94A3B8; font-size: 11px;"><i class="fa-solid fa-plus" title="Thêm phép"></i></span>`}
+            </td>
             <td style="text-align: center; color: #7C3AED; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.le_tet > 0 ? item.le_tet : '-'}</td>
             <td style="text-align: center; color: #0284C7; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.cong_tac > 0 ? item.cong_tac : '-'}</td>
             <td style="text-align: center; color: #0D9488; font-weight: 600; border-right: 1px solid #CBD5E1; padding: 6px 4px;">${item.nghi_huong_l > 0 ? item.nghi_huong_l : '-'}</td>

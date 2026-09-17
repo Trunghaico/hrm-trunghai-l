@@ -1774,11 +1774,17 @@
             <div style="flex: 1; min-width: 200px;">
               <input type="text" id="att-sum-search" class="filter-input" placeholder="🔍 Tìm theo mã NV, họ tên, mã CC..." style="height: 34px;" oninput="appAttendance.onSummarySearch(this.value)">
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-sm" onclick="appAttendance.openAddAnnualLeaveModal()" style="background: #047857; color: #fff; font-weight: 700; border: none; box-shadow: 0 2px 6px rgba(4,120,87,0.25);" title="Thêm ngày nghỉ phép năm cho nhân sự">
+                <i class="fa-solid fa-plus-circle"></i> Thêm Phép Năm
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.openImportAnnualLeaveModal()" style="font-weight: 600; color: #059669; border-color: #A7F3D0; background: #ECFDF5;" title="Nạp file Excel danh sách ngày nghỉ phép năm">
+                <i class="fa-solid fa-file-import"></i> Import Phép Năm Excel
+              </button>
               <button class="btn btn-secondary btn-sm" onclick="appAttendance.recalculateSummary()" title="Tính toán lại toàn bộ bảng công tổng hợp">
                 <i class="fa-solid fa-calculator"></i> Tính Lại Công
               </button>
-              <button class="btn btn-primary btn-sm" onclick="appAttendance.exportSummaryToExcel()" style="background: #15803D; border-color: #15803D;" title="Xuất file Excel bảng công tổng hợp">
+              <button class="btn btn-primary btn-sm" onclick="appAttendance.exportSummaryToExcel()" style="background: #15803D; border-color: #15803D; font-weight: 700;" title="Xuất file Excel bảng công tổng hợp">
                 <i class="fa-solid fa-file-excel"></i> Xuất Excel Tổng Hợp
               </button>
             </div>
@@ -5244,20 +5250,20 @@
      MODAL: QUY TẮC ÁNH XẠ DỮ LIỆU CÔNG SANG PHÂN HỆ TIỀN LƯƠNG MISA AMIS
      (Theo mẫu Sheet 2 Bang_Cham_Cong_Tong_Hop.xlsx)
      ========================================================================== -->
-<div class="modal-backdrop" id="modal-att-mapping-guide" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); z-index: 1060; align-items: center; justify-content: center; padding: 20px;">
-  <div class="modal-content" style="background: #fff; width: 100%; max-width: 960px; max-height: 90vh; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
-    <div class="modal-header" style="background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+<div class="modal-backdrop" id="modal-att-mapping-guide">
+  <div class="modal-container" style="max-width: 960px; max-height: 90vh;">
+    <div class="modal-header" style="background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <i class="fa-solid fa-code-compare" style="font-size: 20px; color: #93C5FD;"></i>
         <div>
-          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">QUY TẮC ÁNH XẠ (MAPPING) DỮ LIỆU CÔNG SANG PHÂN HỆ TIỀN LƯƠNG MISA</h3>
+          <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #fff;">QUY TẮC ÁNH XẠ (MAPPING) DỮ LIỆU CÔNG SANG PHÂN HỆ TIỀN LƯƠNG MISA</h3>
           <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #DBEAFE;">Tài liệu kỹ thuật hướng dẫn HR / Kế toán thiết lập công thức Payroll tự động</p>
         </div>
       </div>
-      <button type="button" class="modal-close" style="color: #fff; background: transparent; border: none; font-size: 22px; cursor: pointer;" onclick="appAttendance.closeMappingGuideModal()">&times;</button>
+      <button type="button" class="modal-close" style="color: #fff;" onclick="appAttendance.closeMappingGuideModal()">&times;</button>
     </div>
 
-    <div class="modal-body" style="padding: 20px; overflow-y: auto; flex: 1;">
+    <div class="modal-body" style="padding: 18px; overflow-y: auto; flex: 1;">
       <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 12.5px; color: #1E40AF; line-height: 1.5;">
         <i class="fa-solid fa-circle-info" style="margin-right: 6px;"></i>
         Dữ liệu từ tab <strong>Bảng Công Tổng Hợp</strong> đã được chuẩn hóa theo đúng tên cột và mã biến chuẩn. Khi xuất file Excel, bạn có thể nạp trực tiếp vào MISA AMIS Tiền Lương hoặc dùng các mã biến bên dưới để cấu hình công thức lương.
@@ -5361,7 +5367,7 @@
       </div>
     </div>
 
-    <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 8px;">
+    <div class="modal-footer" style="padding: 12px 18px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
       <button type="button" class="btn btn-primary btn-sm" onclick="appAttendance.closeMappingGuideModal()">Đóng Hướng Dẫn</button>
     </div>
   </div>
@@ -5370,21 +5376,21 @@
 <!-- ==========================================================================
      MODAL: THÊM / CHỈNH SỬA PHÉP NĂM CÁ NHÂN
      ========================================================================== -->
-<div class="modal-backdrop" id="modal-att-annual-leave-edit" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); z-index: 1060; align-items: center; justify-content: center; padding: 20px;">
-  <div class="modal-content" style="background: #fff; width: 100%; max-width: 540px; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
-    <div class="modal-header" style="background: linear-gradient(135deg, #047857 0%, #059669 100%); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+<div class="modal-backdrop" id="modal-att-annual-leave-edit">
+  <div class="modal-container" style="max-width: 540px;">
+    <div class="modal-header" style="background: linear-gradient(135deg, #047857 0%, #059669 100%); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <i class="fa-solid fa-umbrella-beach" style="font-size: 20px; color: #A7F3D0;"></i>
         <div>
-          <h3 id="modal-att-aleave-title" style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">Thêm Ngày Nghỉ Phép Năm</h3>
+          <h3 id="modal-att-aleave-title" style="margin: 0; font-size: 15px; font-weight: 800; color: #fff;">Thêm Ngày Nghỉ Phép Năm</h3>
           <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #D1FAE5;">Cập nhật phép năm và tự động đồng bộ vào Bảng Công Tổng Hợp</p>
         </div>
       </div>
-      <button type="button" class="modal-close" style="color: #fff; background: transparent; border: none; font-size: 22px; cursor: pointer;" onclick="appAttendance.closeAnnualLeaveModal()">&times;</button>
+      <button type="button" class="modal-close" style="color: #fff;" onclick="appAttendance.closeAnnualLeaveModal()">&times;</button>
     </div>
 
     <form id="form-att-annual-leave" onsubmit="appAttendance.saveAnnualLeaveRecord(event)" style="margin: 0; display: flex; flex-direction: column;">
-      <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <div class="modal-body" style="padding: 20px 18px; display: flex; flex-direction: column; gap: 14px;">
         <input type="hidden" id="att-aleave-id" value="">
 
         <div class="form-group" style="margin: 0;">
@@ -5438,7 +5444,7 @@
         </div>
       </div>
 
-      <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 8px;">
+      <div class="modal-footer" style="padding: 12px 18px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
         <button type="button" class="btn btn-secondary btn-sm" onclick="appAttendance.closeAnnualLeaveModal()">Hủy Bỏ</button>
         <button type="submit" class="btn btn-sm" style="background: #047857; color: #fff; font-weight: 700; border: none; padding: 8px 16px;">
           <i class="fa-solid fa-floppy-disk"></i> Lưu Phép Năm
@@ -5451,20 +5457,20 @@
 <!-- ==========================================================================
      MODAL: IMPORT DANH SÁCH PHÉP NĂM TỪ FILE EXCEL
      ========================================================================== -->
-<div class="modal-backdrop" id="modal-att-annual-leave-import" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); z-index: 1060; align-items: center; justify-content: center; padding: 20px;">
-  <div class="modal-content" style="background: #fff; width: 100%; max-width: 860px; max-height: 90vh; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
-    <div class="modal-header" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+<div class="modal-backdrop" id="modal-att-annual-leave-import">
+  <div class="modal-container" style="max-width: 860px; max-height: 90vh;">
+    <div class="modal-header" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <i class="fa-solid fa-file-excel" style="font-size: 22px; color: #A7F3D0;"></i>
         <div>
-          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">Import Danh Sách Phép Năm Từ Excel</h3>
+          <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #fff;">Import Danh Sách Phép Năm Từ Excel</h3>
           <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #D1FAE5;">Nạp hàng loạt ngày nghỉ phép năm cho nhân sự từ file bảng tính</p>
         </div>
       </div>
-      <button type="button" class="modal-close" style="color: #fff; background: transparent; border: none; font-size: 22px; cursor: pointer;" onclick="appAttendance.closeImportAnnualLeaveModal()">&times;</button>
+      <button type="button" class="modal-close" style="color: #fff;" onclick="appAttendance.closeImportAnnualLeaveModal()">&times;</button>
     </div>
 
-    <div class="modal-body" style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+    <div class="modal-body" style="padding: 18px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
       <!-- Step 1 & 2 Instructions -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <div style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 14px;">
@@ -5522,7 +5528,7 @@
       </div>
     </div>
 
-    <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 8px;">
+    <div class="modal-footer" style="padding: 12px 18px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
       <button type="button" class="btn btn-secondary btn-sm" onclick="appAttendance.closeImportAnnualLeaveModal()">Hủy Bỏ</button>
       <button type="button" id="btn-confirm-aleave-import" class="btn btn-sm" disabled onclick="appAttendance.confirmImportAnnualLeave()" style="background: #047857; color: #fff; font-weight: 700; border: none; padding: 8px 16px;">
         <i class="fa-solid fa-cloud-arrow-up"></i> Thực Hiện Import (<span id="att-aleave-confirm-count">0</span> dòng)
@@ -5534,21 +5540,21 @@
 <!-- ==========================================================================
      MODAL: ĐIỀU CHỈNH QUỸ PHÉP NĂM TIÊU CHUẨN
      ========================================================================== -->
-<div class="modal-backdrop" id="modal-att-quota-edit" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); z-index: 1060; align-items: center; justify-content: center; padding: 20px;">
-  <div class="modal-content" style="background: #fff; width: 100%; max-width: 500px; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
-    <div class="modal-header" style="background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+<div class="modal-backdrop" id="modal-att-quota-edit">
+  <div class="modal-container" style="max-width: 500px;">
+    <div class="modal-header" style="background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <i class="fa-solid fa-sliders" style="font-size: 20px; color: #93C5FD;"></i>
         <div>
-          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">Điều Chỉnh Quỹ Phép Năm</h3>
+          <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #fff;">Điều Chỉnh Quỹ Phép Năm</h3>
           <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #DBEAFE;">Thiết lập hạn mức ngày phép năm được hưởng của nhân sự</p>
         </div>
       </div>
-      <button type="button" class="modal-close" style="color: #fff; background: transparent; border: none; font-size: 22px; cursor: pointer;" onclick="appAttendance.closeEditQuotaModal()">&times;</button>
+      <button type="button" class="modal-close" style="color: #fff;" onclick="appAttendance.closeEditQuotaModal()">&times;</button>
     </div>
 
     <form id="form-att-quota" onsubmit="appAttendance.saveLeaveQuota(event)" style="margin: 0; display: flex; flex-direction: column;">
-      <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <div class="modal-body" style="padding: 20px 18px; display: flex; flex-direction: column; gap: 14px;">
         <div class="form-group" style="margin: 0;">
           <label style="font-size: 12.5px; font-weight: 700; color: #1E293B; margin-bottom: 4px; display: block;">Nhân Sự</label>
           <div id="att-quota-emp-display" style="font-size: 14px; font-weight: 700; color: #1E40AF; background: #EFF6FF; padding: 8px 12px; border-radius: 6px; border: 1px solid #BFDBFE;">...</div>
@@ -5592,7 +5598,7 @@
         </div>
       </div>
 
-      <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 8px;">
+      <div class="modal-footer" style="padding: 12px 18px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
         <button type="button" class="btn btn-secondary btn-sm" onclick="appAttendance.closeEditQuotaModal()">Hủy Bỏ</button>
         <button type="submit" class="btn btn-primary btn-sm" style="font-weight: 700; padding: 8px 16px;">
           <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
@@ -5603,26 +5609,26 @@
 </div>
 
 <!-- JavaScript Application Modules -->
-<script src="js/data.js?v=3.9.37"></script>
-<script src="js/auth.js?v=3.9.37"></script>
-<script src="js/company.js?v=3.9.37"></script>
-<script src="js/dashboard.js?v=3.9.37"></script>
-<script src="js/profile-fields.js?v=3.9.37"></script>
-<script src="js/employees.js?v=3.9.37"></script>
-<script src="js/import.js?v=3.9.37"></script>
-<script src="js/resigned.js?v=3.9.37"></script>
-<script src="js/template-trunghai.js?v=3.9.37"></script>
-<script src="js/contract-merge.js?v=3.9.37"></script>
-<script src="js/contracts.js?v=3.9.37"></script>
-<script src="js/organization.js?v=3.9.37"></script>
-<script src="js/org-import.js?v=3.9.37"></script>
-<script src="js/reports.js?v=3.9.37"></script>
-<script src="js/attendance.js?v=3.9.37"></script>
-<script src="js/accounts.js?v=3.9.37"></script>
-<script src="js/logs.js?v=3.9.37"></script>
-<script src="js/trash.js?v=3.9.37"></script>
-<script src="js/app.js?v=3.9.37"></script>
-<script src="js/pwa.js?v=3.9.37"></script>
+<script src="js/data.js?v=3.9.38"></script>
+<script src="js/auth.js?v=3.9.38"></script>
+<script src="js/company.js?v=3.9.38"></script>
+<script src="js/dashboard.js?v=3.9.38"></script>
+<script src="js/profile-fields.js?v=3.9.38"></script>
+<script src="js/employees.js?v=3.9.38"></script>
+<script src="js/import.js?v=3.9.38"></script>
+<script src="js/resigned.js?v=3.9.38"></script>
+<script src="js/template-trunghai.js?v=3.9.38"></script>
+<script src="js/contract-merge.js?v=3.9.38"></script>
+<script src="js/contracts.js?v=3.9.38"></script>
+<script src="js/organization.js?v=3.9.38"></script>
+<script src="js/org-import.js?v=3.9.38"></script>
+<script src="js/reports.js?v=3.9.38"></script>
+<script src="js/attendance.js?v=3.9.38"></script>
+<script src="js/accounts.js?v=3.9.38"></script>
+<script src="js/logs.js?v=3.9.38"></script>
+<script src="js/trash.js?v=3.9.38"></script>
+<script src="js/app.js?v=3.9.38"></script>
+<script src="js/pwa.js?v=3.9.38"></script>
 
 </body>
 </html>
