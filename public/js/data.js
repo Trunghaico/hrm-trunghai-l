@@ -270,8 +270,8 @@ const appData = {
                     this.attendanceLogs.push({
                       log_id: p.log_id || `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
                       attendance_code: c,
-                      employee_id: emp ? emp.employee_id : (p.employee_id || ''),
-                      employee_name: emp ? emp.full_name : (p.employee_name || ''),
+                      employee_id: emp ? (emp.employee_id || emp.id || p.employee_id || '') : (p.employee_id || ''),
+                      employee_name: emp ? (emp.full_name || emp.name || p.employee_name || '') : (p.employee_name || ''),
                       timestamp: ts,
                       verify_type: p.verify_type || 'Khuon mat',
                       device_name: p.device_name || 'Máy Ronald Jack Pro',

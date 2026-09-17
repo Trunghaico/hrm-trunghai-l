@@ -2774,8 +2774,8 @@ const appAttendance = {
           appData.attendanceLogs.push({
             log_id: l.log_id || `LOG-SQL-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
             attendance_code: c,
-            employee_id: emp ? emp.employee_id : (l.employee_id || ''),
-            employee_name: emp ? emp.full_name : (l.employee_name || ''),
+            employee_id: emp ? (emp.employee_id || emp.id || l.employee_id || '') : (l.employee_id || ''),
+            employee_name: emp ? (emp.full_name || emp.name || l.employee_name || '') : (l.employee_name || ''),
             timestamp: ts,
             verify_type: l.verify_type || 'Khuon mat',
             device_name: l.device_name || `CSDL ${dbname} (SQL Server)`,
@@ -4686,8 +4686,8 @@ const appAttendance = {
             appData.attendanceLogs.push({
               log_id: p.log_id || `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
               attendance_code: c,
-              employee_id: emp ? emp.employee_id : (p.employee_id || ''),
-              employee_name: emp ? emp.full_name : (p.employee_name || ''),
+              employee_id: emp ? (emp.employee_id || emp.id || p.employee_id || '') : (p.employee_id || ''),
+              employee_name: emp ? (emp.full_name || emp.name || p.employee_name || '') : (p.employee_name || ''),
               timestamp: ts,
               verify_type: p.verify_type || 'Khuon mat',
               device_name: targetName,

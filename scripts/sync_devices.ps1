@@ -1,16 +1,19 @@
 param(
     [string]$TargetDeviceId = "",
-    [string]$StartDate = ""
+    [string]$StartDate = "2026-01-01 00:00:00"
 )
+
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 # ================================================================================
 # TAI DU LIEU CHAM CONG 11 MAY CHAM CONG THUC TE VE CLOUDFLARE
 # ================================================================================
 
 if (-not $StartDate) {
-    # Mac dinh lay tu dau thang truoc den thoi diem hien tai (ngay hom nay)
-    $StartDate = (Get-Date).AddMonths(-1).ToString("yyyy-MM-01 00:00:00")
+    # Mac dinh lay tu dau nam 2026 de dam bao khong bo sot bat ky du lieu cham cong nao
+    $StartDate = "2026-01-01 00:00:00"
 }
+
 
 $serverHost = "113.161.53.133,1433"
 $serverUser = "sa"
