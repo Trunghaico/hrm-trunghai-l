@@ -3187,44 +3187,128 @@ const appAttendance = {
   },
 
   // ========================================================================
-  // 6. EMPLOYEE PORTAL (CHẤM CÔNG CÁ NHÂN)
   // ========================================================================
+  // 6. EMPLOYEE PORTAL (CHẤM CÔNG CÁ NHÂN & QUẢN LÝ PHÉP NĂM)
+  // ========================================================================
+  getEmployeeLeaveQuota(empId) {
+    if (!appData.employeeLeaveQuotas) {
+      try {
+        appData.employeeLeaveQuotas = JSON.parse(localStorage.getItem('hrm_employee_leave_quotas') || '{}');
+      } catch (e) {
+        appData.employeeLeaveQuotas = {};
+      }
+    }
+    const q = appData.employeeLeaveQuotas[empId] || { standard: 12, seniority: 0, carryover: 0, note: '' };
+    const standard = parseFloat(q.standard !== undefined ? q.standard : 12) || 0;
+    const seniority = parseFloat(q.seniority || 0) || 0;
+    const carryover = parseFloat(q.carryover || 0) || 0;
+    const total = Math.round((standard + seniority + carryover) * 10) / 10;
+    return { standard, seniority, carryover, total, note: q.note || '' };
+  },
+
   renderPortal() {
     const empSelect = document.getElementById('att-portal-emp-select');
-    if (empSelect && empSelect.options.length <= 1) {
+    if (empSelect) {
       const emps = appData.employees || [];
-      emps.forEach(e => {
-        const opt = document.createElement('option');
-        opt.value = e.employee_id;
-        opt.textContent = `${e.employee_id} - ${e.full_name}`;
-        if (e.employee_id === this.portalEmployeeId) opt.selected = true;
-        empSelect.appendChild(opt);
-      });
-      empSelect.addEventListener('change', (e) => {
-        this.portalEmployeeId = e.target.value;
-        this.renderPortal();
-      });
+      const currentSelected = this.portalEmployeeId || (emps.length > 0 ? emps[0].employee_id : '');
+      if (empSelect.options.length <= 1 || empSelect.getAttribute('data-loaded') !== 'true') {
+        empSelect.innerHTML = emps.map(e => `
+          <option value="${e.employee_id}" ${e.employee_id === currentSelected ? 'selected' : ''}>
+            ${e.employee_id} - ${e.full_name} (${e.department_name || e.department_id || 'Công ty'})
+          </option>
+        `).join('');
+        empSelect.setAttribute('data-loaded', 'true');
+        empSelect.addEventListener('change', (e) => {
+          this.portalEmployeeId = e.target.value;
+          this.renderPortal();
+        });
+      }
     }
 
-    const empId = this.portalEmployeeId;
+    const empId = this.portalEmployeeId || (appData.employees && appData.employees.length > 0 ? appData.employees[0].employee_id : '');
+    this.portalEmployeeId = empId;
     const emp = (appData.employees || []).find(e => e.employee_id === empId);
     if (!emp) return;
 
-    // Leave Balance calculation
-    const totalLeaveDays = 12; // 12 ngày phép năm tiêu chuẩn
-    const myApprovedLeaves = (appData.attendanceRequests || []).filter(r => r.employee_id === empId && r.request_type === 'LEAVE' && r.status === 'APPROVED');
-    const usedDays = myApprovedLeaves.length;
-    const remainingDays = Math.max(0, totalLeaveDays - usedDays);
+    // Quỹ phép năm & tính số ngày đã sử dụng
+    const quota = this.getEmployeeLeaveQuota(empId);
+    const currentYear = (this.summaryMonth || new Date().toISOString().substring(0, 7)).substring(0, 4);
+    
+    // Lấy danh sách ngày nghỉ phép của nhân sự này
+    const myLeaves = (appData.attendanceRequests || [])
+      .filter(r => r.employee_id === empId && (r.request_type === 'LEAVE' || (r.leave_type || '').includes('PHEP') || (r.leave_type || '').includes('ANNUAL')))
+      .sort((a, b) => (b.date || b.start_date || '').localeCompare(a.date || a.start_date || ''));
+
+    let usedLeaveDays = 0;
+    myLeaves.forEach(r => {
+      if (r.status === 'APPROVED') {
+        const rYear = (r.date || r.start_date || '').substring(0, 4);
+        if (!rYear || rYear === currentYear) {
+          usedLeaveDays += parseFloat(r.duration_days || r.days || 1.0) || 1.0;
+        }
+      }
+    });
+    usedLeaveDays = Math.round(usedLeaveDays * 10) / 10;
+    const remainingDays = Math.max(0, Math.round((quota.total - usedLeaveDays) * 10) / 10);
 
     const setVal = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.textContent = val;
     };
-    setVal('att-portal-total-leave', `${totalLeaveDays} ngày`);
-    setVal('att-portal-used-leave', `${usedDays} ngày`);
+    setVal('att-portal-total-leave', `${quota.total} ngày`);
+    setVal('att-portal-used-leave', `${usedLeaveDays} ngày`);
     setVal('att-portal-remain-leave', `${remainingDays} ngày`);
     setVal('att-portal-emp-name', `${emp.full_name} (${emp.employee_id})`);
-    setVal('att-portal-emp-dept', emp.department_name || emp.department_id);
+    setVal('att-portal-emp-dept', emp.department_name || emp.department_id || 'Công ty');
+
+    // Render bảng danh sách ngày nghỉ phép năm
+    const annualLeavesTbody = document.getElementById('att-portal-annual-leaves-tbody');
+    if (annualLeavesTbody) {
+      if (myLeaves.length === 0) {
+        annualLeavesTbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 22px;">
+              Chưa có ngày nghỉ phép năm nào được ghi nhận cho nhân sự này. Bấm <strong>"Thêm Phép Năm"</strong> hoặc <strong>"Import Phép Năm Excel"</strong> để nhập dữ liệu.
+            </td>
+          </tr>
+        `;
+      } else {
+        annualLeavesTbody.innerHTML = myLeaves.map((r, idx) => {
+          const reqDate = r.date || r.start_date || '-';
+          const duration = parseFloat(r.duration_days || r.days || 1.0) || 1.0;
+          const durationLabel = duration === 1 ? '1.0 ngày (Cả ngày)' : `${duration} ngày (Nửa ngày)`;
+          
+          let stBadge = '';
+          if (r.status === 'APPROVED') {
+            stBadge = '<span class="badge" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 700;"><i class="fa-solid fa-check-circle"></i> Đã duyệt</span>';
+          } else if (r.status === 'REJECTED') {
+            stBadge = '<span class="badge" style="background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;"><i class="fa-solid fa-circle-xmark"></i> Từ chối</span>';
+          } else {
+            stBadge = '<span class="badge" style="background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;"><i class="fa-solid fa-clock"></i> Chờ duyệt</span>';
+          }
+
+          const reqId = r.request_id || r.id;
+          return `
+            <tr>
+              <td style="text-align: center; font-weight: 600; color: #64748B;">${idx + 1}</td>
+              <td style="font-family: monospace; font-weight: 700; color: #1E293B;">${reqDate}</td>
+              <td style="text-align: center;"><span class="badge" style="background: #EFF6FF; color: #1E40AF; font-weight: 700; border: 1px solid #BFDBFE;">${durationLabel}</span></td>
+              <td><span class="badge" style="background: #ECFDF5; color: #047857; font-weight: 700; border: 1px solid #A7F3D0;">Phép năm (P)</span></td>
+              <td style="color: #475569; font-size: 12px;">${r.reason || 'Nghỉ phép năm'}</td>
+              <td style="text-align: center;">${stBadge}</td>
+              <td style="text-align: center; white-space: nowrap;">
+                <button type="button" class="btn btn-secondary btn-xs" onclick="appAttendance.openEditAnnualLeaveModal('${reqId}')" title="Chỉnh sửa ngày nghỉ phép" style="padding: 3px 7px; margin-right: 4px; font-size: 11px;">
+                  <i class="fa-solid fa-pen-to-square" style="color: #2563EB;"></i> Sửa
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs" onclick="appAttendance.deleteAnnualLeaveRecord('${reqId}')" title="Xóa ngày nghỉ phép" style="padding: 3px 7px; font-size: 11px; color: #DC2626;">
+                  <i class="fa-solid fa-trash-can"></i> Xóa
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
 
     // Personal timesheets for current month
     const myTimesheets = (appData.timesheets || []).filter(t => t.employee_id === empId && (t.date || '').startsWith(this.currentMonth));
@@ -3280,7 +3364,7 @@ const appAttendance = {
             <tr>
               <td style="text-align: center; color: var(--text-muted); font-size: 11px;">${idx + 1}</td>
               <td><strong>${typeName}</strong></td>
-              <td style="font-family: monospace;">${r.date}</td>
+              <td style="font-family: monospace;">${r.date || r.start_date}</td>
               <td style="font-size: 12px;">${r.reason || '-'}</td>
               <td style="text-align: center;">${stBadge}</td>
             </tr>
@@ -3288,6 +3372,610 @@ const appAttendance = {
         }).join('');
       }
     }
+  },
+
+  // ========================================================================
+  // ANNUAL LEAVE CRUD & EXCEL IMPORT ACTIONS
+  // ========================================================================
+  openAddAnnualLeaveModal() {
+    const modal = document.getElementById('modal-att-annual-leave-edit');
+    if (!modal) return;
+
+    const empSelect = document.getElementById('att-aleave-emp-id');
+    if (empSelect) {
+      empSelect.innerHTML = (appData.employees || []).map(e => `
+        <option value="${e.employee_id}" ${e.employee_id === this.portalEmployeeId ? 'selected' : ''}>
+          ${e.employee_id} - ${e.full_name} (${e.department_name || e.department_id || 'Công ty'})
+        </option>
+      `).join('');
+    }
+
+    document.getElementById('modal-att-aleave-title').textContent = 'Thêm Ngày Nghỉ Phép Năm';
+    document.getElementById('att-aleave-id').value = '';
+    document.getElementById('att-aleave-date').value = this.selectedDate || new Date().toISOString().substring(0, 10);
+    document.getElementById('att-aleave-duration').value = '1.0';
+    document.getElementById('att-aleave-reason').value = '';
+    document.getElementById('att-aleave-status').value = 'APPROVED';
+
+    modal.style.display = 'flex';
+  },
+
+  openEditAnnualLeaveModal(requestId) {
+    const modal = document.getElementById('modal-att-annual-leave-edit');
+    if (!modal) return;
+
+    const req = (appData.attendanceRequests || []).find(r => (r.request_id || r.id) === requestId);
+    if (!req) {
+      utils.showToast('Không tìm thấy bản ghi phép năm', 'error');
+      return;
+    }
+
+    const empSelect = document.getElementById('att-aleave-emp-id');
+    if (empSelect) {
+      empSelect.innerHTML = (appData.employees || []).map(e => `
+        <option value="${e.employee_id}" ${e.employee_id === req.employee_id ? 'selected' : ''}>
+          ${e.employee_id} - ${e.full_name} (${e.department_name || e.department_id || 'Công ty'})
+        </option>
+      `).join('');
+    }
+
+    document.getElementById('modal-att-aleave-title').textContent = 'Chỉnh Sửa Ngày Nghỉ Phép Năm';
+    document.getElementById('att-aleave-id').value = req.request_id || req.id;
+    document.getElementById('att-aleave-date').value = req.date || req.start_date || '';
+    document.getElementById('att-aleave-duration').value = String(req.duration_days || req.days || '1.0');
+    document.getElementById('att-aleave-reason').value = req.reason || '';
+    document.getElementById('att-aleave-status').value = req.status || 'APPROVED';
+
+    modal.style.display = 'flex';
+  },
+
+  closeAnnualLeaveModal() {
+    const modal = document.getElementById('modal-att-annual-leave-edit');
+    if (modal) modal.style.display = 'none';
+  },
+
+  saveAnnualLeaveRecord(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const reqId = document.getElementById('att-aleave-id').value;
+    const empId = document.getElementById('att-aleave-emp-id').value;
+    const date = document.getElementById('att-aleave-date').value;
+    const duration = parseFloat(document.getElementById('att-aleave-duration').value) || 1.0;
+    const reason = (document.getElementById('att-aleave-reason').value || '').trim();
+    const status = document.getElementById('att-aleave-status').value || 'APPROVED';
+
+    if (!empId || !date) {
+      utils.showToast('Vui lòng chọn nhân viên và ngày nghỉ!', 'warning');
+      return;
+    }
+
+    const emp = (appData.employees || []).find(x => x.employee_id === empId);
+    const fullName = emp ? emp.full_name : empId;
+    const deptName = emp ? (emp.department_name || emp.department_id) : '';
+
+    if (!appData.attendanceRequests) appData.attendanceRequests = [];
+
+    if (reqId) {
+      // Edit existing
+      const idx = appData.attendanceRequests.findIndex(r => (r.request_id || r.id) === reqId);
+      if (idx >= 0) {
+        appData.attendanceRequests[idx] = {
+          ...appData.attendanceRequests[idx],
+          employee_id: empId,
+          full_name: fullName,
+          department_name: deptName,
+          request_type: 'LEAVE',
+          leave_type: 'PHEP_NAM',
+          date: date,
+          start_date: date,
+          end_date: date,
+          duration_days: duration,
+          days: duration,
+          reason: reason || 'Nghỉ phép năm',
+          status: status,
+          updated_at: new Date().toISOString()
+        };
+      }
+    } else {
+      // Add new
+      const newReq = {
+        request_id: `ALEAVE-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        employee_id: empId,
+        full_name: fullName,
+        department_name: deptName,
+        request_type: 'LEAVE',
+        leave_type: 'PHEP_NAM',
+        date: date,
+        start_date: date,
+        end_date: date,
+        duration_days: duration,
+        days: duration,
+        reason: reason || 'Nghỉ phép năm',
+        status: status,
+        created_at: new Date().toISOString()
+      };
+      appData.attendanceRequests.unshift(newReq);
+    }
+
+    // Đồng bộ vào appData.timesheets
+    if (!appData.timesheets) appData.timesheets = [];
+    const tsIdx = appData.timesheets.findIndex(t => t.employee_id === empId && t.date === date);
+    if (status === 'APPROVED') {
+      if (tsIdx >= 0) {
+        appData.timesheets[tsIdx].status = 'LEAVE';
+        appData.timesheets[tsIdx].symbol = 'P';
+        appData.timesheets[tsIdx].work_units = duration;
+        appData.timesheets[tsIdx].note = `Nghỉ phép năm (P): ${reason || 'Hưởng lương'}`;
+      } else {
+        const dt = new Date(date);
+        const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+        appData.timesheets.push({
+          id: `TS-LEAVE-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          employee_id: empId,
+          full_name: fullName,
+          department_name: deptName,
+          date: date,
+          day_name: dayNames[dt.getDay()],
+          check_in: '',
+          check_out: '',
+          work_units: duration,
+          late_minutes: 0,
+          early_minutes: 0,
+          ot_hours: 0,
+          status: 'LEAVE',
+          symbol: 'P',
+          note: `Nghỉ phép năm (P): ${reason || 'Hưởng lương'}`
+        });
+      }
+    } else if (tsIdx >= 0 && appData.timesheets[tsIdx].symbol === 'P') {
+      appData.timesheets[tsIdx].status = 'ABSENT';
+      appData.timesheets[tsIdx].symbol = 'KP';
+      appData.timesheets[tsIdx].work_units = 0;
+      appData.timesheets[tsIdx].note = 'Chờ duyệt phép';
+    }
+
+    try {
+      localStorage.setItem('hrm_attendance_requests', JSON.stringify(appData.attendanceRequests));
+      localStorage.setItem('hrm_timesheets', JSON.stringify(appData.timesheets));
+    } catch (e) {}
+
+    this.closeAnnualLeaveModal();
+    this.portalEmployeeId = empId;
+    this.renderPortal();
+    this.renderSummary();
+    this.renderTimesheets();
+    this.renderRequests();
+
+    utils.showToast('Đã lưu thông tin phép năm và tự động đồng bộ vào Bảng Công Tổng Hợp!', 'success');
+  },
+
+  deleteAnnualLeaveRecord(requestId) {
+    const req = (appData.attendanceRequests || []).find(r => (r.request_id || r.id) === requestId);
+    if (!req) return;
+
+    if (!confirm(`Bạn có chắc chắn muốn xóa ngày nghỉ phép (${req.date || req.start_date}) của nhân sự ${req.full_name || req.employee_id}?`)) {
+      return;
+    }
+
+    appData.attendanceRequests = (appData.attendanceRequests || []).filter(r => (r.request_id || r.id) !== requestId);
+
+    const empId = req.employee_id;
+    const reqDate = req.date || req.start_date;
+    if (appData.timesheets) {
+      const tsIdx = appData.timesheets.findIndex(t => t.employee_id === empId && t.date === reqDate);
+      if (tsIdx >= 0 && appData.timesheets[tsIdx].symbol === 'P') {
+        appData.timesheets.splice(tsIdx, 1);
+      }
+    }
+
+    try {
+      localStorage.setItem('hrm_attendance_requests', JSON.stringify(appData.attendanceRequests));
+      localStorage.setItem('hrm_timesheets', JSON.stringify(appData.timesheets));
+    } catch (e) {}
+
+    this.renderPortal();
+    this.renderSummary();
+    this.renderTimesheets();
+    this.renderRequests();
+
+    utils.showToast('Đã xóa bản ghi phép năm thành công!', 'success');
+  },
+
+  openEditQuotaModal() {
+    const modal = document.getElementById('modal-att-quota-edit');
+    if (!modal) return;
+
+    const empId = this.portalEmployeeId;
+    const emp = (appData.employees || []).find(e => e.employee_id === empId);
+    if (!emp) {
+      utils.showToast('Vui lòng chọn nhân viên!', 'warning');
+      return;
+    }
+
+    const quota = this.getEmployeeLeaveQuota(empId);
+    document.getElementById('att-quota-emp-display').textContent = `${emp.employee_id} - ${emp.full_name} (${emp.department_name || emp.department_id || 'Công ty'})`;
+    document.getElementById('att-quota-standard').value = quota.standard;
+    document.getElementById('att-quota-seniority').value = quota.seniority;
+    document.getElementById('att-quota-carryover').value = quota.carryover;
+    document.getElementById('att-quota-total-display').textContent = `${quota.total} ngày`;
+    document.getElementById('att-quota-note').value = quota.note || '';
+
+    modal.style.display = 'flex';
+  },
+
+  closeEditQuotaModal() {
+    const modal = document.getElementById('modal-att-quota-edit');
+    if (modal) modal.style.display = 'none';
+  },
+
+  recalculateTotalQuota() {
+    const std = parseFloat(document.getElementById('att-quota-standard').value) || 0;
+    const sen = parseFloat(document.getElementById('att-quota-seniority').value) || 0;
+    const carry = parseFloat(document.getElementById('att-quota-carryover').value) || 0;
+    const total = Math.round((std + sen + carry) * 10) / 10;
+    document.getElementById('att-quota-total-display').textContent = `${total} ngày`;
+  },
+
+  saveLeaveQuota(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const empId = this.portalEmployeeId;
+    if (!empId) return;
+
+    const std = parseFloat(document.getElementById('att-quota-standard').value) || 0;
+    const sen = parseFloat(document.getElementById('att-quota-seniority').value) || 0;
+    const carry = parseFloat(document.getElementById('att-quota-carryover').value) || 0;
+    const note = (document.getElementById('att-quota-note').value || '').trim();
+
+    if (!appData.employeeLeaveQuotas) appData.employeeLeaveQuotas = {};
+    appData.employeeLeaveQuotas[empId] = {
+      standard: std,
+      seniority: sen,
+      carryover: carry,
+      note: note,
+      updated_at: new Date().toISOString()
+    };
+
+    try {
+      localStorage.setItem('hrm_employee_leave_quotas', JSON.stringify(appData.employeeLeaveQuotas));
+    } catch (err) {}
+
+    this.closeEditQuotaModal();
+    this.renderPortal();
+    utils.showToast(`Đã cập nhật quỹ phép năm cho nhân sự ${empId}!`, 'success');
+  },
+
+  downloadAnnualLeaveTemplate() {
+    if (typeof XLSX === 'undefined') {
+      utils.showToast('Thư viện Excel chưa được tải, vui lòng thử lại sau!', 'error');
+      return;
+    }
+
+    const currentYear = new Date().getFullYear();
+    const currentMonthStr = new Date().toISOString().substring(0, 7);
+
+    // Sheet 1: Mẫu import
+    const dataSheet1 = [
+      ['HƯỚNG DẪN IMPORT PHÉP NĂM:'],
+      ['1. Nhập đúng Mã Nhân Viên theo danh sách nhân viên ở Sheet 2.'],
+      ['2. Cột Ngày Nghỉ định dạng YYYY-MM-DD (Ví dụ: 2026-09-15) hoặc định dạng ngày Excel.'],
+      ['3. Số Ngày: 1.0 (Nghỉ cả ngày) hoặc 0.5 (Nghỉ nửa ngày).'],
+      ['4. Sau khi import, dữ liệu sẽ tự động cộng vào cột PHEP_NAM trên Bảng Công Tổng Hợp.'],
+      [],
+      ['STT', 'Mã Nhân Viên (*)', 'Họ Và Tên', 'Ngày Nghỉ (YYYY-MM-DD) (*)', 'Số Ngày (1.0/0.5) (*)', 'Loại Phép', 'Lý Do Nghỉ']
+    ];
+
+    const emps = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    if (emps.length > 0) {
+      dataSheet1.push([1, emps[0].employee_id, emps[0].full_name, `${currentMonthStr}-10`, 1.0, 'PHEP_NAM', 'Nghỉ phép năm theo kế hoạch']);
+      if (emps.length > 1) {
+        dataSheet1.push([2, emps[1].employee_id, emps[1].full_name, `${currentMonthStr}-15`, 0.5, 'PHEP_NAM', 'Nghỉ phép năm buổi chiều']);
+      }
+    } else {
+      dataSheet1.push([1, 'NV001', 'Nguyễn Văn A', `${currentMonthStr}-10`, 1.0, 'PHEP_NAM', 'Nghỉ phép năm theo kế hoạch']);
+    }
+
+    const ws1 = XLSX.utils.aoa_to_sheet(dataSheet1);
+
+    // Sheet 2: Danh mục nhân sự tham chiếu
+    const dataSheet2 = [
+      ['DANH MỤC NHÂN VIÊN THAM CHIẾU (DÙNG ĐỂ TRA CỨU MÃ NHÂN VIÊN)'],
+      ['STT', 'Mã Nhân Viên', 'Mã Chấm Công', 'Họ Và Tên', 'Phòng Ban / Đơn Vị', 'Trạng Thái']
+    ];
+
+    emps.forEach((e, idx) => {
+      dataSheet2.push([
+        idx + 1,
+        e.employee_id,
+        e.attendance_code || e.time_attendance_code || '',
+        e.full_name,
+        e.department_name || e.department_id || 'Công ty',
+        e.employment_status || 'Đang làm việc'
+      ]);
+    });
+
+    const ws2 = XLSX.utils.aoa_to_sheet(dataSheet2);
+
+    ws1['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 26 }, { wch: 22 }, { wch: 15 }, { wch: 35 }];
+    ws2['!cols'] = [{ wch: 6 }, { wch: 16 }, { wch: 16 }, { wch: 26 }, { wch: 28 }, { wch: 18 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws1, 'Import_Phep_Nam');
+    XLSX.utils.book_append_sheet(wb, ws2, 'DanhMuc_NhanVien');
+
+    XLSX.writeFile(wb, `Mau_Import_Phep_Nam_${currentYear}.xlsx`);
+    utils.showToast('Đã tải mẫu Excel nạp phép năm thành công!', 'success');
+  },
+
+  openImportAnnualLeaveModal() {
+    const modal = document.getElementById('modal-att-annual-leave-import');
+    if (!modal) return;
+
+    this.importedLeaveRows = [];
+    const fileInput = document.getElementById('att-aleave-file-input');
+    if (fileInput) fileInput.value = '';
+    const fileNameSpan = document.getElementById('att-aleave-file-name');
+    if (fileNameSpan) fileNameSpan.textContent = 'Chưa chọn file';
+    const tbody = document.getElementById('att-aleave-preview-tbody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #94A3B8; padding: 24px;">Vui lòng chọn file Excel để xem trước dữ liệu</td></tr>';
+    }
+    document.getElementById('att-aleave-preview-count').textContent = '0';
+    document.getElementById('att-aleave-valid-count').textContent = '0';
+    document.getElementById('att-aleave-invalid-count').textContent = '0';
+    document.getElementById('att-aleave-confirm-count').textContent = '0';
+    document.getElementById('btn-confirm-aleave-import').disabled = true;
+
+    modal.style.display = 'flex';
+  },
+
+  closeImportAnnualLeaveModal() {
+    const modal = document.getElementById('modal-att-annual-leave-import');
+    if (modal) modal.style.display = 'none';
+  },
+
+  handleAnnualLeaveFile(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const fileNameSpan = document.getElementById('att-aleave-file-name');
+    if (fileNameSpan) fileNameSpan.textContent = file.name;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+        let headerRowIdx = -1;
+        for (let i = 0; i < rawRows.length; i++) {
+          const rowStr = rawRows[i].map(c => String(c).toLowerCase()).join(' ');
+          if (rowStr.includes('mã nhân viên') || rowStr.includes('mã nv') || rowStr.includes('employee_id') || rowStr.includes('ngày nghỉ')) {
+            headerRowIdx = i;
+            break;
+          }
+        }
+
+        if (headerRowIdx === -1) headerRowIdx = 0;
+
+        const header = rawRows[headerRowIdx].map(h => String(h).trim().toLowerCase());
+        const empIdCol = header.findIndex(h => h.includes('mã nhân viên') || h.includes('mã nv') || h.includes('employee_id') || h.includes('ma nv'));
+        const nameCol = header.findIndex(h => h.includes('họ') || h.includes('tên') || h.includes('full_name'));
+        const dateCol = header.findIndex(h => h.includes('ngày nghỉ') || h.includes('ngày') || h.includes('date'));
+        const durationCol = header.findIndex(h => h.includes('số ngày') || h.includes('công') || h.includes('duration'));
+        const reasonCol = header.findIndex(h => h.includes('lý do') || h.includes('ghi chú') || h.includes('reason'));
+
+        const empMap = new Map((appData.employees || []).map(emp => [emp.employee_id.trim().toUpperCase(), emp]));
+        (appData.masterProfiles || []).forEach(m => {
+          if (m.employee_id && !empMap.has(m.employee_id.trim().toUpperCase())) {
+            empMap.set(m.employee_id.trim().toUpperCase(), {
+              employee_id: m.employee_id,
+              full_name: m.full_name || m['Họ và tên'] || '',
+              department_name: m.department_name || m['Đơn vị công tác'] || ''
+            });
+          }
+        });
+
+        const parsedRows = [];
+        let validCount = 0;
+        let invalidCount = 0;
+
+        for (let r = headerRowIdx + 1; r < rawRows.length; r++) {
+          const row = rawRows[r];
+          if (!row || row.length === 0 || row.every(c => c === '')) continue;
+
+          let rawEmpId = empIdCol >= 0 ? String(row[empIdCol] || '').trim() : String(row[1] || '').trim();
+          let rawName = nameCol >= 0 ? String(row[nameCol] || '').trim() : String(row[2] || '').trim();
+          let rawDate = dateCol >= 0 ? row[dateCol] : row[3];
+          let rawDuration = durationCol >= 0 ? row[durationCol] : row[4];
+          let rawReason = reasonCol >= 0 ? String(row[reasonCol] || '').trim() : (row[6] ? String(row[6]).trim() : '');
+
+          if (!rawEmpId && !rawDate) continue;
+
+          // Parse Date
+          let dateStr = '';
+          if (rawDate instanceof Date && !isNaN(rawDate)) {
+            const yr = rawDate.getFullYear();
+            const mo = String(rawDate.getMonth() + 1).padStart(2, '0');
+            const da = String(rawDate.getDate()).padStart(2, '0');
+            dateStr = `${yr}-${mo}-${da}`;
+          } else if (typeof rawDate === 'number') {
+            const d = XLSX.SSF.parse_date_code(rawDate);
+            if (d) {
+              dateStr = `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`;
+            }
+          } else if (typeof rawDate === 'string') {
+            const clean = rawDate.trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+              dateStr = clean;
+            } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(clean)) {
+              const [d, m, y] = clean.split('/');
+              dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            }
+          }
+
+          // Validate Employee
+          const emp = empMap.get(rawEmpId.toUpperCase());
+          const finalName = emp ? emp.full_name : (rawName || rawEmpId);
+          const finalDept = emp ? (emp.department_name || emp.department_id || 'Công ty') : '';
+
+          // Validate Duration
+          let duration = parseFloat(rawDuration);
+          if (isNaN(duration) || duration <= 0) duration = 1.0;
+          if (duration > 1.0) duration = 1.0;
+
+          let isValid = true;
+          let errorMsg = '';
+
+          if (!rawEmpId) {
+            isValid = false;
+            errorMsg = 'Thiếu mã NV';
+          } else if (!emp) {
+            isValid = false;
+            errorMsg = `Mã NV "${rawEmpId}" không tồn tại`;
+          } else if (!dateStr) {
+            isValid = false;
+            errorMsg = 'Ngày nghỉ không hợp lệ (định dạng YYYY-MM-DD)';
+          }
+
+          if (isValid) validCount++;
+          else invalidCount++;
+
+          parsedRows.push({
+            employee_id: emp ? emp.employee_id : rawEmpId,
+            full_name: finalName,
+            department_name: finalDept,
+            date: dateStr || String(rawDate),
+            duration_days: duration,
+            reason: rawReason || 'Nghỉ phép năm',
+            isValid,
+            errorMsg
+          });
+        }
+
+        this.importedLeaveRows = parsedRows;
+        document.getElementById('att-aleave-preview-count').textContent = parsedRows.length;
+        document.getElementById('att-aleave-valid-count').textContent = validCount;
+        document.getElementById('att-aleave-invalid-count').textContent = invalidCount;
+        document.getElementById('att-aleave-confirm-count').textContent = validCount;
+        document.getElementById('btn-confirm-aleave-import').disabled = validCount === 0;
+
+        const tbody = document.getElementById('att-aleave-preview-tbody');
+        if (tbody) {
+          if (parsedRows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #DC2626; padding: 24px;">Không tìm thấy dòng dữ liệu nào hợp lệ trong file!</td></tr>';
+          } else {
+            tbody.innerHTML = parsedRows.map((r, idx) => `
+              <tr style="background: ${r.isValid ? '#F0FDF4' : '#FEF2F2'}; border-bottom: 1px solid #E2E8F0;">
+                <td style="text-align: center; font-weight: 600;">${idx + 1}</td>
+                <td style="font-family: monospace; font-weight: 700; color: ${r.isValid ? '#047857' : '#DC2626'};">${r.employee_id}</td>
+                <td style="font-weight: 600;">${r.full_name}</td>
+                <td style="text-align: center; font-family: monospace;">${r.date}</td>
+                <td style="text-align: center; font-weight: 700;">${r.duration_days}</td>
+                <td style="font-size: 11.5px; color: #475569;">${r.reason}</td>
+                <td style="text-align: center;">
+                  ${r.isValid 
+                    ? '<span class="badge" style="background: #ECFDF5; color: #047857; font-weight: 700;"><i class="fa-solid fa-check"></i> Hợp lệ</span>' 
+                    : `<span class="badge" style="background: #FEF2F2; color: #DC2626; font-weight: 700;" title="${r.errorMsg}"><i class="fa-solid fa-triangle-exclamation"></i> ${r.errorMsg}</span>`}
+                </td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi khi đọc file Excel phép năm:', err);
+        utils.showToast(`Lỗi khi đọc file: ${err.message || 'File không đúng định dạng Excel'}`, 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  },
+
+  confirmImportAnnualLeave() {
+    if (!this.importedLeaveRows || this.importedLeaveRows.length === 0) return;
+
+    const validRows = this.importedLeaveRows.filter(r => r.isValid);
+    if (validRows.length === 0) {
+      utils.showToast('Không có dòng hợp lệ nào để import!', 'warning');
+      return;
+    }
+
+    if (!appData.attendanceRequests) appData.attendanceRequests = [];
+    if (!appData.timesheets) appData.timesheets = [];
+
+    const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+
+    validRows.forEach(r => {
+      // 1. Attendance request
+      const existingReqIdx = appData.attendanceRequests.findIndex(
+        req => req.employee_id === r.employee_id && (req.date === r.date || req.start_date === r.date) && req.request_type === 'LEAVE'
+      );
+
+      if (existingReqIdx >= 0) {
+        appData.attendanceRequests[existingReqIdx].status = 'APPROVED';
+        appData.attendanceRequests[existingReqIdx].duration_days = r.duration_days;
+        appData.attendanceRequests[existingReqIdx].days = r.duration_days;
+        appData.attendanceRequests[existingReqIdx].reason = r.reason;
+      } else {
+        appData.attendanceRequests.unshift({
+          request_id: `ALEAVE-IMP-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          employee_id: r.employee_id,
+          full_name: r.full_name,
+          department_name: r.department_name,
+          request_type: 'LEAVE',
+          leave_type: 'PHEP_NAM',
+          date: r.date,
+          start_date: r.date,
+          end_date: r.date,
+          duration_days: r.duration_days,
+          days: r.duration_days,
+          reason: r.reason,
+          status: 'APPROVED',
+          created_at: new Date().toISOString()
+        });
+      }
+
+      // 2. Timesheet record sync
+      const tsIdx = appData.timesheets.findIndex(t => t.employee_id === r.employee_id && t.date === r.date);
+      if (tsIdx >= 0) {
+        appData.timesheets[tsIdx].status = 'LEAVE';
+        appData.timesheets[tsIdx].symbol = 'P';
+        appData.timesheets[tsIdx].work_units = r.duration_days;
+        appData.timesheets[tsIdx].note = `Nghỉ phép năm (P): ${r.reason}`;
+      } else {
+        const dt = new Date(r.date);
+        appData.timesheets.push({
+          id: `TS-IMP-LEAVE-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          employee_id: r.employee_id,
+          full_name: r.full_name,
+          department_name: r.department_name,
+          date: r.date,
+          day_name: isNaN(dt.getDay()) ? 'Thứ 2' : dayNames[dt.getDay()],
+          check_in: '',
+          check_out: '',
+          work_units: r.duration_days,
+          late_minutes: 0,
+          early_minutes: 0,
+          ot_hours: 0,
+          status: 'LEAVE',
+          symbol: 'P',
+          note: `Nghỉ phép năm (P): ${r.reason}`
+        });
+      }
+    });
+
+    try {
+      localStorage.setItem('hrm_attendance_requests', JSON.stringify(appData.attendanceRequests));
+      localStorage.setItem('hrm_timesheets', JSON.stringify(appData.timesheets));
+    } catch (e) {}
+
+    this.closeImportAnnualLeaveModal();
+    this.renderPortal();
+    this.renderSummary();
+    this.renderTimesheets();
+    this.renderRequests();
+
+    utils.showToast(`Đã import thành công ${validRows.length} bản ghi phép năm và đồng bộ vào Bảng Công Tổng Hợp!`, 'success');
   },
 
   // ========================================================================
@@ -4870,11 +5558,15 @@ const appAttendance = {
       let nghiKoLuong = 0;
       let nghiBHXH = 0;
 
+      const phepNamDates = new Set();
+
       empReqs.forEach(req => {
         const type = (req.request_type || req.leave_type || req.type || '').toUpperCase();
         const duration = parseFloat(req.duration_days || req.days || req.units || 1.0) || 1.0;
+        const reqDate = req.date || req.start_date || '';
         if (type.includes('ANNUAL') || type.includes('PHEP') || type.includes('PHÉP')) {
           phepNam += duration;
+          if (reqDate) phepNamDates.add(reqDate);
         } else if (type.includes('LE') || type.includes('LỄ') || type.includes('TET') || type.includes('TẾT') || type.includes('HOLIDAY')) {
           leTet += duration;
         } else if (type.includes('CONG_TAC') || type.includes('CÔNG TÁC') || type.includes('BUSINESS')) {
@@ -4889,7 +5581,12 @@ const appAttendance = {
       });
 
       empTs.forEach(t => {
-        if (t.status === 'ABSENT' && (!t.work_units || t.work_units === 0)) {
+        const isLeave = t.symbol === 'P' || t.status === 'LEAVE' || (t.note && (t.note.toLowerCase().includes('phép năm') || t.note.toLowerCase().includes('phep nam')));
+        if (isLeave && t.date && !phepNamDates.has(t.date)) {
+          const wu = parseFloat(t.work_units !== undefined ? t.work_units : 1.0) || 1.0;
+          phepNam += wu;
+          phepNamDates.add(t.date);
+        } else if (t.status === 'ABSENT' && (!t.work_units || t.work_units === 0)) {
           nghiKoLuong += 1;
         }
       });
