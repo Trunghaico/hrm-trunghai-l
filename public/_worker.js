@@ -587,11 +587,20 @@ export default {
 
         if (!sampleTables || Object.keys(sampleTables).length === 0) {
           try {
-            const origin = new URL(request.url).origin;
-            const sampleRes = await fetch(`${origin}/sample_database.json`);
-            if (sampleRes.ok) {
-              const sampleJson = await sampleRes.json();
-              sampleTables = sampleJson.tables;
+            if (env?.ASSETS) {
+              const assetRes = await env.ASSETS.fetch(new Request(new URL("/sample_database.json", request.url)));
+              if (assetRes && assetRes.ok) {
+                const assetJson = await assetRes.json();
+                sampleTables = assetJson.tables;
+              }
+            }
+            if (!sampleTables || Object.keys(sampleTables).length === 0) {
+              const origin = new URL(request.url).origin;
+              const sampleRes = await fetch(`${origin}/sample_database.json`);
+              if (sampleRes.ok) {
+                const sampleJson = await sampleRes.json();
+                sampleTables = sampleJson.tables;
+              }
             }
           } catch (fetchErr) {
             console.error("Error fetching static sample_database.json:", fetchErr);
@@ -628,7 +637,39 @@ export default {
       // Route: GET /api/data (Fetch all HRM tables)
       // -------------------------------------------------------------
       if (path === "data" && method === "GET") {
-        const data = await loadAllFromD1(db);
+        let data = await loadAllFromD1(db);
+
+        // Tự động khôi phục toàn bộ 852 nhân sự từ sample_database.json nếu D1 bị trống hoặc chỉ có <= 10 bản ghi
+        const initialEmps = data.tables["03_Employees"] || [];
+        if (initialEmps.length <= 10) {
+          try {
+            let sampleTables = null;
+            if (env?.ASSETS) {
+              const assetRes = await env.ASSETS.fetch(new Request(new URL("/sample_database.json", request.url)));
+              if (assetRes && assetRes.ok) {
+                const assetJson = await assetRes.json();
+                sampleTables = assetJson.tables;
+              }
+            }
+            if (!sampleTables) {
+              const origin = new URL(request.url).origin;
+              const sampleRes = await fetch(`${origin}/sample_database.json`);
+              if (sampleRes.ok) {
+                const sampleJson = await sampleRes.json();
+                sampleTables = sampleJson.tables;
+              }
+            }
+            if (sampleTables && Array.isArray(sampleTables["03_Employees"]) && sampleTables["03_Employees"].length > initialEmps.length) {
+              console.log(`[Auto-Seed D1] Tự động nạp ${sampleTables["03_Employees"].length} nhân sự từ sample_database.json vào D1...`);
+              for (const [tblName, rows] of Object.entries(sampleTables)) {
+                await saveTableToD1(db, tblName, rows);
+              }
+              data = await loadAllFromD1(db);
+            }
+          } catch (seedErr) {
+            console.warn("[Auto-Seed D1 Warning]:", seedErr);
+          }
+        }
 
         // Tự động đồng bộ / tự sửa lành (auto-heal) bảng phụ nếu nhân sự có dữ liệu nhưng các bảng phụ thiếu
         const employees = data.tables["03_Employees"] || [];

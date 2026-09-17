@@ -116,7 +116,7 @@ const appData = {
           const cType = res.headers.get('content-type') || '';
           if (cType.includes('application/json')) {
             const resData = await res.json();
-            const hasEmps = resData && resData.tables && Array.isArray(resData.tables['03_Employees']) && resData.tables['03_Employees'].length > 0;
+            const hasEmps = resData && resData.tables && Array.isArray(resData.tables['03_Employees']) && resData.tables['03_Employees'].length >= 50;
             if (hasEmps) {
               json = resData;
               this.hasServerBackend = true;
@@ -128,7 +128,7 @@ const appData = {
       }
 
       // Tier 2: Static sample_database.json Fallback
-      const isComplete = json && json.tables && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length > 0;
+      const isComplete = json && json.tables && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length >= 50;
       if (!isComplete) {
         try {
           let fbRes = await fetch('sample_database.json?t=' + Date.now()).catch(() => null);
@@ -139,6 +139,14 @@ const appData = {
             const fbData = await fbRes.json();
             if (fbData && fbData.tables && Array.isArray(fbData.tables['03_Employees']) && fbData.tables['03_Employees'].length > 0) {
               json = fbData;
+              // Sync complete data back to Cloudflare D1 if server was empty or had a stub
+              if (this.hasServerBackend || !isComplete) {
+                fetch('/api/setup/restore-sample-data', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ tables: fbData.tables })
+                }).catch(() => {});
+              }
             }
           }
         } catch (e) {
@@ -147,11 +155,11 @@ const appData = {
       }
 
       // Tier 3: IndexedDB Local Cache Fallback
-      const hasValidData = json && json.tables && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length > 0;
+      const hasValidData = json && json.tables && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length >= 50;
       if (!hasValidData && window.hrmStorage) {
         try {
           const cachedTables = await window.hrmStorage.get('hrm_database_full_cache');
-          if (cachedTables && Array.isArray(cachedTables['03_Employees']) && cachedTables['03_Employees'].length > 0) {
+          if (cachedTables && Array.isArray(cachedTables['03_Employees']) && cachedTables['03_Employees'].length >= 50) {
             json = { success: true, tables: cachedTables };
           }
         } catch(e) {}
