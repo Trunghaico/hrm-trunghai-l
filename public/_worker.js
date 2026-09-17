@@ -1062,23 +1062,23 @@ export default {
               message: "Vui lòng bấm nút 'Tải file mẫu' trực tiếp trên giao diện để tải file mẫu Excel mới nhất."
             }, 400);
           }
-          const data = await loadAllFromD1(db);
-          const emp = (data.tables["03_Employees"] || []).find(e => e.employee_id === empId);
+          const [employees, depts, positions, contacts, identity, emergency, education, salaries, insurance, allowancesList, contracts, accounts, masterList] = await Promise.all([
+            loadTableFromD1(db, "03_Employees"),
+            loadTableFromD1(db, "01_Departments"),
+            loadTableFromD1(db, "02_Positions"),
+            loadTableFromD1(db, "04_Contacts_Addresses"),
+            loadTableFromD1(db, "05_Identity_Docs"),
+            loadTableFromD1(db, "06_Emergency_Contacts"),
+            loadTableFromD1(db, "07_Education"),
+            loadTableFromD1(db, "08_Salaries_Banks"),
+            loadTableFromD1(db, "09_Insurance_Welfare"),
+            loadTableFromD1(db, "14_Allowances_Deductions"),
+            loadTableFromD1(db, "10_Contracts"),
+            loadTableFromD1(db, "11_System_Accounts"),
+            loadTableFromD1(db, "00_Master_Profiles")
+          ]);
+          const emp = (employees || []).find(e => e.employee_id === empId);
           if (!emp) return jsonResponse({ success: false, message: "Không tìm thấy nhân viên" }, 404);
-
-          const depts = data.tables["01_Departments"] || [];
-          const positions = data.tables["02_Positions"] || [];
-          const contacts = data.tables["04_Contacts_Addresses"] || [];
-          const identity = data.tables["05_Identity_Docs"] || [];
-          const emergency = data.tables["06_Emergency_Contacts"] || [];
-          const education = data.tables["07_Education"] || [];
-          const salaries = data.tables["08_Salaries_Banks"] || [];
-          const insurance = data.tables["09_Insurance_Welfare"] || [];
-          const allowancesList = data.tables["14_Allowances_Deductions"] || [];
-          const empAllowances = allowancesList.filter(a => a.employee_id === empId);
-          const contracts = data.tables["10_Contracts"] || [];
-          const accounts = data.tables["11_System_Accounts"] || [];
-          const masterList = data.tables["00_Master_Profiles"] || [];
 
           const dept = depts.find(d => d.department_id === emp.department_id) || {};
           const pos = positions.find(p => p.position_id === emp.position_id) || {};
@@ -2565,14 +2565,14 @@ export default {
 
         // GET /api/attendance/devices
         if (path === "attendance/devices" && method === "GET") {
-          let devices = data.tables["20_Attendance_Devices"] || [];
+          let devices = await loadTableFromD1(db, "20_Attendance_Devices");
           return jsonResponse({ success: true, devices });
         }
 
         // POST /api/attendance/devices/save
         if (path === "attendance/devices/save" && method === "POST") {
           const body = await request.json().catch(() => ({}));
-          let devices = data.tables["20_Attendance_Devices"] || [];
+          let devices = await loadTableFromD1(db, "20_Attendance_Devices");
           const targetId = body.device_id || body.id;
           const idx = devices.findIndex(d => (d.device_id || d.id) === targetId);
           let savedDev = null;
@@ -2594,7 +2594,7 @@ export default {
         // POST /api/attendance/devices/delete
         if (path === "attendance/devices/delete" && method === "POST") {
           const body = await request.json().catch(() => ({}));
-          let devices = data.tables["20_Attendance_Devices"] || [];
+          let devices = await loadTableFromD1(db, "20_Attendance_Devices");
           const targetId = body.device_id || body.id;
           devices = devices.filter(d => (d.device_id || d.id) !== targetId);
           await saveTableToD1(db, "20_Attendance_Devices", devices);
@@ -2604,7 +2604,7 @@ export default {
         // POST /api/attendance/shifts/save
         if (path === "attendance/shifts/save" && method === "POST") {
           const body = await request.json().catch(() => ({}));
-          let shifts = data.tables["15_Attendance_Shifts"] || [];
+          let shifts = await loadTableFromD1(db, "15_Attendance_Shifts");
           const targetId = body.shift_id || body.shift_code || body.id;
           const idx = shifts.findIndex(s => (s.shift_id || s.shift_code) === targetId);
           if (idx >= 0) {
@@ -2619,7 +2619,7 @@ export default {
         // POST /api/attendance/shifts/delete
         if (path === "attendance/shifts/delete" && method === "POST") {
           const body = await request.json().catch(() => ({}));
-          let shifts = data.tables["15_Attendance_Shifts"] || [];
+          let shifts = await loadTableFromD1(db, "15_Attendance_Shifts");
           const targetId = body.shift_id || body.shift_code || body.id;
           shifts = shifts.filter(s => (s.shift_id || s.shift_code) !== targetId);
           await saveTableToD1(db, "15_Attendance_Shifts", shifts);
@@ -2638,7 +2638,7 @@ export default {
         // POST /api/attendance/zk/software-sync
         if (path === "attendance/zk/software-sync" && method === "POST") {
           const body = await request.json().catch(() => ({}));
-          let logs = data.tables["17_Attendance_Logs"] || [];
+          let logs = await loadTableFromD1(db, "17_Attendance_Logs");
           const punchLogs = body.punch_logs || [];
           let addedCount = 0;
           if (Array.isArray(punchLogs) && punchLogs.length > 0) {
@@ -2661,7 +2661,6 @@ export default {
             await saveTableToD1(db, "17_Attendance_Logs", logs);
           }
           if (Array.isArray(body.timesheets) && body.timesheets.length > 0) {
-            data.tables["19_Attendance_Timesheets"] = body.timesheets;
             await saveTableToD1(db, "19_Attendance_Timesheets", body.timesheets);
           }
           return jsonResponse({
