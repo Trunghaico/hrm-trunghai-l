@@ -1526,10 +1526,13 @@
           </div>
         </div>
 
-        <!-- Attendance Sub-tabs Navigation (5 Focused Tabs) -->
+        <!-- Attendance Sub-tabs Navigation (6 Focused Tabs) -->
         <div class="att-subnav-bar" style="display: flex; gap: 8px; border-bottom: 2px solid #E2E8F0; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;">
           <button class="btn btn-secondary att-nav-tab active" data-tab="dashboard" onclick="appAttendance.switchSubTab('dashboard')">
             <i class="fa-solid fa-chart-line"></i> Dashboard Bảng Công
+          </button>
+          <button class="btn btn-secondary att-nav-tab" data-tab="summary" onclick="appAttendance.switchSubTab('summary')">
+            <i class="fa-solid fa-table-list"></i> Bảng Công Tổng Hợp
           </button>
           <button class="btn btn-secondary att-nav-tab" data-tab="shifts" onclick="appAttendance.switchSubTab('shifts')">
             <i class="fa-solid fa-business-time"></i> Ca Làm Việc & Phân Lịch
@@ -1686,6 +1689,165 @@
               <button class="btn btn-secondary btn-sm" id="att-ts-prev-btn" onclick="appAttendance.changeTimesheetPage(-1)" style="padding: 4px 10px; font-size: 11.5px;"><i class="fa-solid fa-chevron-left"></i> Trước</button>
               <span id="att-ts-page-number" style="font-weight: 700; color: #1E293B; padding: 0 8px;">Trang 1 / 1</span>
               <button class="btn btn-secondary btn-sm" id="att-ts-next-btn" onclick="appAttendance.changeTimesheetPage(1)" style="padding: 4px 10px; font-size: 11.5px;">Sau <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBTAB 2: BẢNG CHẤM CÔNG TỔNG HỢP (CHUẨN MẪU BANG_CHAM_CONG_TONG_HOP.XLSX) -->
+        <div class="att-tab-content" id="att-tab-summary">
+          <!-- Policy & Summary Header Banner -->
+          <div style="background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%); color: #fff; border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(30,58,138,0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 46px; height: 46px; border-radius: 12px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+                  <i class="fa-solid fa-table-list"></i>
+                </div>
+                <div>
+                  <h3 style="margin: 0; font-size: 16.5px; font-weight: 800; color: #fff; letter-spacing: 0.3px;">BẢNG CHẤM CÔNG TỔNG HỢP THÁNG</h3>
+                  <p style="margin: 4px 0 0 0; font-size: 12.5px; color: #DBEAFE; line-height: 1.45;">
+                    Tổng hợp công thực tế, nghỉ phép năm, nghỉ lễ/tết, công tác, làm thêm giờ OT và kết nối chuẩn xác sang phân hệ tiền lương
+                  </p>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="appAttendance.openMappingGuideModal()" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; font-weight: 600;">
+                  <i class="fa-solid fa-circle-info"></i> Quy Tắc Mapping MISA
+                </button>
+                <button class="btn btn-sm" onclick="appAttendance.exportSummaryToExcel()" style="background: #10B981; color: #fff; font-weight: 700; border: none; box-shadow: 0 2px 8px rgba(16,185,129,0.35);">
+                  <i class="fa-solid fa-file-excel"></i> Xuất Excel Tổng Hợp (2 Sheet)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly KPI Summary Cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px;">
+            <div class="card att-kpi-card" style="border-left: 4px solid #3B82F6; padding: 12px 14px;">
+              <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Tổng Nhân Sự</div>
+              <div id="att-sum-kpi-total-emp" style="font-size: 22px; font-weight: 800; color: #1E293B; margin-top: 4px;">0</div>
+              <div style="font-size: 10.5px; color: #64748B; margin-top: 2px;">Nhân sự tính công</div>
+            </div>
+            <div class="card att-kpi-card" style="border-left: 4px solid #10B981; padding: 12px 14px;">
+              <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Công Thực Tế</div>
+              <div id="att-sum-kpi-actual" style="font-size: 22px; font-weight: 800; color: #047857; margin-top: 4px;">0</div>
+              <div style="font-size: 10.5px; color: #10B981; margin-top: 2px;">Mã: CONG_TT</div>
+            </div>
+            <div class="card att-kpi-card" style="border-left: 4px solid #2563EB; padding: 12px 14px;">
+              <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Phép & Nghỉ Hưởng Lương</div>
+              <div id="att-sum-kpi-paid-leave" style="font-size: 22px; font-weight: 800; color: #1D4ED8; margin-top: 4px;">0</div>
+              <div style="font-size: 10.5px; color: #2563EB; margin-top: 2px;">Phép + Lễ + Công tác</div>
+            </div>
+            <div class="card att-kpi-card" style="border-left: 4px solid #EF4444; padding: 12px 14px;">
+              <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Nghỉ Ko Lương / BHXH</div>
+              <div id="att-sum-kpi-unpaid-leave" style="font-size: 22px; font-weight: 800; color: #DC2626; margin-top: 4px;">0</div>
+              <div style="font-size: 10.5px; color: #EF4444; margin-top: 2px;">NGHI_KL + NGHI_BHXH</div>
+            </div>
+            <div class="card att-kpi-card" style="border-left: 4px solid #EA580C; padding: 12px 14px;">
+              <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Tổng Giờ OT</div>
+              <div id="att-sum-kpi-ot" style="font-size: 22px; font-weight: 800; color: #C2410C; margin-top: 4px;">0h</div>
+              <div style="font-size: 10.5px; color: #EA580C; margin-top: 2px;">Thường + Cuối tuần + Lễ</div>
+            </div>
+            <div class="card att-kpi-card" style="border-left: 4px solid #D97706; padding: 12px 14px;">
+              <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Đi Muộn</div>
+              <div id="att-sum-kpi-late" style="font-size: 22px; font-weight: 800; color: #B45309; margin-top: 4px;">0 lần / 0p</div>
+              <div style="font-size: 10.5px; color: #D97706; margin-top: 2px;">Kỷ luật / chuyên cần</div>
+            </div>
+            <div class="card att-kpi-card" style="border-left: 4px solid #F59E0B; background: #FFFBEB; padding: 12px 14px;">
+              <div style="font-size: 11px; color: #92400E; text-transform: uppercase; font-weight: 700;">Tổng Công Tính Lương</div>
+              <div id="att-sum-kpi-total-salary-days" style="font-size: 22px; font-weight: 800; color: #B45309; margin-top: 4px;">0</div>
+              <div style="font-size: 10.5px; color: #92400E; margin-top: 2px;">Mã: TONG_CONG</div>
+            </div>
+          </div>
+
+          <!-- Summary Filter Toolbar -->
+          <div class="filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; background: #F8FAFC; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label for="att-sum-month-picker" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Tháng chấm công:</label>
+              <input type="month" id="att-sum-month-picker" class="filter-select" style="height: 34px; font-weight: 700; color: #1E40AF;" onchange="appAttendance.onSummaryMonthChange(this.value)">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label for="att-sum-dept-select" style="font-size: 12px; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Phòng ban:</label>
+              <select id="att-sum-dept-select" class="filter-select" style="height: 34px; min-width: 200px; font-weight: 600;" onchange="appAttendance.onSummaryDeptChange(this.value)">
+                <option value="ALL">-- Tất cả phòng ban --</option>
+              </select>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <input type="text" id="att-sum-search" class="filter-input" placeholder="🔍 Tìm theo mã NV, họ tên, mã CC..." style="height: 34px;" oninput="appAttendance.onSummarySearch(this.value)">
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" onclick="appAttendance.recalculateSummary()" title="Tính toán lại toàn bộ bảng công tổng hợp">
+                <i class="fa-solid fa-calculator"></i> Tính Lại Công
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="appAttendance.exportSummaryToExcel()" style="background: #15803D; border-color: #15803D;" title="Xuất file Excel bảng công tổng hợp">
+                <i class="fa-solid fa-file-excel"></i> Xuất Excel Tổng Hợp
+              </button>
+            </div>
+          </div>
+
+          <!-- The Two-tier Enterprise Summary Table matching Bang_Cham_Cong_Tong_Hop.xlsx -->
+          <div class="table-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); max-height: 600px;">
+            <table class="table" style="width: 100%; font-size: 12px; border-collapse: separate; border-spacing: 0; white-space: nowrap;">
+              <thead style="position: sticky; top: 0; z-index: 10;">
+                <!-- Row 1: Group Headers -->
+                <tr style="text-transform: uppercase; font-size: 11px; font-weight: 700; letter-spacing: 0.3px;">
+                  <th colspan="4" style="background: #1E293B; color: #F8FAFC; text-align: center; border-right: 1px solid #334155; padding: 8px 6px;">THÔNG TIN NHÂN VIÊN</th>
+                  <th rowspan="2" style="background: #334155; color: #F8FAFC; text-align: center; vertical-align: middle; border-right: 1px solid #475569; width: 75px; padding: 6px;">CÔNG CHUẨN</th>
+                  <th colspan="5" style="background: #065F46; color: #ECFDF5; text-align: center; border-right: 1px solid #047857; padding: 8px 6px;">CÔNG HƯỞNG NGUYÊN LƯƠNG (NGÀY)</th>
+                  <th colspan="2" style="background: #991B1B; color: #FEF2F2; text-align: center; border-right: 1px solid #B91C1C; padding: 8px 6px;">NGHỈ KHÔNG LƯƠNG / CHẾ ĐỘ</th>
+                  <th colspan="3" style="background: #C2410C; color: #FFF7ED; text-align: center; border-right: 1px solid #EA580C; padding: 8px 6px;">LÀM THÊM GIỜ - OT (GIỜ)</th>
+                  <th colspan="2" style="background: #7F1D1D; color: #FEF2F2; text-align: center; border-right: 1px solid #991B1B; padding: 8px 6px;">KỶ LUẬT / CHUYÊN CẦN</th>
+                  <th rowspan="2" style="background: #1E3A8A; color: #EFF6FF; text-align: center; vertical-align: middle; width: 110px; padding: 6px;">TỔNG CÔNG TÍNH LƯƠNG<br><small style="color: #FDE047; font-weight: 800;">(TONG_CONG)</small></th>
+                </tr>
+                <!-- Row 2: Detailed Column Headers -->
+                <tr style="background: #F1F5F9; color: #1E293B; font-weight: 700; font-size: 11px; border-bottom: 2px solid #CBD5E1;">
+                  <th style="width: 40px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px;">STT</th>
+                  <th style="width: 85px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 6px;">Mã NV</th>
+                  <th style="min-width: 160px; text-align: left; border-right: 1px solid #E2E8F0; padding: 6px 8px;">Họ và tên</th>
+                  <th style="min-width: 140px; text-align: left; border-right: 1px solid #CBD5E1; padding: 6px 8px;">Phòng ban</th>
+
+                  <!-- CÔNG HƯỞNG NGUYÊN LƯƠNG -->
+                  <th style="width: 80px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; background: #F0FDF4; color: #065F46;">Công thực tế<br><small style="font-weight: 600; color: #059669;">(CONG_TT)</small></th>
+                  <th style="width: 75px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; background: #F0FDF4; color: #065F46;">Phép năm<br><small style="font-weight: 600; color: #059669;">(PHEP_NAM)</small></th>
+                  <th style="width: 75px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; background: #F0FDF4; color: #065F46;">Nghỉ lễ/Tết<br><small style="font-weight: 600; color: #059669;">(LE_TET)</small></th>
+                  <th style="width: 75px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; background: #F0FDF4; color: #065F46;">Công tác<br><small style="font-weight: 600; color: #059669;">(CONG_TAC)</small></th>
+                  <th style="width: 85px; text-align: center; border-right: 1px solid #CBD5E1; padding: 6px 4px; background: #F0FDF4; color: #065F46;">Nghỉ có lương<br><small style="font-weight: 600; color: #059669;">(NGHI_HUONG_L)</small></th>
+
+                  <!-- NGHỈ KHÔNG LƯƠNG / CHẾ ĐỘ -->
+                  <th style="width: 85px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; background: #FEF2F2; color: #991B1B;">Nghỉ ko lương<br><small style="font-weight: 600; color: #DC2626;">(NGHI_KL)</small></th>
+                  <th style="width: 80px; text-align: center; border-right: 1px solid #CBD5E1; padding: 6px 4px; background: #FEF2F2; color: #991B1B;">Nghỉ BHXH<br><small style="font-weight: 600; color: #DC2626;">(NGHI_BHXH)</small></th>
+
+                  <!-- LÀM THÊM GIỜ - OT -->
+                  <th style="width: 85px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; background: #FFF7ED; color: #C2410C;">OT ngày thường<br><small style="font-weight: 600; color: #EA580C;">(OT_NT)</small></th>
+                  <th style="width: 85px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; background: #FFF7ED; color: #C2410C;">OT cuối tuần<br><small style="font-weight: 600; color: #EA580C;">(OT_CT)</small></th>
+                  <th style="width: 75px; text-align: center; border-right: 1px solid #CBD5E1; padding: 6px 4px; background: #FFF7ED; color: #C2410C;">OT ngày lễ<br><small style="font-weight: 600; color: #EA580C;">(OT_NL)</small></th>
+
+                  <!-- KỶ LUẬT / CHUYÊN CẦN -->
+                  <th style="width: 75px; text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; background: #FFF1F2; color: #9F1239;">Đi muộn<br><small style="font-weight: 600; color: #E11D48;">(lần)</small></th>
+                  <th style="width: 75px; text-align: center; border-right: 1px solid #CBD5E1; padding: 6px 4px; background: #FFF1F2; color: #9F1239;">Đi muộn<br><small style="font-weight: 600; color: #E11D48;">(phút)</small></th>
+                </tr>
+              </thead>
+              <tbody id="att-summary-tbody">
+                <!-- Populated dynamically by attendance.js -->
+              </tbody>
+              <tfoot id="att-summary-tfoot" style="position: sticky; bottom: 0; background: #F8FAFC; font-weight: 800; border-top: 2px solid #CBD5E1; z-index: 5;">
+                <!-- Populated dynamically with grand totals -->
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Summary Pagination Bar -->
+          <div id="att-summary-pagination" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #fff; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--radius-md) var(--radius-md); font-size: 12px;">
+            <div id="att-sum-page-info" style="color: #64748B;">Đang hiển thị 0 / 0 nhân sự</div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button class="btn btn-secondary btn-sm" id="att-sum-prev-btn" onclick="appAttendance.changeSummaryPage(-1)" style="padding: 4px 10px; font-size: 11.5px;"><i class="fa-solid fa-chevron-left"></i> Trước</button>
+              <span id="att-sum-page-number" style="font-weight: 700; color: #1E293B; padding: 0 8px;">Trang 1 / 1</span>
+              <button class="btn btn-secondary btn-sm" id="att-sum-next-btn" onclick="appAttendance.changeSummaryPage(1)" style="padding: 4px 10px; font-size: 11.5px;">Sau <i class="fa-solid fa-chevron-right"></i></button>
+              <select id="att-sum-page-size" class="filter-select" style="height: 28px; font-size: 11.5px; margin-left: 6px;" onchange="appAttendance.changeSummaryPageSize(this.value)">
+                <option value="50">50 dòng/trang</option>
+                <option value="100">100 dòng/trang</option>
+                <option value="200">200 dòng/trang</option>
+                <option value="9999">Tất cả</option>
+              </select>
             </div>
           </div>
         </div>
@@ -5030,6 +5192,133 @@
       <button type="button" class="btn btn-primary btn-sm" onclick="appAttendance.saveAutoEmpAssignment()" style="background: #15803D; border-color: #15803D;">
         <i class="fa-solid fa-floppy-disk"></i> Lưu Đặc Cách
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: QUY TẮC ÁNH XẠ DỮ LIỆU CÔNG SANG PHÂN HỆ TIỀN LƯƠNG MISA AMIS
+     (Theo mẫu Sheet 2 Bang_Cham_Cong_Tong_Hop.xlsx)
+     ========================================================================== -->
+<div class="modal-backdrop" id="modal-att-mapping-guide" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); z-index: 1060; align-items: center; justify-content: center; padding: 20px;">
+  <div class="modal-content" style="background: #fff; width: 100%; max-width: 960px; max-height: 90vh; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+    <div class="modal-header" style="background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-code-compare" style="font-size: 20px; color: #93C5FD;"></i>
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #fff;">QUY TẮC ÁNH XẠ (MAPPING) DỮ LIỆU CÔNG SANG PHÂN HỆ TIỀN LƯƠNG MISA</h3>
+          <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #DBEAFE;">Tài liệu kỹ thuật hướng dẫn HR / Kế toán thiết lập công thức Payroll tự động</p>
+        </div>
+      </div>
+      <button type="button" class="modal-close" style="color: #fff; background: transparent; border: none; font-size: 22px; cursor: pointer;" onclick="appAttendance.closeMappingGuideModal()">&times;</button>
+    </div>
+
+    <div class="modal-body" style="padding: 20px; overflow-y: auto; flex: 1;">
+      <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 12.5px; color: #1E40AF; line-height: 1.5;">
+        <i class="fa-solid fa-circle-info" style="margin-right: 6px;"></i>
+        Dữ liệu từ tab <strong>Bảng Công Tổng Hợp</strong> đã được chuẩn hóa theo đúng tên cột và mã biến chuẩn. Khi xuất file Excel, bạn có thể nạp trực tiếp vào MISA AMIS Tiền Lương hoặc dùng các mã biến bên dưới để cấu hình công thức lương.
+      </div>
+
+      <div class="table-container" style="border: 1px solid #CBD5E1; border-radius: 8px; overflow-x: auto;">
+        <table class="table" style="width: 100%; font-size: 12px; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #1E293B; color: #fff;">
+              <th style="width: 40px; text-align: center; padding: 10px 6px;">STT</th>
+              <th style="min-width: 160px; padding: 10px 8px;">Chỉ số trên Bảng công</th>
+              <th style="min-width: 120px; padding: 10px 8px; text-align: center;">Mã biến Chấm công</th>
+              <th style="min-width: 120px; padding: 10px 8px; text-align: center;">Mã biến Bảng lương</th>
+              <th style="min-width: 280px; padding: 10px 8px;">Công thức mẫu trên MISA Tiền lương</th>
+              <th style="min-width: 200px; padding: 10px 8px;">Ghi chú nghiệp vụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #E2E8F0;">
+              <td style="text-align: center; font-weight: 700;">1</td>
+              <td style="font-weight: 600;">Công làm việc thực tế</td>
+              <td style="text-align: center;"><span class="badge" style="background: #ECFDF5; color: #047857; font-weight: 700; border: 1px solid #A7F3D0;">CONG_TT</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-weight: 700; border: 1px solid #BFDBFE;">CONG_THUC_TE</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #0369A1; background: #F8FAFC;">[Luong_Co_Ban] / [Cong_Chuan] * [CONG_THUC_TE]</td>
+              <td style="color: #475569;">Lương thời gian làm việc trực tiếp</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #E2E8F0; background: #FAFAFA;">
+              <td style="text-align: center; font-weight: 700;">2</td>
+              <td style="font-weight: 600;">Nghỉ phép năm</td>
+              <td style="text-align: center;"><span class="badge" style="background: #ECFDF5; color: #047857; font-weight: 700; border: 1px solid #A7F3D0;">PHEP_NAM</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-weight: 700; border: 1px solid #BFDBFE;">CONG_PHEP</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #0369A1; background: #F8FAFC;">[Luong_Co_Ban] / [Cong_Chuan] * [CONG_PHEP]</td>
+              <td style="color: #475569;">Hưởng 100% lương theo Luật Lao động</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #E2E8F0;">
+              <td style="text-align: center; font-weight: 700;">3</td>
+              <td style="font-weight: 600;">Nghỉ lễ/Tết</td>
+              <td style="text-align: center;"><span class="badge" style="background: #ECFDF5; color: #047857; font-weight: 700; border: 1px solid #A7F3D0;">LE_TET</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-weight: 700; border: 1px solid #BFDBFE;">CONG_LE</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #0369A1; background: #F8FAFC;">[Luong_Co_Ban] / [Cong_Chuan] * [CONG_LE]</td>
+              <td style="color: #475569;">Hưởng 100% lương theo quy định</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #E2E8F0; background: #FFFBEB;">
+              <td style="text-align: center; font-weight: 700; color: #B45309;">4</td>
+              <td style="font-weight: 700; color: #B45309;">Tổng công hưởng lương</td>
+              <td style="text-align: center;"><span class="badge" style="background: #FEF3C7; color: #B45309; font-weight: 800; border: 1px solid #FDE68A;">TONG_CONG</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #FEF3C7; color: #B45309; font-weight: 800; border: 1px solid #FDE68A;">TONG_CONG_HL</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #B45309; background: #FFFBEB; font-weight: 700;">[Luong_Co_Ban] / [Cong_Chuan] * [TONG_CONG_HL]</td>
+              <td style="color: #92400E; font-weight: 600;">Tính gộp toàn bộ công thời gian hưởng lương</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #E2E8F0;">
+              <td style="text-align: center; font-weight: 700;">5</td>
+              <td style="font-weight: 600;">Nghỉ không lương</td>
+              <td style="text-align: center;"><span class="badge" style="background: #FEF2F2; color: #DC2626; font-weight: 700; border: 1px solid #FECACA;">NGHI_KL</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #FEF2F2; color: #DC2626; font-weight: 700; border: 1px solid #FECACA;">CONG_KL</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #DC2626; background: #F8FAFC;">Trừ vào công chuẩn khi tính thưởng</td>
+              <td style="color: #475569;">Không sinh dòng lương thời gian</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #E2E8F0; background: #FAFAFA;">
+              <td style="text-align: center; font-weight: 700;">6</td>
+              <td style="font-weight: 600;">Nghỉ BHXH (Ốm/Thai sản)</td>
+              <td style="text-align: center;"><span class="badge" style="background: #FEF2F2; color: #DC2626; font-weight: 700; border: 1px solid #FECACA;">NGHI_BHXH</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #FEF2F2; color: #DC2626; font-weight: 700; border: 1px solid #FECACA;">CONG_BHXH</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #DC2626; background: #F8FAFC;">Lập hồ sơ C70a-HD gửi cơ quan BHXH</td>
+              <td style="color: #475569;">Do cơ quan BHXH chi trả qua tài khoản NV</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #E2E8F0;">
+              <td style="text-align: center; font-weight: 700;">7</td>
+              <td style="font-weight: 600;">OT ngày thường (150%)</td>
+              <td style="text-align: center;"><span class="badge" style="background: #FFF7ED; color: #EA580C; font-weight: 700; border: 1px solid #FED7AA;">OT_NT</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #FFF7ED; color: #EA580C; font-weight: 700; border: 1px solid #FED7AA;">GIO_OT_NT</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #EA580C; background: #F8FAFC;">([Luong_Co_Ban] / [Cong_Chuan] / 8) * 1.5 * [GIO_OT_NT]</td>
+              <td style="color: #475569;">Hệ số OT tối thiểu 1.5</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #E2E8F0; background: #FAFAFA;">
+              <td style="text-align: center; font-weight: 700;">8</td>
+              <td style="font-weight: 600;">OT cuối tuần (200%)</td>
+              <td style="text-align: center;"><span class="badge" style="background: #FFF7ED; color: #EA580C; font-weight: 700; border: 1px solid #FED7AA;">OT_CT</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #FFF7ED; color: #EA580C; font-weight: 700; border: 1px solid #FED7AA;">GIO_OT_CT</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #EA580C; background: #F8FAFC;">([Luong_Co_Ban] / [Cong_Chuan] / 8) * 2.0 * [GIO_OT_CT]</td>
+              <td style="color: #475569;">Hệ số OT nghỉ tuần tối thiểu 2.0</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #E2E8F0;">
+              <td style="text-align: center; font-weight: 700;">9</td>
+              <td style="font-weight: 600;">OT ngày lễ (300%)</td>
+              <td style="text-align: center;"><span class="badge" style="background: #FFF7ED; color: #EA580C; font-weight: 700; border: 1px solid #FED7AA;">OT_NL</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #FFF7ED; color: #EA580C; font-weight: 700; border: 1px solid #FED7AA;">GIO_OT_NL</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #EA580C; background: #F8FAFC;">([Luong_Co_Ban] / [Cong_Chuan] / 8) * 3.0 * [GIO_OT_NL]</td>
+              <td style="color: #475569;">Chưa bao gồm lương ngày lễ đã tính ở mục 3</td>
+            </tr>
+            <tr>
+              <td style="text-align: center; font-weight: 700;">10</td>
+              <td style="font-weight: 600;">Đi muộn (phút)</td>
+              <td style="text-align: center;"><span class="badge" style="background: #FEF2F2; color: #DC2626; font-weight: 700; border: 1px solid #FECACA;">DI_MUON_PHUT</span></td>
+              <td style="text-align: center;"><span class="badge" style="background: #FEF2F2; color: #DC2626; font-weight: 700; border: 1px solid #FECACA;">SO_PHUT_MUON</span></td>
+              <td style="font-family: monospace; font-size: 11.5px; color: #DC2626; background: #F8FAFC;">IF([SO_PHUT_MUON] &gt; 30, [SO_PHUT_MUON] * 2000, 0)</td>
+              <td style="color: #475569;">Công thức phạt đi muộn nội bộ (nếu có)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="padding: 12px 20px; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 8px;">
+      <button type="button" class="btn btn-primary btn-sm" onclick="appAttendance.closeMappingGuideModal()">Đóng Hướng Dẫn</button>
     </div>
   </div>
 </div>

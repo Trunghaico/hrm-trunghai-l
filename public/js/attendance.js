@@ -16,6 +16,12 @@ const appAttendance = {
   filterSearch: '',
   portalEmployeeId: '',
   devices: [],
+  summaryMonth: new Date().toISOString().substring(0, 7),
+  summaryFilterDept: 'ALL',
+  summaryFilterSearch: '',
+  summaryPage: 1,
+  summaryPageSize: 50,
+  summaryData: [],
 
   // Tracking deleted items so default templates never re-add them after user deletion
   getDeletedDeviceIds() {
@@ -146,6 +152,9 @@ const appAttendance = {
         this.toDate = maxAvailable;
         this.selectedDate = maxAvailable;
         this.currentMonth = maxAvailable.substring(0, 7);
+        this.summaryMonth = maxAvailable.substring(0, 7);
+      } else {
+        this.summaryMonth = this.currentMonth || new Date().toISOString().substring(0, 7);
       }
     } catch (e) {}
 
@@ -672,6 +681,9 @@ const appAttendance = {
     switch (this.currentSubTab) {
       case 'dashboard':
         this.renderDashboard();
+        break;
+      case 'summary':
+        this.renderSummary();
         break;
       case 'shifts':
         this.renderShifts();
@@ -4709,6 +4721,615 @@ const appAttendance = {
       document.body.removeChild(a2);
       utils.showToast('Đã tải xuống bộ cài đặt Agent tự động (install_agent_task.bat & ronald_jack_agent.ps1)!', 'success');
     }, 400);
+  },
+
+  // ========================================================================
+  // BẢNG CHẤM CÔNG TỔNG HỢP (CHUẨN MẪU BANG_CHAM_CONG_TONG_HOP.XLSX)
+  // ========================================================================
+  onSummaryMonthChange(monthVal) {
+    if (monthVal) {
+      this.summaryMonth = monthVal;
+      this.summaryPage = 1;
+      this.renderSummary();
+    }
+  },
+
+  onSummaryDeptChange(deptVal) {
+    this.summaryFilterDept = deptVal || 'ALL';
+    this.summaryPage = 1;
+    this.renderSummary();
+  },
+
+  onSummarySearch(searchVal) {
+    this.summaryFilterSearch = (searchVal || '').toLowerCase().trim();
+    this.summaryPage = 1;
+    this.renderSummary();
+  },
+
+  changeSummaryPage(delta) {
+    this.summaryPage = Math.max(1, (this.summaryPage || 1) + delta);
+    this.renderSummary();
+  },
+
+  changeSummaryPageSize(size) {
+    this.summaryPageSize = parseInt(size, 10) || 50;
+    this.summaryPage = 1;
+    this.renderSummary();
+  },
+
+  openMappingGuideModal() {
+    const m = document.getElementById('modal-att-mapping-guide');
+    if (m) m.style.display = 'flex';
+  },
+
+  closeMappingGuideModal() {
+    const m = document.getElementById('modal-att-mapping-guide');
+    if (m) m.style.display = 'none';
+  },
+
+  recalculateSummary() {
+    this.recalculateClientSide(true);
+    this.renderSummary();
+    if (window.utils && utils.showToast) {
+      utils.showToast('Đã tính toán lại toàn bộ dữ liệu bảng công tổng hợp thành công!', 'success');
+    }
+  },
+
+  calculateMonthlySummaryData(targetMonth) {
+    if (!targetMonth) targetMonth = this.summaryMonth || new Date().toISOString().substring(0, 7);
+    const [yr, mo] = targetMonth.split('-').map(Number);
+    const daysInMonth = new Date(yr, mo, 0).getDate();
+
+    // Chuẩn ngày công tháng (thường là 26 ngày công chuẩn theo Luật LĐ và DN Trung Hải)
+    let standardDays = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayOfWeek = new Date(yr, mo - 1, d).getDay();
+      if (dayOfWeek !== 0) standardDays++; // T2 - T7
+    }
+    if (standardDays > 26) standardDays = 26;
+    if (standardDays <= 0) standardDays = 26;
+
+    const timesheets = (appData.timesheets || []).filter(t => (t.date || '').startsWith(targetMonth));
+    const requests = (appData.attendanceRequests || []).filter(r => r.status === 'APPROVED');
+    const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const masterProfiles = appData.masterProfiles || [];
+    const masterMap = new Map(masterProfiles.map(m => [m.employee_id, m]));
+    const autoEmpSet = new Set((this.autoAttendanceEmployees || []).filter(a => a.enabled !== false).map(a => a.employee_id));
+
+    // Map timesheets by empId
+    const tsByEmp = new Map();
+    timesheets.forEach(t => {
+      if (!t.employee_id) return;
+      if (!tsByEmp.has(t.employee_id)) tsByEmp.set(t.employee_id, []);
+      tsByEmp.get(t.employee_id).push(t);
+    });
+
+    // Map requests by empId
+    const reqByEmp = new Map();
+    requests.forEach(r => {
+      if (!r.employee_id) return;
+      const sDate = (r.start_date || r.date || '').substring(0, 7);
+      const eDate = (r.end_date || r.date || r.start_date || '').substring(0, 7);
+      if (sDate === targetMonth || eDate === targetMonth) {
+        if (!reqByEmp.has(r.employee_id)) reqByEmp.set(r.employee_id, []);
+        reqByEmp.get(r.employee_id).push(r);
+      }
+    });
+
+    const summaryList = [];
+
+    employees.forEach((emp, index) => {
+      const empId = emp.employee_id || '';
+      const master = masterMap.get(empId) || {};
+      const fullName = emp.full_name || master.full_name || master['Họ và tên'] || '';
+      const deptName = this.getCanonicalDeptName(emp.department_name || emp.department_id || master['Đơn vị công tác'] || master.department_name || '') || 'Công ty';
+      const attCode = emp.attendance_code || emp.time_attendance_code || emp['Mã chấm công'] || master['Mã chấm công'] || master.time_attendance_code || '';
+
+      const empTs = tsByEmp.get(empId) || [];
+      const empReqs = reqByEmp.get(empId) || [];
+      const isAuto = autoEmpSet.has(empId);
+
+      let congTT = 0;
+      let otNT = 0;
+      let otCT = 0;
+      let otNL = 0;
+      let lateCount = 0;
+      let lateMinutes = 0;
+
+      if (empTs.length > 0) {
+        empTs.forEach(t => {
+          const wu = parseFloat(t.work_units !== undefined ? t.work_units : 1.0) || 0;
+          if (t.check_in || t.status === 'VALID' || t.status === 'LATE' || t.status === 'EARLY' || t.status === 'OVERTIME' || t.status === 'NO_CODE') {
+            congTT += wu;
+          }
+          if (t.late_minutes && t.late_minutes > 0) {
+            lateCount++;
+            lateMinutes += t.late_minutes;
+          }
+          const ot = parseFloat(t.ot_hours) || 0;
+          if (ot > 0) {
+            const dt = t.date ? new Date(t.date) : null;
+            const dayOfWeek = dt ? dt.getDay() : 1;
+            if (t.ot_type === 'HOLIDAY' || t.status === 'HOLIDAY') {
+              otNL += ot;
+            } else if (t.ot_type === 'WEEKEND' || dayOfWeek === 0) {
+              otCT += ot;
+            } else {
+              otNT += ot;
+            }
+          }
+        });
+      } else if (isAuto) {
+        congTT = standardDays;
+      }
+
+      let phepNam = 0;
+      let leTet = 0;
+      let congTac = 0;
+      let nghiHuongLuong = 0;
+      let nghiKoLuong = 0;
+      let nghiBHXH = 0;
+
+      empReqs.forEach(req => {
+        const type = (req.request_type || req.leave_type || req.type || '').toUpperCase();
+        const duration = parseFloat(req.duration_days || req.days || req.units || 1.0) || 1.0;
+        if (type.includes('ANNUAL') || type.includes('PHEP') || type.includes('PHÉP')) {
+          phepNam += duration;
+        } else if (type.includes('LE') || type.includes('LỄ') || type.includes('TET') || type.includes('TẾT') || type.includes('HOLIDAY')) {
+          leTet += duration;
+        } else if (type.includes('CONG_TAC') || type.includes('CÔNG TÁC') || type.includes('BUSINESS')) {
+          congTac += duration;
+        } else if (type.includes('PAID') || type.includes('HƯỞNG LƯƠNG') || type.includes('CHẾ ĐỘ')) {
+          nghiHuongLuong += duration;
+        } else if (type.includes('UNPAID') || type.includes('KHÔNG LƯƠNG') || type.includes('KO LUONG')) {
+          nghiKoLuong += duration;
+        } else if (type.includes('BHXH') || type.includes('SICK') || type.includes('ỐM') || type.includes('THAI SẢN') || type.includes('MATERNITY')) {
+          nghiBHXH += duration;
+        }
+      });
+
+      empTs.forEach(t => {
+        if (t.status === 'ABSENT' && (!t.work_units || t.work_units === 0)) {
+          nghiKoLuong += 1;
+        }
+      });
+
+      congTT = Math.round(congTT * 10) / 10;
+      phepNam = Math.round(phepNam * 10) / 10;
+      leTet = Math.round(leTet * 10) / 10;
+      congTac = Math.round(congTac * 10) / 10;
+      nghiHuongLuong = Math.round(nghiHuongLuong * 10) / 10;
+      nghiKoLuong = Math.round(nghiKoLuong * 10) / 10;
+      nghiBHXH = Math.round(nghiBHXH * 10) / 10;
+      otNT = Math.round(otNT * 10) / 10;
+      otCT = Math.round(otCT * 10) / 10;
+      otNL = Math.round(otNL * 10) / 10;
+
+      const tongCong = Math.round((congTT + phepNam + leTet + congTac + nghiHuongLuong) * 10) / 10;
+
+      summaryList.push({
+        stt: index + 1,
+        employee_id: empId,
+        attendance_code: attCode,
+        full_name: fullName,
+        department_name: deptName,
+        standard_days: standardDays,
+        cong_tt: congTT,
+        phep_nam: phepNam,
+        le_tet: leTet,
+        cong_tac: congTac,
+        nghi_huong_l: nghiHuongLuong,
+        nghi_kl: nghiKoLuong,
+        nghi_bhxh: nghiBHXH,
+        ot_nt: otNT,
+        ot_ct: otCT,
+        ot_nl: otNL,
+        late_times: lateCount,
+        late_minutes: lateMinutes,
+        tong_cong: tongCong
+      });
+    });
+
+    return summaryList;
+  },
+
+  renderSummary() {
+    const tbody = document.getElementById('att-summary-tbody');
+    const tfoot = document.getElementById('att-summary-tfoot');
+    if (!tbody) return;
+
+    // Sync Month Picker
+    const monthPicker = document.getElementById('att-sum-month-picker');
+    if (monthPicker) {
+      if (!this.summaryMonth) {
+        this.summaryMonth = this.currentMonth || new Date().toISOString().substring(0, 7);
+      }
+      monthPicker.value = this.summaryMonth;
+    }
+
+    // Populate Department Filter Select Dropdown
+    const deptSelect = document.getElementById('att-sum-dept-select');
+    if (deptSelect && deptSelect.options.length <= 1) {
+      const depts = new Set();
+      (appData.employees || []).forEach(e => {
+        const d = this.getCanonicalDeptName(e.department_name || e.department_id || '');
+        if (d) depts.add(d);
+      });
+      Array.from(depts).sort().forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        deptSelect.appendChild(opt);
+      });
+    }
+    if (deptSelect && this.summaryFilterDept) {
+      deptSelect.value = this.summaryFilterDept;
+    }
+
+    // Calculate Summary Data
+    const allSummary = this.calculateMonthlySummaryData(this.summaryMonth);
+    this.summaryData = allSummary;
+
+    // Apply Filter & Search
+    let filtered = [...allSummary];
+    if (this.summaryFilterDept && this.summaryFilterDept !== 'ALL') {
+      const targetDept = this.summaryFilterDept.toLowerCase().trim();
+      filtered = filtered.filter(i => (i.department_name || '').toLowerCase().trim() === targetDept);
+    }
+    if (this.summaryFilterSearch) {
+      const kw = this.summaryFilterSearch;
+      filtered = filtered.filter(i => 
+        (i.full_name || '').toLowerCase().includes(kw) ||
+        (i.employee_id || '').toLowerCase().includes(kw) ||
+        (i.attendance_code || '').toLowerCase().includes(kw) ||
+        (i.department_name || '').toLowerCase().includes(kw)
+      );
+    }
+
+    // Calculate Grand Totals
+    const totalEmp = filtered.length;
+    let sumStandard = 0;
+    let sumCongTT = 0;
+    let sumPhepNam = 0;
+    let sumLeTet = 0;
+    let sumCongTac = 0;
+    let sumNghiHuongL = 0;
+    let sumNghiKL = 0;
+    let sumNghiBHXH = 0;
+    let sumOtNT = 0;
+    let sumOtCT = 0;
+    let sumOtNL = 0;
+    let sumLateTimes = 0;
+    let sumLateMinutes = 0;
+    let sumTongCong = 0;
+
+    filtered.forEach(i => {
+      sumStandard += (i.standard_days || 0);
+      sumCongTT += (i.cong_tt || 0);
+      sumPhepNam += (i.phep_nam || 0);
+      sumLeTet += (i.le_tet || 0);
+      sumCongTac += (i.cong_tac || 0);
+      sumNghiHuongL += (i.nghi_huong_l || 0);
+      sumNghiKL += (i.nghi_kl || 0);
+      sumNghiBHXH += (i.nghi_bhxh || 0);
+      sumOtNT += (i.ot_nt || 0);
+      sumOtCT += (i.ot_ct || 0);
+      sumOtNL += (i.ot_nl || 0);
+      sumLateTimes += (i.late_times || 0);
+      sumLateMinutes += (i.late_minutes || 0);
+      sumTongCong += (i.tong_cong || 0);
+    });
+
+    const round1 = (num) => Math.round(num * 10) / 10;
+    sumCongTT = round1(sumCongTT);
+    sumPhepNam = round1(sumPhepNam);
+    sumLeTet = round1(sumLeTet);
+    sumCongTac = round1(sumCongTac);
+    sumNghiHuongL = round1(sumNghiHuongL);
+    sumNghiKL = round1(sumNghiKL);
+    sumNghiBHXH = round1(sumNghiBHXH);
+    sumOtNT = round1(sumOtNT);
+    sumOtCT = round1(sumOtCT);
+    sumOtNL = round1(sumOtNL);
+    sumTongCong = round1(sumTongCong);
+
+    const sumPaidLeaves = round1(sumPhepNam + sumLeTet + sumCongTac + sumNghiHuongL);
+    const sumUnpaidLeaves = round1(sumNghiKL + sumNghiBHXH);
+    const sumTotalOt = round1(sumOtNT + sumOtCT + sumOtNL);
+
+    // Update KPI Cards
+    const setEl = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    setEl('att-sum-kpi-total-emp', totalEmp.toLocaleString('vi-VN'));
+    setEl('att-sum-kpi-actual', `${sumCongTT.toLocaleString('vi-VN')} công`);
+    setEl('att-sum-kpi-paid-leave', `${sumPaidLeaves.toLocaleString('vi-VN')} ngày`);
+    setEl('att-sum-kpi-unpaid-leave', `${sumUnpaidLeaves.toLocaleString('vi-VN')} ngày`);
+    setEl('att-sum-kpi-ot', `${sumTotalOt.toLocaleString('vi-VN')} giờ`);
+    setEl('att-sum-kpi-late', `${sumLateTimes.toLocaleString('vi-VN')} lần (${sumLateMinutes.toLocaleString('vi-VN')}p)`);
+    setEl('att-sum-kpi-total-salary-days', `${sumTongCong.toLocaleString('vi-VN')} công`);
+
+    // Pagination
+    const pageSize = this.summaryPageSize || 50;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    if (this.summaryPage > totalPages) this.summaryPage = totalPages;
+    const startIdx = (this.summaryPage - 1) * pageSize;
+    const pagedData = filtered.slice(startIdx, startIdx + pageSize);
+
+    // Render Table Body
+    if (pagedData.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="18" style="text-align: center; padding: 36px 20px; color: #94A3B8;">
+            <i class="fa-solid fa-calendar-xmark" style="font-size: 32px; margin-bottom: 8px; display: block; color: #CBD5E1;"></i>
+            <span style="font-size: 13.5px; font-weight: 600;">Không tìm thấy dữ liệu tổng hợp cho tháng ${this.summaryMonth || ''}</span>
+          </td>
+        </tr>`;
+    } else {
+      tbody.innerHTML = pagedData.map((item, idx) => {
+        const rowNum = startIdx + idx + 1;
+        return `
+          <tr style="border-bottom: 1px solid #E2E8F0;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
+            <td style="text-align: center; color: #64748B; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${rowNum}</td>
+            <td style="text-align: center; font-weight: 700; color: #1E40AF; border-right: 1px solid #E2E8F0; padding: 6px;">${item.employee_id}</td>
+            <td style="font-weight: 600; color: #1E293B; border-right: 1px solid #E2E8F0; padding: 6px 8px;">${item.full_name}</td>
+            <td style="color: #475569; font-size: 11.5px; border-right: 1px solid #CBD5E1; padding: 6px 8px;">${item.department_name}</td>
+
+            <!-- CÔNG CHUẨN -->
+            <td style="text-align: center; font-weight: 700; background: #F8FAFC; border-right: 1px solid #CBD5E1; padding: 6px 4px;">${item.standard_days}</td>
+
+            <!-- CÔNG HƯỞNG NGUYÊN LƯƠNG -->
+            <td style="text-align: center; font-weight: 800; color: #047857; background: #F0FDF4; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.cong_tt > 0 ? item.cong_tt : '-'}</td>
+            <td style="text-align: center; color: #1D4ED8; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.phep_nam > 0 ? item.phep_nam : '-'}</td>
+            <td style="text-align: center; color: #7C3AED; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.le_tet > 0 ? item.le_tet : '-'}</td>
+            <td style="text-align: center; color: #0284C7; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.cong_tac > 0 ? item.cong_tac : '-'}</td>
+            <td style="text-align: center; color: #0D9488; font-weight: 600; border-right: 1px solid #CBD5E1; padding: 6px 4px;">${item.nghi_huong_l > 0 ? item.nghi_huong_l : '-'}</td>
+
+            <!-- NGHỈ KHÔNG LƯƠNG / CHẾ ĐỘ -->
+            <td style="text-align: center; color: #DC2626; font-weight: 600; background: #FEF2F2; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.nghi_kl > 0 ? item.nghi_kl : '-'}</td>
+            <td style="text-align: center; color: #D97706; font-weight: 600; background: #FEF2F2; border-right: 1px solid #CBD5E1; padding: 6px 4px;">${item.nghi_bhxh > 0 ? item.nghi_bhxh : '-'}</td>
+
+            <!-- LÀM THÊM GIỜ - OT -->
+            <td style="text-align: center; color: #C2410C; font-weight: 600; background: #FFF7ED; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.ot_nt > 0 ? item.ot_nt : '-'}</td>
+            <td style="text-align: center; color: #EA580C; font-weight: 600; background: #FFF7ED; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.ot_ct > 0 ? item.ot_ct : '-'}</td>
+            <td style="text-align: center; color: #9A3412; font-weight: 600; background: #FFF7ED; border-right: 1px solid #CBD5E1; padding: 6px 4px;">${item.ot_nl > 0 ? item.ot_nl : '-'}</td>
+
+            <!-- KỶ LUẬT / CHUYÊN CẦN -->
+            <td style="text-align: center; color: #E11D48; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.late_times > 0 ? item.late_times : '-'}</td>
+            <td style="text-align: center; color: #E11D48; font-weight: 600; border-right: 1px solid #CBD5E1; padding: 6px 4px;">${item.late_minutes > 0 ? item.late_minutes : '-'}</td>
+
+            <!-- TỔNG CÔNG TÍNH LƯƠNG -->
+            <td style="text-align: center; font-weight: 800; font-size: 13px; color: #B45309; background: #FFFBEB; padding: 6px 6px;">${item.tong_cong}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Render Table Footer
+    if (tfoot) {
+      tfoot.innerHTML = `
+        <tr style="background: #F1F5F9; color: #1E293B; font-weight: 800; font-size: 11.5px; border-top: 2px solid #CBD5E1;">
+          <td colspan="4" style="text-align: center; padding: 8px 6px; border-right: 1px solid #CBD5E1; font-weight: 800; color: #1E293B;">TỔNG CỘNG (${totalEmp} NV)</td>
+          <td style="text-align: center; border-right: 1px solid #CBD5E1; padding: 8px 4px;">${sumStandard}</td>
+          <td style="text-align: center; color: #047857; background: #DCFCE7; border-right: 1px solid #E2E8F0; padding: 8px 4px;">${sumCongTT}</td>
+          <td style="text-align: center; color: #1D4ED8; border-right: 1px solid #E2E8F0; padding: 8px 4px;">${sumPhepNam}</td>
+          <td style="text-align: center; color: #7C3AED; border-right: 1px solid #E2E8F0; padding: 8px 4px;">${sumLeTet}</td>
+          <td style="text-align: center; color: #0284C7; border-right: 1px solid #E2E8F0; padding: 8px 4px;">${sumCongTac}</td>
+          <td style="text-align: center; color: #0D9488; border-right: 1px solid #CBD5E1; padding: 8px 4px;">${sumNghiHuongL}</td>
+          <td style="text-align: center; color: #DC2626; background: #FEE2E2; border-right: 1px solid #E2E8F0; padding: 8px 4px;">${sumNghiKL}</td>
+          <td style="text-align: center; color: #D97706; background: #FEE2E2; border-right: 1px solid #CBD5E1; padding: 8px 4px;">${sumNghiBHXH}</td>
+          <td style="text-align: center; color: #C2410C; background: #FFEDD5; border-right: 1px solid #E2E8F0; padding: 8px 4px;">${sumOtNT}</td>
+          <td style="text-align: center; color: #EA580C; background: #FFEDD5; border-right: 1px solid #E2E8F0; padding: 8px 4px;">${sumOtCT}</td>
+          <td style="text-align: center; color: #9A3412; background: #FFEDD5; border-right: 1px solid #CBD5E1; padding: 8px 4px;">${sumOtNL}</td>
+          <td style="text-align: center; color: #E11D48; border-right: 1px solid #E2E8F0; padding: 8px 4px;">${sumLateTimes}</td>
+          <td style="text-align: center; color: #E11D48; border-right: 1px solid #CBD5E1; padding: 8px 4px;">${sumLateMinutes}</td>
+          <td style="text-align: center; color: #B45309; background: #FEF3C7; font-size: 13.5px; padding: 8px 6px;">${sumTongCong}</td>
+        </tr>
+      `;
+    }
+
+    // Update Pagination Display
+    const pageInfo = document.getElementById('att-sum-page-info');
+    if (pageInfo) {
+      const shownStart = filtered.length > 0 ? startIdx + 1 : 0;
+      const shownEnd = Math.min(startIdx + pageSize, filtered.length);
+      pageInfo.textContent = `Đang hiển thị ${shownStart} - ${shownEnd} / ${filtered.length} nhân sự`;
+    }
+    const pageNumber = document.getElementById('att-sum-page-number');
+    if (pageNumber) {
+      pageNumber.textContent = `Trang ${this.summaryPage} / ${totalPages}`;
+    }
+    const prevBtn = document.getElementById('att-sum-prev-btn');
+    if (prevBtn) prevBtn.disabled = this.summaryPage <= 1;
+    const nextBtn = document.getElementById('att-sum-next-btn');
+    if (nextBtn) nextBtn.disabled = this.summaryPage >= totalPages;
+  },
+
+  exportSummaryToExcel() {
+    if (typeof XLSX === 'undefined') {
+      utils.showToast('Thư viện Excel (SheetJS) chưa tải xong, vui lòng thử lại sau giây lát!', 'error');
+      return;
+    }
+
+    const targetMonth = this.summaryMonth || new Date().toISOString().substring(0, 7);
+    const summaryList = this.calculateMonthlySummaryData(targetMonth);
+    if (!summaryList || summaryList.length === 0) {
+      utils.showToast('Không có dữ liệu chấm công tổng hợp để xuất!', 'warning');
+      return;
+    }
+
+    const [yr, mo] = targetMonth.split('-');
+
+    // Build Sheet 1: Bang_Cong_Tong_Hop
+    const wsData = [];
+    wsData.push([]); // Row 1
+    wsData.push(['', 'BẢNG CHẤM CÔNG TỔNG HỢP THÁNG ' + mo + '/' + yr]); // Row 2
+    wsData.push([]); // Row 3
+    
+    // Row 4 (Group Headers)
+    wsData.push([
+      '', // A
+      'THÔNG TIN NHÂN VIÊN', '', '', '', // B, C, D, E
+      'CÔNG CHUẨN', // F
+      'CÔNG HƯỞNG NGUYÊN LƯƠNG (NGÀY)', '', '', '', '', // G, H, I, J, K
+      'NGHỈ KHÔNG LƯƠNG / CHẾ ĐỘ', '', // L, M
+      'LÀM THÊM GIỜ - OT (GIỜ)', '', '', // N, O, P
+      'KỶ LUẬT / CHUYÊN CẦN', '', // Q, R
+      'TỔNG CHỐT' // S
+    ]);
+
+    // Row 5 (Detailed Headers)
+    wsData.push([
+      '', // A
+      'STT', // B
+      'Mã NV', // C
+      'Họ và tên', // D
+      'Phòng ban', // E
+      'Công chuẩn', // F
+      'Công thực tế\n(CONG_TT)', // G
+      'Phép năm\n(PHEP_NAM)', // H
+      'Nghỉ lễ/Tết\n(LE_TET)', // I
+      'Công tác\n(CONG_TAC)', // J
+      'Nghỉ có lương\n(NGHI_HUONG_L)', // K
+      'Nghỉ ko lương\n(NGHI_KL)', // L
+      'Nghỉ BHXH\n(NGHI_BHXH)', // M
+      'OT ngày thường\n(OT_NT)', // N
+      'OT cuối tuần\n(OT_CT)', // O
+      'OT ngày lễ\n(OT_NL)', // P
+      'Đi muộn\n(lần)', // Q
+      'Đi muộn\n(phút)', // R
+      'Tổng công tính lương\n(TONG_CONG)' // S
+    ]);
+
+    // Data rows (Row 6..N)
+    summaryList.forEach((item, idx) => {
+      const rIdx = idx + 6;
+      wsData.push([
+        '', // A
+        idx + 1, // B
+        item.employee_id || '', // C
+        item.full_name || '', // D
+        item.department_name || '', // E
+        item.standard_days || 26, // F
+        item.cong_tt || 0, // G
+        item.phep_nam || 0, // H
+        item.le_tet || 0, // I
+        item.cong_tac || 0, // J
+        item.nghi_huong_l || 0, // K
+        item.nghi_kl || 0, // L
+        item.nghi_bhxh || 0, // M
+        item.ot_nt || 0, // N
+        item.ot_ct || 0, // O
+        item.ot_nl || 0, // P
+        item.late_times || 0, // Q
+        item.late_minutes || 0, // R
+        { f: `SUM(G${rIdx}:K${rIdx})`, v: item.tong_cong } // S
+      ]);
+    });
+
+    // Total Footer Row (Row N+1)
+    const startRow = 6;
+    const endRow = summaryList.length + 5;
+    const totalRowIdx = endRow + 1;
+    wsData.push([
+      '', // A
+      'TỔNG CỘNG', '', '', '', // B, C, D, E (merged)
+      { f: `SUM(F${startRow}:F${endRow})`, v: summaryList.reduce((s, i) => s + (i.standard_days || 0), 0) },
+      { f: `SUM(G${startRow}:G${endRow})`, v: summaryList.reduce((s, i) => s + (i.cong_tt || 0), 0) },
+      { f: `SUM(H${startRow}:H${endRow})`, v: summaryList.reduce((s, i) => s + (i.phep_nam || 0), 0) },
+      { f: `SUM(I${startRow}:I${endRow})`, v: summaryList.reduce((s, i) => s + (i.le_tet || 0), 0) },
+      { f: `SUM(J${startRow}:J${endRow})`, v: summaryList.reduce((s, i) => s + (i.cong_tac || 0), 0) },
+      { f: `SUM(K${startRow}:K${endRow})`, v: summaryList.reduce((s, i) => s + (i.nghi_huong_l || 0), 0) },
+      { f: `SUM(L${startRow}:L${endRow})`, v: summaryList.reduce((s, i) => s + (i.nghi_kl || 0), 0) },
+      { f: `SUM(M${startRow}:M${endRow})`, v: summaryList.reduce((s, i) => s + (i.nghi_bhxh || 0), 0) },
+      { f: `SUM(N${startRow}:N${endRow})`, v: summaryList.reduce((s, i) => s + (i.ot_nt || 0), 0) },
+      { f: `SUM(O${startRow}:O${endRow})`, v: summaryList.reduce((s, i) => s + (i.ot_ct || 0), 0) },
+      { f: `SUM(P${startRow}:P${endRow})`, v: summaryList.reduce((s, i) => s + (i.ot_nl || 0), 0) },
+      { f: `SUM(Q${startRow}:Q${endRow})`, v: summaryList.reduce((s, i) => s + (i.late_times || 0), 0) },
+      { f: `SUM(R${startRow}:R${endRow})`, v: summaryList.reduce((s, i) => s + (i.late_minutes || 0), 0) },
+      { f: `SUM(S${startRow}:S${endRow})`, v: summaryList.reduce((s, i) => s + (i.tong_cong || 0), 0) }
+    ]);
+
+    const ws1 = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Merges for Sheet 1
+    ws1['!merges'] = [
+      { s: { r: 1, c: 1 }, e: { r: 1, c: 18 } }, // Title B2:S2
+      { s: { r: 3, c: 1 }, e: { r: 3, c: 4 } },  // B4:E4 THONG TIN NHAN VIEN
+      { s: { r: 3, c: 6 }, e: { r: 3, c: 10 } }, // G4:K4 CONG HUONG NGUYEN LUONG
+      { s: { r: 3, c: 11 }, e: { r: 3, c: 12 } }, // L4:M4 NGHI KHONG LUONG / CHE DO
+      { s: { r: 3, c: 13 }, e: { r: 3, c: 15 } }, // N4:P4 LAM THEM GIO - OT
+      { s: { r: 3, c: 16 }, e: { r: 3, c: 17 } }, // Q4:R4 KY LUAT / CHUYEN CAN
+      { s: { r: totalRowIdx - 1, c: 1 }, e: { r: totalRowIdx - 1, c: 4 } } // TONG CONG footer B:E
+    ];
+
+    // Column widths
+    ws1['!cols'] = [
+      { wch: 3 },  // A
+      { wch: 6 },  // B: STT
+      { wch: 12 }, // C: Ma NV
+      { wch: 26 }, // D: Ho va ten
+      { wch: 22 }, // E: Phong ban
+      { wch: 12 }, // F: Cong chuan
+      { wch: 15 }, // G: Cong TT
+      { wch: 13 }, // H: Phep nam
+      { wch: 13 }, // I: Le tet
+      { wch: 12 }, // J: Cong tac
+      { wch: 15 }, // K: Nghi huong L
+      { wch: 14 }, // L: Nghi KL
+      { wch: 13 }, // M: Nghi BHXH
+      { wch: 16 }, // N: OT NT
+      { wch: 15 }, // O: OT CT
+      { wch: 13 }, // P: OT NL
+      { wch: 12 }, // Q: Di muon lan
+      { wch: 14 }, // R: Di muon phut
+      { wch: 22 }  // S: Tong cong
+    ];
+
+    // Sheet 2: Mapping_Vao_Bang_Luong
+    const ws2Data = [
+      [],
+      ['', 'QUY TẮC ÁNH XẠ (MAPPING) DỮ LIỆU CÔNG SANG PHÂN HỆ TIỀN LƯƠNG MISA'],
+      ['', 'Tài liệu kỹ thuật hướng dẫn HR/Kế toán thiết lập công thức payroll trên MISA AMIS'],
+      [],
+      ['', 'STT', 'Chỉ số trên Bảng công', 'Mã biến MISA Chấm công', 'Mã biến trên Bảng lương', 'Công thức mẫu trên MISA Tiền lương', 'Ghi chú nghiệp vụ'],
+      ['', 1, 'Công làm việc thực tế', 'CONG_TT', 'CONG_THUC_TE', '[Luong_Co_Ban] / [Cong_Chuan] * [CONG_THUC_TE]', 'Lương thời gian làm việc trực tiếp'],
+      ['', 2, 'Nghỉ phép năm', 'PHEP_NAM', 'CONG_PHEP', '[Luong_Co_Ban] / [Cong_Chuan] * [CONG_PHEP]', 'Hưởng 100% lương theo Luật Lao động'],
+      ['', 3, 'Nghỉ lễ/Tết', 'LE_TET', 'CONG_LE', '[Luong_Co_Ban] / [Cong_Chuan] * [CONG_LE]', 'Hưởng 100% lương theo quy định'],
+      ['', 4, 'Tổng công hưởng lương', 'TONG_CONG', 'TONG_CONG_HL', '[Luong_Co_Ban] / [Cong_Chuan] * [TONG_CONG_HL]', 'Tính gộp toàn bộ công thời gian hưởng lương'],
+      ['', 5, 'Nghỉ không lương', 'NGHI_KL', 'CONG_KL', 'Trừ vào công chuẩn khi tính thưởng', 'Không sinh dòng lương thời gian'],
+      ['', 6, 'Nghỉ BHXH (Ốm/Thai sản)', 'NGHI_BHXH', 'CONG_BHXH', 'Lập hồ sơ C70a-HD gửi cơ quan BHXH', 'Do cơ quan BHXH chi trả qua tài khoản NV'],
+      ['', 7, 'OT ngày thường (150%)', 'OT_NT', 'GIO_OT_NT', '([Luong_Co_Ban] / [Cong_Chuan] / 8) * 1.5 * [GIO_OT_NT]', 'Hệ số OT tối thiểu 1.5'],
+      ['', 8, 'OT cuối tuần (200%)', 'OT_CT', 'GIO_OT_CT', '([Luong_Co_Ban] / [Cong_Chuan] / 8) * 2.0 * [GIO_OT_CT]', 'Hệ số OT nghỉ tuần tối thiểu 2.0'],
+      ['', 9, 'OT ngày lễ (300%)', 'OT_NL', 'GIO_OT_NL', '([Luong_Co_Ban] / [Cong_Chuan] / 8) * 3.0 * [GIO_OT_NL]', 'Chưa bao gồm lương ngày lễ đã tính ở mục 3'],
+      ['', 10, 'Đi muộn (phút)', 'DI_MUON_PHUT', 'SO_PHUT_MUON', 'IF([SO_PHUT_MUON] > 30, [SO_PHUT_MUON] * 2000, 0)', 'Công thức phạt đi muộn nội bộ (nếu có)']
+    ];
+
+    const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+    ws2['!merges'] = [
+      { s: { r: 1, c: 1 }, e: { r: 1, c: 6 } },
+      { s: { r: 2, c: 1 }, e: { r: 2, c: 6 } }
+    ];
+    ws2['!cols'] = [
+      { wch: 3 },
+      { wch: 6 },
+      { wch: 28 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 48 },
+      { wch: 38 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws1, 'Bang_Cong_Tong_Hop');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Mapping_Vao_Bang_Luong');
+
+    const fileName = `Bang_Cham_Cong_Tong_Hop_Thang_${mo}_${yr}_TRUNGHAI.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    if (window.utils && utils.showToast) {
+      utils.showToast(`Đã xuất bảng chấm công tổng hợp tháng ${mo}/${yr} thành công!`, 'success');
+    }
   },
 
   async saveLocalAttendanceState() {
