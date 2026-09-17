@@ -6,7 +6,7 @@ $serverHost = "113.161.53.133,1433"
 $serverUser = "sa"
 $serverPass = "THG@2026!"
 
-$databases = if ($TargetDatabase) { @($TargetDatabase) } else { @("Mitaco", "Tlmt", "longan", "khbmt", "ctvp") }
+$databases = if ($TargetDatabase) { @($TargetDatabase) } else { @("VPSG", "TLMT", "longan") }
 
 $allRawPunches = @()
 $allDevices = @()
@@ -14,7 +14,7 @@ $devMap = @{}
 
 foreach ($dbName in $databases) {
     try {
-        $connStr = "Server=$serverHost;Database=$dbName;User Id=$serverUser;Password=$serverPass;Connection Timeout=10;"
+        $connStr = "Server=$serverHost;Database=$dbName;User Id=$serverUser;Password=$serverPass;Connection Timeout=10;TrustServerCertificate=True;"
         $conn = New-Object System.Data.SqlClient.SqlConnection($connStr)
         $conn.Open()
 
@@ -168,10 +168,10 @@ try {
     $apiPayload = @{
         db_type = "sql_server"
         server_host = $serverHost
-        database_name = if ($TargetDatabase) { $TargetDatabase } else { "Mitaco,Tlmt,longan,khbmt,ctvp" }
+        database_name = if ($TargetDatabase) { $TargetDatabase } else { "VPSG,TLMT,longan" }
         punch_logs = $punches
     } | ConvertTo-Json -Depth 5
-    $res = Invoke-RestMethod -Uri "https://trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json; charset=utf-8" -Body $apiPayload -TimeoutSec 15 -ErrorAction SilentlyContinue
+    $res = Invoke-RestMethod -Uri "https://hrm.trunghaico.vn/api/attendance/zk/software-sync" -Method Post -ContentType "application/json; charset=utf-8" -Body $apiPayload -TimeoutSec 15 -ErrorAction SilentlyContinue
     if ($res -and $res.success) {
         Write-Host "Cloudflare API sync: Success ($($res.added_count) new punches)"
     }

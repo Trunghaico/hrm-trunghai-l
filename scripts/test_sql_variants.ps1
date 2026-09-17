@@ -1,22 +1,33 @@
 $serverHost = "113.161.53.133,1433"
 $serverUser = "sa"
 $serverPass = "THG@2026!"
+$dbList = @("VPSG", "TLMT", "longan")
 
-$variants = @(
-    "Server=$serverHost;Database=Mitaco;User Id=$serverUser;Password=$serverPass;Encrypt=False;TrustServerCertificate=True;Connect Timeout=5;",
-    "Server=$serverHost;Database=Mitaco;User Id=$serverUser;Password=$serverPass;TrustServerCertificate=True;Connect Timeout=5;",
-    "Server=113.161.53.133;Database=Mitaco;User Id=$serverUser;Password=$serverPass;Encrypt=False;Connect Timeout=5;",
-    "Data Source=113.161.53.133,1433;Initial Catalog=Mitaco;User ID=$serverUser;Password=$serverPass;Encrypt=False;TrustServerCertificate=True;Timeout=5;"
-)
-
-foreach ($v in $variants) {
+foreach ($db in $dbList) {
     try {
-        $conn = New-Object System.Data.SqlClient.SqlConnection($v)
+        $connStr = "Server=$serverHost;Database=$db;User Id=$serverUser;Password=$serverPass;TrustServerCertificate=True;Connect Timeout=8;"
+        $conn = New-Object System.Data.SqlClient.SqlConnection($connStr)
         $conn.Open()
-        Write-Host "Success with: $v" -ForegroundColor Green
+        Write-Host "`n=== DATABASE: $db ===" -ForegroundColor Cyan
+        
+        $cmd = $conn.CreateCommand()
+        $cmd.CommandText = "SELECT COUNT(*) FROM NHANVIEN"
+        $count = $cmd.ExecuteScalar()
+        Write-Host "NHANVIEN count: $count" -ForegroundColor Green
+
+        $cmdSample = $conn.CreateCommand()
+        $cmdSample.CommandText = "SELECT TOP 3 MaNhanVien, TenNhanVien, MaChamCong FROM NHANVIEN"
+        $ad = New-Object System.Data.SqlClient.SqlDataAdapter($cmdSample)
+        $ds = New-Object System.Data.DataSet
+        $ad.Fill($ds) | Out-Null
+        foreach ($r in $ds.Tables[0].Rows) {
+            Write-Host "  NV: $($r.MaNhanVien) - $($r.TenNhanVien) - MCC: $($r.MaChamCong)"
+        }
+
         $conn.Close()
-        break
     } catch {
-        Write-Host "Failed ($($_.Exception.Message)) with: $v" -ForegroundColor Red
+        Write-Host "Failed to connect to ${db}: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
+
+

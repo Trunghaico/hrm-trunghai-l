@@ -5,7 +5,7 @@
   "SoftwareType": "mitaco",
   "SqlHost": "113.161.53.133,1433",
   "SqlDatabase": "all",
-  "SqlDatabases": ["mitaco", "Tlmt", "longan", "khbmt", "ctvp"],
+  "SqlDatabases": ["VPSG", "TLMT", "longan"],
   "SqlUser": "sa",
   "SqlPassword": "THG@2026!",
   "UseWindowsAuth": false,

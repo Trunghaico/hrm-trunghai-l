@@ -18,22 +18,22 @@ $serverPass = "THG@2026!"
 
 # Danh sach 11 May Cham Cong thuc te cua doanh nghiep
 $devices = @(
-    @{ serial = "AYSH02091522"; name = "MCC TANG TRET"; ip = "113.161.53.133"; port = 5007; location = "VPSG"; db = "Mitaco" },
-    @{ serial = "AYSH02091575"; name = "MCC T3";        ip = "113.161.53.133"; port = 5006; location = "vpsg"; db = "Mitaco" },
-    @{ serial = "AYSH02091571"; name = "MCC T2";        ip = "113.161.53.133"; port = 5005; location = "vpsg"; db = "Mitaco" },
-    @{ serial = "AYSB28014633"; name = "TL-MT TP";      ip = "113.161.201.71"; port = 5005; location = "HCM-TLMT"; db = "Tlmt" },
+    @{ serial = "AYSH02091522"; name = "MCC TANG TRET"; ip = "113.161.53.133"; port = 5007; location = "VPSG"; db = "VPSG" },
+    @{ serial = "AYSH02091575"; name = "MCC T3";        ip = "113.161.53.133"; port = 5006; location = "VPSG"; db = "VPSG" },
+    @{ serial = "AYSH02091571"; name = "MCC T2";        ip = "113.161.53.133"; port = 5005; location = "VPSG"; db = "VPSG" },
+    @{ serial = "AYSB28014633"; name = "TL-MT TP";      ip = "113.161.201.71"; port = 5005; location = "HCM-TLMT"; db = "TLMT" },
     @{ serial = "ZXRC17014917"; name = "TL-MT TH";      ip = "14.224.132.5";   port = 5005; location = "TL-MT TH"; db = "longan" },
-    @{ serial = "AYSH02091656"; name = "NUI VUNG";      ip = "113.161.194.20"; port = 5005; location = "NUI VUNG"; db = "Mitaco" },
-    @{ serial = "ZXRC17014860"; name = "KH-BMT VP";     ip = "113.161.30.79";  port = 5006; location = "KH-BMT"; db = "khbmt" },
-    @{ serial = "ZXRC17014867"; name = "KH-BMT HAM";     ip = "14.224.151.151"; port = 5005; location = "KHBMT"; db = "khbmt" },
-    @{ serial = "AYSB28014684"; name = "KH-BMT KHU D";  ip = "113.161.30.79";  port = 5005; location = "KHBMT"; db = "khbmt" },
-    @{ serial = "ZXRC17014844"; name = "CTVP VP";       ip = "117.2.32.120";   port = 5005; location = "CTVP"; db = "ctvp" },
-    @{ serial = "ZXRC17014905"; name = "CTVP DU AN";    ip = "117.2.32.120";   port = 5006; location = "CTVP"; db = "ctvp" }
+    @{ serial = "AYSH02091656"; name = "NUI VUNG";      ip = "113.161.194.20"; port = 5005; location = "NUI VUNG"; db = "VPSG" },
+    @{ serial = "ZXRC17014860"; name = "KH-BMT VP";     ip = "113.161.30.79";  port = 5006; location = "KH-BMT"; db = "VPSG" },
+    @{ serial = "ZXRC17014867"; name = "KH-BMT HAM";     ip = "14.224.151.151"; port = 5005; location = "KHBMT"; db = "VPSG" },
+    @{ serial = "AYSB28014684"; name = "KH-BMT KHU D";  ip = "113.161.30.79";  port = 5005; location = "KHBMT"; db = "VPSG" },
+    @{ serial = "ZXRC17014844"; name = "CTVP VP";       ip = "117.2.32.120";   port = 5005; location = "CTVP"; db = "VPSG" },
+    @{ serial = "ZXRC17014905"; name = "CTVP DU AN";    ip = "117.2.32.120";   port = 5006; location = "CTVP"; db = "VPSG" }
 )
 
 Write-Host ""
 Write-Host "====================================================================" -ForegroundColor Cyan
-Write-Host "  HRM TRUNG HAI - DONG BO DU LIEU 11 MAY CHAM CONG THUC TE" -ForegroundColor Yellow
+Write-Host "  HRM TRUNG HAI - DONG BO DU LIEU 11 MAY CHAM CONG & SQL SERVER" -ForegroundColor Yellow
 Write-Host "====================================================================" -ForegroundColor Cyan
 
 # Kiem tra ket noi TCP truc tiep toi 11 may
@@ -48,17 +48,17 @@ foreach ($d in $devices) {
     $client.Close()
 }
 
-Write-Host "  Ket qua kiem tra ket noi: $onlineCount / 11 may ONLINE" -ForegroundColor Green
+Write-Host "  Ket qua kiem tra ket noi truc tiep: $onlineCount / 11 may ONLINE" -ForegroundColor Green
 Write-Host ""
 
-# Lay nhat ky cham cong tu cac CSDL tuong ung
+# Lay nhat ky cham cong tu cac CSDL tuong ung (VPSG, TLMT, longan)
 $allRawPunches = @()
-$dbList = @("Mitaco", "Tlmt", "longan", "khbmt", "ctvp")
+$dbList = @("VPSG", "TLMT", "longan")
 $dbPunchesMap = @{}
 
 foreach ($dbName in $dbList) {
     try {
-        $connStr = "Server=$serverHost;Database=$dbName;User Id=$serverUser;Password=$serverPass;Connection Timeout=10;"
+        $connStr = "Server=$serverHost;Database=$dbName;User Id=$serverUser;Password=$serverPass;Connection Timeout=10;TrustServerCertificate=True;"
         $conn = New-Object System.Data.SqlClient.SqlConnection($connStr)
         $conn.Open()
 
@@ -70,12 +70,14 @@ foreach ($dbName in $dbList) {
         $conn.Close()
 
         $dbPunchesMap[$dbName] = $ds.Tables[0].Rows
+        Write-Host "  [SQL Server] CSDL ${dbName}: $($ds.Tables[0].Rows.Count) luot cham cong (tu $StartDate)" -ForegroundColor Cyan
     } catch {
-        # Fallback
+        Write-Host "  [SQL Server] Loi ket noi CSDL ${dbName}: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 $devIndex = 1
+$processedIds = @{}
 foreach ($d in $devices) {
     $dSerial = $d.serial
     $dName = $d.name
@@ -91,18 +93,19 @@ foreach ($d in $devices) {
             $matched = $false
 
             if ($dName -eq "MCC TANG TRET" -and ($rDev -like "*TANG TRET*" -or $rDev -like "*TRET*")) { $matched = $true }
-            elseif ($dName -eq "MCC T2" -and ($rDev -like "*PHU MINH*" -or $rDev -like "*T2*")) { $matched = $true }
-            elseif ($dName -eq "MCC T3" -and ($rDev -like "*THANH PHAT*" -or $rDev -like "*T3*")) { $matched = $true }
-            elseif ($dName -eq "TL-MT TP" -and ($dbName -eq "Tlmt" -or $rDev -like "*TLMT-TP*" -or $rDev -like "*TLMT*")) { $matched = $true }
+            elseif ($dName -eq "MCC T2" -and ($rDev -like "*TANG 2*" -or $rDev -like "*T2*" -or $rDev -like "*PHU MINH*")) { $matched = $true }
+            elseif ($dName -eq "MCC T3" -and ($rDev -like "*TANG 3*" -or $rDev -like "*T3*" -or $rDev -like "*THANH PHAT*")) { $matched = $true }
+            elseif ($dName -eq "TL-MT TP" -and ($dbName -eq "TLMT" -or $rDev -like "*TLMT-TP*" -or $rDev -like "*TLMT*")) { $matched = $true }
             elseif ($dName -eq "TL-MT TH" -and ($dbName -eq "longan" -or $rDev -like "*TLMT-TH*" -or $rDev -like "*LONG AN*")) { $matched = $true }
-            elseif ($dName -eq "NUI VUNG" -and ($rDev -like "*NUI VUNG*" -or $rDev -like "*VUNG*" -or ($dbName -eq "Mitaco" -and $rDev -like "*MCC00001*"))) { $matched = $true }
-            elseif ($dName -eq "KH-BMT VP" -and ($dbName -eq "khbmt" -and ($rDev -like "*MCC KH-BMT*" -or $rDev -like "*KH-BMT VP*" -or $rDev -like "*VP*"))) { $matched = $true }
-            elseif ($dName -eq "KH-BMT HAM" -and ($dbName -eq "khbmt" -and ($rDev -like "*HAM*" -or $rDev -like "*HẦM*"))) { $matched = $true }
-            elseif ($dName -eq "KH-BMT KHU D" -and ($dbName -eq "khbmt" -and ($rDev -like "*KHU D*" -or $rDev -like "*KHUD*"))) { $matched = $true }
-            elseif ($dName -eq "CTVP VP" -and ($dbName -eq "ctvp" -and ($rDev -like "*MCC00001*" -or $rDev -like "*CTVP VP*" -or ($rDev -like "*CTVP*" -and -not ($rDev -like "*MCC00002*" -or $rDev -like "*CT-VP 2*" -or $rDev -like "*DU AN*"))))) { $matched = $true }
-            elseif ($dName -eq "CTVP DU AN" -and ($dbName -eq "ctvp" -and ($rDev -like "*MCC00002*" -or $rDev -like "*CT-VP 2*" -or $rDev -like "*DU AN*" -or $rDev -like "*CT-DH*"))) { $matched = $true }
+            elseif ($dName -eq "NUI VUNG" -and ($rDev -like "*NUI VUNG*" -or $rDev -like "*VUNG*")) { $matched = $true }
+            elseif ($dName -eq "KH-BMT VP" -and ($rDev -like "*KH-BMT VP*" -or $rDev -like "*MCC KH-BMT*" -or ($rDev -like "*BMT*" -and $rDev -like "*VP*"))) { $matched = $true }
+            elseif ($dName -eq "KH-BMT HAM" -and ($rDev -like "*HAM*" -or $rDev -like "*HẦM*")) { $matched = $true }
+            elseif ($dName -eq "KH-BMT KHU D" -and ($rDev -like "*KHU D*" -or $rDev -like "*KHUD*")) { $matched = $true }
+            elseif ($dName -eq "CTVP VP" -and ($rDev -like "*CPVP VP*" -or $rDev -like "*CTVP VP*" -or ($rDev -like "*CTVP*" -and -not ($rDev -like "*DU AN*" -or $rDev -like "*CT-VP 2*")))) { $matched = $true }
+            elseif ($dName -eq "CTVP DU AN" -and ($rDev -like "*CTVP DU AN*" -or $rDev -like "*DU AN*" -or $rDev -like "*CT-VP 2*" -or $rDev -like "*CT-DH*")) { $matched = $true }
 
             if ($matched) {
+                $processedIds["${dbName}_$($r.ID)"] = $true
                 $allRawPunches += [PSCustomObject]@{
                     ID = $r.ID
                     AttCode = $r.AttCode
@@ -129,6 +132,31 @@ foreach ($d in $devices) {
     Write-Host "         Trang thai: $statusText | Du lieu: $countStr" -ForegroundColor Green
     $devIndex++
 }
+
+# Dam bao bat ky nhat ky nao chua match danh sach may van duoc thu thap
+foreach ($dbName in $dbList) {
+    if ($dbPunchesMap.ContainsKey($dbName)) {
+        foreach ($r in $dbPunchesMap[$dbName]) {
+            $pk = "${dbName}_$($r.ID)"
+            if (-not $processedIds.ContainsKey($pk)) {
+                $allRawPunches += [PSCustomObject]@{
+                    ID = $r.ID
+                    AttCode = $r.AttCode
+                    EmpId = $r.EmpId
+                    EmpName = $r.EmpName
+                    CheckTimeString = $r.CheckTimeString
+                    DeviceName = if ($r.DeviceName) { "" + $r.DeviceName } else { $dbName }
+                    DeviceIp = $serverHost.Split(",")[0]
+                    DevicePort = 5005
+                    DeviceSerial = "SQL-$dbName"
+                    VerifyMode = $r.VerifyMode
+                    DbSource = $dbName
+                }
+            }
+        }
+    }
+}
+
 
 Write-Host ""
 Write-Host "--------------------------------------------------------------------" -ForegroundColor Gray
