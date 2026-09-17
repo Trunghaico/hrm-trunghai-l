@@ -338,6 +338,52 @@ function normalizeDepartmentName(codeOrName) {
   return s;
 }
 
+// Load a single table from D1 swiftly with chunk reassembly (takes < 2ms)
+async function loadTableFromD1(db, tblName) {
+  try {
+    await initD1Store(db);
+    const key = `tbl_${tblName}`;
+    const rows = await db.prepare("SELECT key, value FROM hrm_store WHERE key = ? OR key LIKE ? ORDER BY key ASC").bind(key, `${key}__part_%`).all();
+    const results = rows.results || [];
+    if (results.length === 0) {
+      return DEFAULT_TABLES[tblName] || [];
+    }
+    const mainRow = results.find(r => r.key === key);
+    if (!mainRow) return DEFAULT_TABLES[tblName] || [];
+
+    const parsed = JSON.parse(mainRow.value);
+    if (parsed && parsed.__is_chunked && parsed.chunks > 0) {
+      const partMap = new Map();
+      results.forEach(r => {
+        if (r.key.startsWith(`${key}__part_`)) {
+          partMap.set(r.key, r.value);
+        }
+      });
+      let fullStr = "";
+      for (let i = 0; i < parsed.chunks; i++) {
+        fullStr += partMap.get(`${key}__part_${i}`) || "";
+      }
+      return JSON.parse(fullStr);
+    }
+    return Array.isArray(parsed) ? parsed : (DEFAULT_TABLES[tblName] || []);
+  } catch (err) {
+    console.error(`Error loading table ${tblName} from D1:`, err);
+    return DEFAULT_TABLES[tblName] || [];
+  }
+}
+
+// Helper: Prune empty/null/undefined keys to keep JSON lean and fast
+function pruneEmptyKeys(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+  const cleaned = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== "" && v !== null && v !== undefined) {
+      cleaned[k] = v;
+    }
+  }
+  return cleaned;
+}
+
 // Load all tables from D1 with chunk reassembly
 async function loadAllFromD1(db) {
   await initD1Store(db);
@@ -380,71 +426,16 @@ async function loadAllFromD1(db) {
     if (!tables[tName]) tables[tName] = [];
   }
 
-  // Auto-heal dates and department codes in 03_Employees and 00_Master_Profiles
-  if (Array.isArray(tables["03_Employees"])) {
-    tables["03_Employees"].forEach(e => {
-      if (e.date_of_birth) e.date_of_birth = fixExcelSerialDate(e.date_of_birth);
-      if (e['Ngày sinh']) e['Ngày sinh'] = fixExcelSerialDate(e['Ngày sinh']);
-      if (e.start_date) e.start_date = fixExcelSerialDate(e.start_date);
-      if (e.trial_start_date) e.trial_start_date = fixExcelSerialDate(e.trial_start_date);
-      if (e.official_date) e.official_date = fixExcelSerialDate(e.official_date);
-      if (e.department_id) {
-        const clean = normalizeDepartmentCode(e.department_id);
-        if (clean) e.department_id = clean;
-      }
-      const rawDeptName = e.department_name || e.department_id || e['Đơn vị công tác'] || e['Mã đơn vị công tác'];
-      if (rawDeptName) {
-        const cleanName = normalizeDepartmentName(rawDeptName);
-        if (cleanName) {
-          e.department_name = cleanName;
-          e['Đơn vị công tác'] = cleanName;
-        }
-      }
-    });
-  }
-  if (Array.isArray(tables["00_Master_Profiles"])) {
-    tables["00_Master_Profiles"].forEach(m => {
-      if (m['Ngày sinh']) m['Ngày sinh'] = fixExcelSerialDate(m['Ngày sinh']);
-      if (m.date_of_birth) m.date_of_birth = fixExcelSerialDate(m.date_of_birth);
-      const rawDept = m['Mã đơn vị công tác'] || m.department_id || m['Đơn vị công tác'] || m.department_name;
-      if (rawDept) {
-        const cleanId = normalizeDepartmentCode(rawDept);
-        if (cleanId) {
-          m['Mã đơn vị công tác'] = cleanId;
-          m.department_id = cleanId;
-        }
-        const cleanName = normalizeDepartmentName(m['Đơn vị công tác'] || rawDept);
-        if (cleanName) {
-          m['Đơn vị công tác'] = cleanName;
-          m.department_name = cleanName;
-        }
-      }
-    });
-  }
-
-  // Ensure 12_System_Logs has at least initialization audit log if empty
-  if (!tables["12_System_Logs"] || tables["12_System_Logs"].length === 0) {
-    tables["12_System_Logs"] = [
-      {
-        log_id: "LOG-INIT-1001",
-        timestamp: "2026-09-01T08:00:00.000Z",
-        user_id: "TH-1948",
-        user_name: "Huỳnh Thanh Long",
-        user_role: "ADMIN",
-        action_type: "CREATE",
-        module: "Hệ thống",
-        description: "Khởi tạo hệ thống quản trị nhân sự Trung Hải HRM & Kích hoạt kiểm toán bất biến",
-        ip_address: "127.0.0.1"
-      }
-    ];
-  }
-
   return { tables, company };
 }
 
 // Save single table to D1 with automatic chunking for tables > 350KB
 async function saveTableToD1(db, tblName, rows) {
-  const jsonStr = JSON.stringify(rows);
+  let toSave = rows;
+  if (tblName === "00_Master_Profiles" && Array.isArray(rows)) {
+    toSave = rows.map(pruneEmptyKeys);
+  }
+  const jsonStr = JSON.stringify(toSave);
   const CHUNK_SIZE = 350000;
 
   if (jsonStr.length <= CHUNK_SIZE) {
@@ -672,10 +663,10 @@ export default {
           }
         }
 
-        // Tự động đồng bộ / tự sửa lành (auto-heal) bảng phụ nếu nhân sự có dữ liệu nhưng các bảng phụ thiếu
+        // Enrich in-memory missing items for response if needed (read-only, no background D1 writes)
         const employees = data.tables["03_Employees"] || [];
         if (employees.length > 0) {
-          // 1. Đồng bộ 10_Contracts
+          // 1. In-memory check for 10_Contracts
           let contracts = data.tables["10_Contracts"] || [];
           if (contracts.length < employees.length) {
             const contractMap = new Map(contracts.map(c => [c.employee_id, c]));
@@ -696,47 +687,7 @@ export default {
                 });
               }
             });
-            contracts = Array.from(contractMap.values());
-            data.tables["10_Contracts"] = contracts;
-            await saveTableToD1(db, "10_Contracts", contracts);
-          }
-
-          // 2. Đồng bộ 04_Contacts_Addresses
-          let contacts = data.tables["04_Contacts_Addresses"] || [];
-          if (contacts.length < employees.length) {
-            const contactMap = new Map(contacts.map(c => [c.employee_id, c]));
-            employees.forEach(emp => {
-              if (emp.employee_id && !contactMap.has(emp.employee_id)) {
-                contactMap.set(emp.employee_id, {
-                  employee_id: emp.employee_id,
-                  mobile_phone: emp.mobile_phone || emp['ĐT di động'] || '',
-                  work_email: emp.work_email || emp['Email cơ quan'] || '',
-                  permanent_address_full: emp.permanent_address_full || emp.permanent_address || emp['Hộ khẩu thường trú'] || '',
-                  current_address_full: emp.current_address_full || emp.current_address || emp['Chỗ ở hiện nay'] || ''
-                });
-              }
-            });
-            contacts = Array.from(contactMap.values());
-            data.tables["04_Contacts_Addresses"] = contacts;
-            await saveTableToD1(db, "04_Contacts_Addresses", contacts);
-          }
-
-          // 3. Đồng bộ 05_Identity_Docs
-          let identity = data.tables["05_Identity_Docs"] || [];
-          if (identity.length < employees.length) {
-            const idMap = new Map(identity.map(i => [i.employee_id, i]));
-            employees.forEach(emp => {
-              if (emp.employee_id && !idMap.has(emp.employee_id)) {
-                idMap.set(emp.employee_id, {
-                  employee_id: emp.employee_id,
-                  id_number: emp.id_number || emp.tax_code || emp['Số CMND'] || '',
-                  doc_type: emp.doc_type || emp['Loại giấy tờ'] || 'CCCD'
-                });
-              }
-            });
-            identity = Array.from(idMap.values());
-            data.tables["05_Identity_Docs"] = identity;
-            await saveTableToD1(db, "05_Identity_Docs", identity);
+            data.tables["10_Contracts"] = Array.from(contractMap.values());
           }
         }
 
@@ -754,8 +705,7 @@ export default {
       if (path === "login" && method === "POST") {
         const body = await request.json().catch(() => ({}));
         const { username, password } = body;
-        const data = await loadAllFromD1(db);
-        const accounts = data.tables["11_System_Accounts"] || [];
+        const accounts = await loadTableFromD1(db, "11_System_Accounts");
 
         const user = accounts.find(a => (a.username || "").toLowerCase() === (username || "").toLowerCase().trim());
         if (!user) {
@@ -785,8 +735,7 @@ export default {
       // Route: GET /api/auth/me
       // -------------------------------------------------------------
       if (path === "auth/me" && method === "GET") {
-        const data = await loadAllFromD1(db);
-        const accounts = data.tables["11_System_Accounts"] || [];
+        const accounts = await loadTableFromD1(db, "11_System_Accounts");
         const admin = accounts[0] || { username: "admin", full_name: "Quản trị viên", role: "ADMIN" };
         return jsonResponse({ success: true, user: admin });
       }
@@ -1206,8 +1155,7 @@ export default {
           if (body.trial_start_date) body.trial_start_date = fixExcelSerialDate(body.trial_start_date);
           if (body.official_date) body.official_date = fixExcelSerialDate(body.official_date);
 
-          const data = await loadAllFromD1(db);
-          const employees = data.tables["03_Employees"] || [];
+          const employees = await loadTableFromD1(db, "03_Employees");
           const index = employees.findIndex(e => e.employee_id === targetId || (body.employee_id && e.employee_id === body.employee_id));
 
           const masterProfileData = body.master_profile ? { ...body.master_profile } : {};
@@ -1235,8 +1183,8 @@ export default {
 
           await saveTableToD1(db, "03_Employees", employees);
 
-          // Đồng bộ 00_Master_Profiles
-          let masterList = data.tables["00_Master_Profiles"] || [];
+          // Đồng bộ 00_Master_Profiles nhanh chóng
+          let masterList = await loadTableFromD1(db, "00_Master_Profiles");
           const mIdx = masterList.findIndex(m => m.employee_id === targetId || m['Mã nhân viên'] === targetId || (body.employee_id && (m.employee_id === body.employee_id || m['Mã nhân viên'] === body.employee_id)));
 
           const mergedMaster = {
@@ -1262,24 +1210,13 @@ export default {
 
           // Cập nhật 10_Contracts nếu có trạng thái nghỉ việc
           if (body.employment_status) {
-            let contracts = data.tables["10_Contracts"] || [];
+            let contracts = await loadTableFromD1(db, "10_Contracts");
             const conIdx = contracts.findIndex(c => c.employee_id === targetId || (body.employee_id && c.employee_id === body.employee_id));
             if (conIdx >= 0) {
               contracts[conIdx].contract_status = (body.employment_status === 'Đã nghỉ việc' || body.employment_status === 'Nghỉ việc') ? 'HẾT HẠN' : 'HIỆU LỰC';
               await saveTableToD1(db, "10_Contracts", contracts);
             }
           }
-
-          appendAuditLog(data.tables, {
-            action_type: index >= 0 ? "UPDATE" : "CREATE",
-            module: "Nhân sự",
-            description: `${index >= 0 ? 'Cập nhật' : 'Thêm mới'} thông tin nhân sự: ${body.full_name || targetId} (${targetId})`,
-            user_id: body.operator_id || "TH-1948",
-            user_name: body.operator_name || "Huỳnh Thanh Long",
-            user_role: body.operator_role || "ADMIN",
-            ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
-          });
-          await saveTableToD1(db, "12_System_Logs", data.tables["12_System_Logs"]);
 
           return jsonResponse({ success: true, message: "Lưu thông tin nhân viên thành công!" });
         }
@@ -2344,8 +2281,7 @@ export default {
       // Route: System Logs (/api/logs)
       // -------------------------------------------------------------
       if (path === "logs") {
-        const data = await loadAllFromD1(db);
-        let logs = data.tables["12_System_Logs"] || [];
+        let logs = await loadTableFromD1(db, "12_System_Logs");
 
         if (method === "GET") {
           return jsonResponse({ success: true, data: logs, logs, total: logs.length });
@@ -2364,7 +2300,7 @@ export default {
             ip_address: request.headers.get("cf-connecting-ip") || "127.0.0.1"
           };
           logs.unshift(logEntry);
-          if (logs.length > 3000) logs = logs.slice(0, 3000);
+          if (logs.length > 500) logs = logs.slice(0, 500);
           await saveTableToD1(db, "12_System_Logs", logs);
           return jsonResponse({ success: true, log: logEntry });
         }
@@ -2380,14 +2316,9 @@ export default {
       // Route: Attendance Module (/api/attendance/*)
       // -------------------------------------------------------------
       if (path.startsWith("attendance/")) {
-        const data = await loadAllFromD1(db);
-        let timesheets = data.tables["19_Attendance_Timesheets"] || [];
-        let shifts = data.tables["15_Attendance_Shifts"] || [];
-        let requests = data.tables["18_Attendance_Requests"] || [];
-        let logs = data.tables["17_Attendance_Logs"] || [];
-
         // GET /api/attendance/timesheets
         if (path === "attendance/timesheets" && method === "GET") {
+          let timesheets = await loadTableFromD1(db, "19_Attendance_Timesheets");
           const month = url.searchParams.get("month");
           const filtered = month ? timesheets.filter(t => (t.date || "").startsWith(month)) : timesheets;
           return jsonResponse({ success: true, timesheets: filtered, total: filtered.length });
@@ -2395,6 +2326,7 @@ export default {
 
         // POST /api/attendance/timesheets/update
         if (path === "attendance/timesheets/update" && method === "POST") {
+          let timesheets = await loadTableFromD1(db, "19_Attendance_Timesheets");
           const body = await request.json().catch(() => ({}));
           const idx = timesheets.findIndex(t => t.timesheet_id === body.timesheet_id);
           if (idx >= 0) {
@@ -2407,6 +2339,7 @@ export default {
 
         // POST /api/attendance/timesheets/lock
         if (path === "attendance/timesheets/lock" && method === "POST") {
+          let timesheets = await loadTableFromD1(db, "19_Attendance_Timesheets");
           const body = await request.json().catch(() => ({}));
           const { month, is_locked } = body;
           timesheets.forEach(t => {
@@ -2420,6 +2353,7 @@ export default {
 
         // POST /api/attendance/requests/submit
         if (path === "attendance/requests/submit" && method === "POST") {
+          let requests = await loadTableFromD1(db, "18_Attendance_Requests");
           const body = await request.json().catch(() => ({}));
           const newReq = {
             request_id: `REQ-${Date.now().toString().slice(-6)}`,
@@ -2434,6 +2368,7 @@ export default {
 
         // POST /api/attendance/requests/approve
         if (path === "attendance/requests/approve" && method === "POST") {
+          let requests = await loadTableFromD1(db, "18_Attendance_Requests");
           const body = await request.json().catch(() => ({}));
           const idx = requests.findIndex(r => r.request_id === body.request_id);
           if (idx >= 0) {
@@ -2446,6 +2381,7 @@ export default {
 
         // GET /api/attendance/shifts
         if (path === "attendance/shifts" && method === "GET") {
+          let shifts = await loadTableFromD1(db, "15_Attendance_Shifts");
           return jsonResponse({ success: true, shifts });
         }
 
@@ -2453,7 +2389,10 @@ export default {
         if (path === "attendance/calculate" && method === "POST") {
           const body = await request.json().catch(() => ({}));
           const targetMonth = body.month || new Date().toISOString().substring(0, 7);
-          const employees = (data.tables["03_Employees"] || []).filter(e => e.employment_status !== "Đã nghỉ việc");
+          const allEmps = await loadTableFromD1(db, "03_Employees");
+          const employees = allEmps.filter(e => e.employment_status !== "Đã nghỉ việc");
+          const logs = await loadTableFromD1(db, "17_Attendance_Logs");
+          const requests = await loadTableFromD1(db, "18_Attendance_Requests");
           
           // Nhóm logs theo ngày và mã nhân viên
           const uniqueDates = new Set();

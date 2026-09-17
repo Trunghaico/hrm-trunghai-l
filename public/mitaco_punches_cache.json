@@ -1,12 +1,12 @@
 ﻿{
     "source":  "LIVE_SQL_SERVER_MULTI_DB",
-    "synced_at":  "2026-09-17T14:23:02.462Z",
+    "synced_at":  "2026-09-17T15:43:02.302Z",
     "databases":  [
                       "VPSG",
                       "TLMT",
                       "longan"
                   ],
-    "total_punches":  1234,
+    "total_punches":  1223,
     "punches":  [
                     {
                         "log_id":  "SQL-VPSG-636531",
@@ -86,11 +86,11 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636672",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-14 07:38:00",
+                        "log_id":  "SQL-VPSG-636673",
+                        "attendance_code":  "3027",
+                        "employee_id":  "TH-1614",
+                        "employee_name":  "Chu Thị Thanh Bình",
+                        "timestamp":  "2026-09-14 07:40:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
                         "device_ip":  "113.161.53.133",
@@ -119,17 +119,6 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636673",
-                        "attendance_code":  "3027",
-                        "employee_id":  "TH-1614",
-                        "employee_name":  "Chu Thị Thanh Bình",
-                        "timestamp":  "2026-09-14 07:40:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636674",
                         "attendance_code":  "3098",
                         "employee_id":  "TH-2081",
@@ -152,17 +141,6 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636675",
-                        "attendance_code":  "3029",
-                        "employee_id":  "TH-1617",
-                        "employee_name":  "Trần Văn Trà",
-                        "timestamp":  "2026-09-14 07:45:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636537",
                         "attendance_code":  "3027",
                         "employee_id":  "TH-1614",
@@ -172,6 +150,17 @@
                         "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5007
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636675",
+                        "attendance_code":  "3029",
+                        "employee_id":  "TH-1617",
+                        "employee_name":  "Trần Văn Trà",
+                        "timestamp":  "2026-09-14 07:45:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "TANG 2",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5005
                     },
                     {
                         "log_id":  "SQL-VPSG-636538",
@@ -350,17 +339,6 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636680",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-14 07:53:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636545",
                         "attendance_code":  "3028",
                         "employee_id":  "TH-1615",
@@ -405,17 +383,6 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636548",
-                        "attendance_code":  "3077",
-                        "employee_id":  "TH-1971",
-                        "employee_name":  "Nguyễn Phạm Công Nguyên",
-                        "timestamp":  "2026-09-14 07:56:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "Táº¦NG TRá»†T",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5007
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636740",
                         "attendance_code":  "3094",
                         "employee_id":  "TH-2062",
@@ -425,6 +392,17 @@
                         "device_name":  "TANG 3",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5005
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636548",
+                        "attendance_code":  "3077",
+                        "employee_id":  "TH-1971",
+                        "employee_name":  "Nguyễn Phạm Công Nguyên",
+                        "timestamp":  "2026-09-14 07:56:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "Táº¦NG TRá»†T",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5007
                     },
                     {
                         "log_id":  "SQL-VPSG-636549",
@@ -471,17 +449,6 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636743",
-                        "attendance_code":  "3015",
-                        "employee_id":  "TH-1581",
-                        "employee_name":  "Bùi Thanh Tuấn",
-                        "timestamp":  "2026-09-14 07:59:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 3",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636550",
                         "attendance_code":  "3012",
                         "employee_id":  "TH-1504",
@@ -491,6 +458,17 @@
                         "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5007
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636743",
+                        "attendance_code":  "3015",
+                        "employee_id":  "TH-1581",
+                        "employee_name":  "Bùi Thanh Tuấn",
+                        "timestamp":  "2026-09-14 07:59:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "TANG 3",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5005
                     },
                     {
                         "log_id":  "SQL-VPSG-636745",
@@ -735,17 +713,6 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636563",
-                        "attendance_code":  "3005",
-                        "employee_id":  "TH-1505",
-                        "employee_name":  "Nguyễn Hồ Phương Thảo",
-                        "timestamp":  "2026-09-14 08:14:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "Táº¦NG TRá»†T",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5007
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636684",
                         "attendance_code":  "3027",
                         "employee_id":  "TH-1614",
@@ -755,6 +722,17 @@
                         "device_name":  "TANG 2",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5005
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636563",
+                        "attendance_code":  "3005",
+                        "employee_id":  "TH-1505",
+                        "employee_name":  "Nguyễn Hồ Phương Thảo",
+                        "timestamp":  "2026-09-14 08:14:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "Táº¦NG TRá»†T",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5007
                     },
                     {
                         "log_id":  "SQL-VPSG-636564",
@@ -1164,32 +1142,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636697",
-                        "attendance_code":  "3101",
-                        "employee_id":  "TH-2115",
-                        "employee_name":  "Trần Ngọc Vũ",
-                        "timestamp":  "2026-09-14 17:37:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636699",
                         "attendance_code":  "3074",
                         "employee_id":  "TH-1953",
                         "employee_name":  "Trần Thanh Hoàng",
-                        "timestamp":  "2026-09-14 17:37:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
-                        "log_id":  "SQL-VPSG-636698",
-                        "attendance_code":  "3098",
-                        "employee_id":  "TH-2081",
-                        "employee_name":  "Phạm Quang Tín",
                         "timestamp":  "2026-09-14 17:37:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -1206,6 +1162,28 @@
                         "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5007
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636697",
+                        "attendance_code":  "3101",
+                        "employee_id":  "TH-2115",
+                        "employee_name":  "Trần Ngọc Vũ",
+                        "timestamp":  "2026-09-14 17:37:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "TANG 2",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5005
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636698",
+                        "attendance_code":  "3098",
+                        "employee_id":  "TH-2081",
+                        "employee_name":  "Phạm Quang Tín",
+                        "timestamp":  "2026-09-14 17:37:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "TANG 2",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5005
                     },
                     {
                         "log_id":  "SQL-VPSG-636576",
@@ -1263,15 +1241,26 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636701",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-14 17:42:00",
+                        "log_id":  "SQL-VPSG-636579",
+                        "attendance_code":  "3045",
+                        "employee_id":  "TH-1708",
+                        "employee_name":  "Vũ Thị Thanh Hiền",
+                        "timestamp":  "2026-09-14 17:43:00",
                         "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
+                        "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
-                        "device_port":  5005
+                        "device_port":  5007
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636580",
+                        "attendance_code":  "3098",
+                        "employee_id":  "TH-2081",
+                        "employee_name":  "Phạm Quang Tín",
+                        "timestamp":  "2026-09-14 17:43:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "Táº¦NG TRá»†T",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5007
                     },
                     {
                         "log_id":  "SQL-VPSG-636578",
@@ -1296,32 +1285,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636580",
-                        "attendance_code":  "3098",
-                        "employee_id":  "TH-2081",
-                        "employee_name":  "Phạm Quang Tín",
-                        "timestamp":  "2026-09-14 17:43:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "Táº¦NG TRá»†T",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5007
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636581",
                         "attendance_code":  "3074",
                         "employee_id":  "TH-1953",
                         "employee_name":  "Trần Thanh Hoàng",
-                        "timestamp":  "2026-09-14 17:43:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "Táº¦NG TRá»†T",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5007
-                    },
-                    {
-                        "log_id":  "SQL-VPSG-636579",
-                        "attendance_code":  "3045",
-                        "employee_id":  "TH-1708",
-                        "employee_name":  "Vũ Thị Thanh Hiền",
                         "timestamp":  "2026-09-14 17:43:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -1472,10 +1439,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636589",
-                        "attendance_code":  "3005",
-                        "employee_id":  "TH-1505",
-                        "employee_name":  "Nguyễn Hồ Phương Thảo",
+                        "log_id":  "SQL-VPSG-636590",
+                        "attendance_code":  "3007",
+                        "employee_id":  "TH-1511",
+                        "employee_name":  "Phạm Quốc Nguyên",
                         "timestamp":  "2026-09-14 17:58:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -1483,10 +1450,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636590",
-                        "attendance_code":  "3007",
-                        "employee_id":  "TH-1511",
-                        "employee_name":  "Phạm Quốc Nguyên",
+                        "log_id":  "SQL-VPSG-636589",
+                        "attendance_code":  "3005",
+                        "employee_id":  "TH-1505",
+                        "employee_name":  "Nguyễn Hồ Phương Thảo",
                         "timestamp":  "2026-09-14 17:58:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -1802,17 +1769,6 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636704",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-15 07:39:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636705",
                         "attendance_code":  "3029",
                         "employee_id":  "TH-1617",
@@ -1835,6 +1791,17 @@
                         "device_port":  5005
                     },
                     {
+                        "log_id":  "SQL-VPSG-636608",
+                        "attendance_code":  "3068",
+                        "employee_id":  "TH-1946",
+                        "employee_name":  "Nguyễn Tiến Hưng",
+                        "timestamp":  "2026-09-15 07:43:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "Táº¦NG TRá»†T",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5007
+                    },
+                    {
                         "log_id":  "SQL-VPSG-636707",
                         "attendance_code":  "3029",
                         "employee_id":  "TH-1617",
@@ -1855,17 +1822,6 @@
                         "device_name":  "TANG 2",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5005
-                    },
-                    {
-                        "log_id":  "SQL-VPSG-636608",
-                        "attendance_code":  "3068",
-                        "employee_id":  "TH-1946",
-                        "employee_name":  "Nguyễn Tiến Hưng",
-                        "timestamp":  "2026-09-15 07:43:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "Táº¦NG TRá»†T",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5007
                     },
                     {
                         "log_id":  "SQL-VPSG-636773",
@@ -2121,17 +2077,6 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636620",
-                        "attendance_code":  "3077",
-                        "employee_id":  "TH-1971",
-                        "employee_name":  "Nguyễn Phạm Công Nguyên",
-                        "timestamp":  "2026-09-15 07:54:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "Táº¦NG TRá»†T",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5007
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636780",
                         "attendance_code":  "3094",
                         "employee_id":  "TH-2062",
@@ -2141,6 +2086,17 @@
                         "device_name":  "TANG 3",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5005
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636620",
+                        "attendance_code":  "3077",
+                        "employee_id":  "TH-1971",
+                        "employee_name":  "Nguyễn Phạm Công Nguyên",
+                        "timestamp":  "2026-09-15 07:54:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "Táº¦NG TRá»†T",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5007
                     },
                     {
                         "log_id":  "SQL-VPSG-636781",
@@ -2220,17 +2176,6 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636623",
-                        "attendance_code":  "3067",
-                        "employee_id":  "TH-1954",
-                        "employee_name":  "Nguyễn Hoàng Nina",
-                        "timestamp":  "2026-09-15 07:59:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "Táº¦NG TRá»†T",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5007
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636783",
                         "attendance_code":  "3065",
                         "employee_id":  "TH-1900",
@@ -2240,6 +2185,17 @@
                         "device_name":  "TANG 3",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5005
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636623",
+                        "attendance_code":  "3067",
+                        "employee_id":  "TH-1954",
+                        "employee_name":  "Nguyễn Hoàng Nina",
+                        "timestamp":  "2026-09-15 07:59:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "Táº¦NG TRá»†T",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5007
                     },
                     {
                         "log_id":  "SQL-VPSG-636624",
@@ -2605,17 +2561,6 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636720",
-                        "attendance_code":  "3045",
-                        "employee_id":  "TH-1708",
-                        "employee_name":  "Vũ Thị Thanh Hiền",
-                        "timestamp":  "2026-09-15 17:29:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636636",
                         "attendance_code":  "3031",
                         "employee_id":  "TH-117",
@@ -2625,6 +2570,17 @@
                         "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5007
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636720",
+                        "attendance_code":  "3045",
+                        "employee_id":  "TH-1708",
+                        "employee_name":  "Vũ Thị Thanh Hiền",
+                        "timestamp":  "2026-09-15 17:29:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "TANG 2",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5005
                     },
                     {
                         "log_id":  "SQL-VPSG-636799",
@@ -2638,10 +2594,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636722",
-                        "attendance_code":  "3074",
-                        "employee_id":  "TH-1953",
-                        "employee_name":  "Trần Thanh Hoàng",
+                        "log_id":  "SQL-VPSG-636724",
+                        "attendance_code":  "3106",
+                        "employee_id":  "TH-2121",
+                        "employee_name":  "Nguyễn Lê Ngọc Quyền",
                         "timestamp":  "2026-09-15 17:30:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -2649,10 +2605,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636724",
-                        "attendance_code":  "3106",
-                        "employee_id":  "TH-2121",
-                        "employee_name":  "Nguyễn Lê Ngọc Quyền",
+                        "log_id":  "SQL-VPSG-636722",
+                        "attendance_code":  "3074",
+                        "employee_id":  "TH-1953",
+                        "employee_name":  "Trần Thanh Hoàng",
                         "timestamp":  "2026-09-15 17:30:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -2935,10 +2891,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636730",
-                        "attendance_code":  "3095",
-                        "employee_id":  "TH-2063",
-                        "employee_name":  "Tạ Quốc Lộc",
+                        "log_id":  "SQL-VPSG-636729",
+                        "attendance_code":  "3101",
+                        "employee_id":  "TH-2115",
+                        "employee_name":  "Trần Ngọc Vũ",
                         "timestamp":  "2026-09-15 17:42:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -2946,10 +2902,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636729",
-                        "attendance_code":  "3101",
-                        "employee_id":  "TH-2115",
-                        "employee_name":  "Trần Ngọc Vũ",
+                        "log_id":  "SQL-VPSG-636730",
+                        "attendance_code":  "3095",
+                        "employee_id":  "TH-2063",
+                        "employee_name":  "Tạ Quốc Lộc",
                         "timestamp":  "2026-09-15 17:42:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -2999,17 +2955,6 @@
                         "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5007
-                    },
-                    {
-                        "log_id":  "SQL-VPSG-636731",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-15 17:50:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
                     },
                     {
                         "log_id":  "SQL-VPSG-636655",
@@ -3074,17 +3019,6 @@
                         "timestamp":  "2026-09-15 17:57:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 3",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
-                        "log_id":  "SQL-VPSG-637022",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-15 17:58:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "KH-BMT VP",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5005
                     },
@@ -3386,17 +3320,6 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-637032",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-16 07:32:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "KH-BMT VP",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636813",
                         "attendance_code":  "3098",
                         "employee_id":  "TH-2081",
@@ -3419,11 +3342,11 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636814",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-16 07:41:00",
+                        "log_id":  "SQL-VPSG-636898",
+                        "attendance_code":  "3029",
+                        "employee_id":  "TH-1617",
+                        "employee_name":  "Trần Văn Trà",
+                        "timestamp":  "2026-09-16 07:43:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
                         "device_ip":  "113.161.53.133",
@@ -3434,17 +3357,6 @@
                         "attendance_code":  "3027",
                         "employee_id":  "TH-1614",
                         "employee_name":  "Chu Thị Thanh Bình",
-                        "timestamp":  "2026-09-16 07:43:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
-                        "log_id":  "SQL-VPSG-636898",
-                        "attendance_code":  "3029",
-                        "employee_id":  "TH-1617",
-                        "employee_name":  "Trần Văn Trà",
                         "timestamp":  "2026-09-16 07:43:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -3463,10 +3375,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636900",
-                        "attendance_code":  "3074",
-                        "employee_id":  "TH-1953",
-                        "employee_name":  "Trần Thanh Hoàng",
+                        "log_id":  "SQL-VPSG-636899",
+                        "attendance_code":  "3095",
+                        "employee_id":  "TH-2063",
+                        "employee_name":  "Tạ Quốc Lộc",
                         "timestamp":  "2026-09-16 07:44:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -3474,10 +3386,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636899",
-                        "attendance_code":  "3095",
-                        "employee_id":  "TH-2063",
-                        "employee_name":  "Tạ Quốc Lộc",
+                        "log_id":  "SQL-VPSG-636900",
+                        "attendance_code":  "3074",
+                        "employee_id":  "TH-1953",
+                        "employee_name":  "Trần Thanh Hoàng",
                         "timestamp":  "2026-09-16 07:44:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -3507,13 +3419,13 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636903",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
+                        "log_id":  "SQL-VPSG-636936",
+                        "attendance_code":  "2951",
+                        "employee_id":  "TH-1457",
+                        "employee_name":  "Đào Thị Mai Xuân",
                         "timestamp":  "2026-09-16 07:46:00",
                         "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
+                        "device_name":  "TANG 3",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5005
                     },
@@ -3527,17 +3439,6 @@
                         "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5007
-                    },
-                    {
-                        "log_id":  "SQL-VPSG-636936",
-                        "attendance_code":  "2951",
-                        "employee_id":  "TH-1457",
-                        "employee_name":  "Đào Thị Mai Xuân",
-                        "timestamp":  "2026-09-16 07:46:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 3",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
                     },
                     {
                         "log_id":  "SQL-VPSG-636904",
@@ -3573,17 +3474,6 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636816",
-                        "attendance_code":  "3027",
-                        "employee_id":  "TH-1614",
-                        "employee_name":  "Chu Thị Thanh Bình",
-                        "timestamp":  "2026-09-16 07:48:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "Táº¦NG TRá»†T",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5007
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636905",
                         "attendance_code":  "3052",
                         "employee_id":  "TH-1814",
@@ -3604,6 +3494,17 @@
                         "device_name":  "TANG 3",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5005
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636816",
+                        "attendance_code":  "3027",
+                        "employee_id":  "TH-1614",
+                        "employee_name":  "Chu Thị Thanh Bình",
+                        "timestamp":  "2026-09-16 07:48:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "Táº¦NG TRá»†T",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5007
                     },
                     {
                         "log_id":  "SQL-VPSG-636938",
@@ -3738,17 +3639,6 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636906",
-                        "attendance_code":  "3061",
-                        "employee_id":  "TH-1864",
-                        "employee_name":  "Nguyễn Minh Tân",
-                        "timestamp":  "2026-09-16 07:56:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636827",
                         "attendance_code":  "3048",
                         "employee_id":  "TH-1779",
@@ -3758,6 +3648,17 @@
                         "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5007
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636906",
+                        "attendance_code":  "3061",
+                        "employee_id":  "TH-1864",
+                        "employee_name":  "Nguyễn Minh Tân",
+                        "timestamp":  "2026-09-16 07:56:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "TANG 2",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5005
                     },
                     {
                         "log_id":  "SQL-VPSG-636826",
@@ -4233,10 +4134,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636966",
-                        "attendance_code":  "3085",
-                        "employee_id":  "TH-2012",
-                        "employee_name":  "Lê Chí Linh",
+                        "log_id":  "SQL-VPSG-636967",
+                        "attendance_code":  "3068",
+                        "employee_id":  "TH-1946",
+                        "employee_name":  "Nguyễn Tiến Hưng",
                         "timestamp":  "2026-09-16 17:17:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 3",
@@ -4244,10 +4145,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636967",
-                        "attendance_code":  "3068",
-                        "employee_id":  "TH-1946",
-                        "employee_name":  "Nguyễn Tiến Hưng",
+                        "log_id":  "SQL-VPSG-636966",
+                        "attendance_code":  "3085",
+                        "employee_id":  "TH-2012",
+                        "employee_name":  "Lê Chí Linh",
                         "timestamp":  "2026-09-16 17:17:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 3",
@@ -4343,10 +4244,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636920",
-                        "attendance_code":  "3095",
-                        "employee_id":  "TH-2063",
-                        "employee_name":  "Tạ Quốc Lộc",
+                        "log_id":  "SQL-VPSG-636919",
+                        "attendance_code":  "3098",
+                        "employee_id":  "TH-2081",
+                        "employee_name":  "Phạm Quang Tín",
                         "timestamp":  "2026-09-16 17:31:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -4354,10 +4255,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636919",
-                        "attendance_code":  "3098",
-                        "employee_id":  "TH-2081",
-                        "employee_name":  "Phạm Quang Tín",
+                        "log_id":  "SQL-VPSG-636920",
+                        "attendance_code":  "3095",
+                        "employee_id":  "TH-2063",
+                        "employee_name":  "Tạ Quốc Lộc",
                         "timestamp":  "2026-09-16 17:31:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 2",
@@ -4519,28 +4420,6 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636923",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-16 17:38:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
-                        "log_id":  "SQL-VPSG-636847",
-                        "attendance_code":  "3099",
-                        "employee_id":  "TH-2082",
-                        "employee_name":  "Ngô Thị Dung",
-                        "timestamp":  "2026-09-16 17:39:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "Táº¦NG TRá»†T",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5007
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636975",
                         "attendance_code":  "3026",
                         "employee_id":  "TH-1620",
@@ -4574,15 +4453,15 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636976",
-                        "attendance_code":  "3026",
-                        "employee_id":  "TH-1620",
-                        "employee_name":  "Bùi Thanh Toàn",
-                        "timestamp":  "2026-09-16 17:41:00",
+                        "log_id":  "SQL-VPSG-636847",
+                        "attendance_code":  "3099",
+                        "employee_id":  "TH-2082",
+                        "employee_name":  "Ngô Thị Dung",
+                        "timestamp":  "2026-09-16 17:39:00",
                         "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 3",
+                        "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
-                        "device_port":  5005
+                        "device_port":  5007
                     },
                     {
                         "log_id":  "SQL-VPSG-636848",
@@ -4594,6 +4473,17 @@
                         "device_name":  "Táº¦NG TRá»†T",
                         "device_ip":  "113.161.53.133",
                         "device_port":  5007
+                    },
+                    {
+                        "log_id":  "SQL-VPSG-636976",
+                        "attendance_code":  "3026",
+                        "employee_id":  "TH-1620",
+                        "employee_name":  "Bùi Thanh Toàn",
+                        "timestamp":  "2026-09-16 17:41:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "TANG 3",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5005
                     },
                     {
                         "log_id":  "SQL-VPSG-637036",
@@ -4640,10 +4530,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636849",
-                        "attendance_code":  "3031",
-                        "employee_id":  "TH-117",
-                        "employee_name":  "Hoàng Văn Chung",
+                        "log_id":  "SQL-VPSG-636850",
+                        "attendance_code":  "3046",
+                        "employee_id":  "TH-1752",
+                        "employee_name":  "Ngô Thị Tú Trâm",
                         "timestamp":  "2026-09-16 17:45:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -4651,10 +4541,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636850",
-                        "attendance_code":  "3046",
-                        "employee_id":  "TH-1752",
-                        "employee_name":  "Ngô Thị Tú Trâm",
+                        "log_id":  "SQL-VPSG-636849",
+                        "attendance_code":  "3031",
+                        "employee_id":  "TH-117",
+                        "employee_name":  "Hoàng Văn Chung",
                         "timestamp":  "2026-09-16 17:45:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -4849,10 +4739,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636865",
-                        "attendance_code":  "3009",
-                        "employee_id":  "TH-1506",
-                        "employee_name":  "Nguyễn Hoàng Thanh Vy",
+                        "log_id":  "SQL-VPSG-636864",
+                        "attendance_code":  "3049",
+                        "employee_id":  "TH-1755",
+                        "employee_name":  "Phạm Thị Hoài Giang",
                         "timestamp":  "2026-09-16 18:06:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -4860,10 +4750,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636864",
-                        "attendance_code":  "3049",
-                        "employee_id":  "TH-1755",
-                        "employee_name":  "Phạm Thị Hoài Giang",
+                        "log_id":  "SQL-VPSG-636865",
+                        "attendance_code":  "3009",
+                        "employee_id":  "TH-1506",
+                        "employee_name":  "Nguyễn Hoàng Thanh Vy",
                         "timestamp":  "2026-09-16 18:06:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -5069,17 +4959,6 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636925",
-                        "attendance_code":  "5058",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-17 07:39:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "TANG 2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005
-                    },
-                    {
                         "log_id":  "SQL-VPSG-636926",
                         "attendance_code":  "3098",
                         "employee_id":  "TH-2081",
@@ -5267,10 +5146,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636882",
-                        "attendance_code":  "3052",
-                        "employee_id":  "TH-1814",
-                        "employee_name":  "Nguyễn Hữu Định",
+                        "log_id":  "SQL-VPSG-636883",
+                        "attendance_code":  "3048",
+                        "employee_id":  "TH-1779",
+                        "employee_name":  "Lê Thị Thùy Trang",
                         "timestamp":  "2026-09-17 07:51:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -5278,10 +5157,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636883",
-                        "attendance_code":  "3048",
-                        "employee_id":  "TH-1779",
-                        "employee_name":  "Lê Thị Thùy Trang",
+                        "log_id":  "SQL-VPSG-636882",
+                        "attendance_code":  "3052",
+                        "employee_id":  "TH-1814",
+                        "employee_name":  "Nguyễn Hữu Định",
                         "timestamp":  "2026-09-17 07:51:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -5344,10 +5223,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636884",
-                        "attendance_code":  "1508",
-                        "employee_id":  "TH-682",
-                        "employee_name":  "Nguyễn Thị Phương Dung",
+                        "log_id":  "SQL-VPSG-636885",
+                        "attendance_code":  "3027",
+                        "employee_id":  "TH-1614",
+                        "employee_name":  "Chu Thị Thanh Bình",
                         "timestamp":  "2026-09-17 07:53:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -5355,10 +5234,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636885",
-                        "attendance_code":  "3027",
-                        "employee_id":  "TH-1614",
-                        "employee_name":  "Chu Thị Thanh Bình",
+                        "log_id":  "SQL-VPSG-636884",
+                        "attendance_code":  "1508",
+                        "employee_id":  "TH-682",
+                        "employee_name":  "Nguyễn Thị Phương Dung",
                         "timestamp":  "2026-09-17 07:53:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "Táº¦NG TRá»†T",
@@ -5498,10 +5377,10 @@
                         "device_port":  5007
                     },
                     {
-                        "log_id":  "SQL-VPSG-636995",
-                        "attendance_code":  "3035",
-                        "employee_id":  "TH-1669",
-                        "employee_name":  "Nguyễn Thị Kim Bằng",
+                        "log_id":  "SQL-VPSG-636996",
+                        "attendance_code":  "3065",
+                        "employee_id":  "TH-1900",
+                        "employee_name":  "Bùi Thị Hiền",
                         "timestamp":  "2026-09-17 08:02:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 3",
@@ -5509,10 +5388,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636996",
-                        "attendance_code":  "3065",
-                        "employee_id":  "TH-1900",
-                        "employee_name":  "Bùi Thị Hiền",
+                        "log_id":  "SQL-VPSG-636995",
+                        "attendance_code":  "3035",
+                        "employee_id":  "TH-1669",
+                        "employee_name":  "Nguyễn Thị Kim Bằng",
                         "timestamp":  "2026-09-17 08:02:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 3",
@@ -5542,10 +5421,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-636998",
-                        "attendance_code":  "3085",
-                        "employee_id":  "TH-2012",
-                        "employee_name":  "Lê Chí Linh",
+                        "log_id":  "SQL-VPSG-637000",
+                        "attendance_code":  "3068",
+                        "employee_id":  "TH-1946",
+                        "employee_name":  "Nguyễn Tiến Hưng",
                         "timestamp":  "2026-09-17 08:05:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 3",
@@ -5553,10 +5432,10 @@
                         "device_port":  5005
                     },
                     {
-                        "log_id":  "SQL-VPSG-637000",
-                        "attendance_code":  "3068",
-                        "employee_id":  "TH-1946",
-                        "employee_name":  "Nguyễn Tiến Hưng",
+                        "log_id":  "SQL-VPSG-636998",
+                        "attendance_code":  "3085",
+                        "employee_id":  "TH-2012",
+                        "employee_name":  "Lê Chí Linh",
                         "timestamp":  "2026-09-17 08:05:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "TANG 3",

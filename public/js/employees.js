@@ -1527,10 +1527,11 @@ const appEmployees = {
         }
         this.closeFormModal();
         try {
-          await appData.init();
-          appDashboard.init();
+          if (typeof appDashboard !== 'undefined' && appDashboard.init) {
+            appDashboard.init();
+          }
         } catch (syncErr) {
-          console.warn('Background reload notice:', syncErr);
+          console.warn('Dashboard refresh notice:', syncErr);
         }
         this.applyFilters();
       } else {

@@ -127,7 +127,21 @@ const appData = {
         console.warn('Backend API /api/data not reachable, using static/cache fallback:', e);
       }
 
-      // Tier 2: Static sample_database.json Fallback
+      // Tier 2: IndexedDB Local Cache Fallback (contains user's latest saved edits)
+      const hasApiData = json && json.tables && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length >= 50;
+      if (!hasApiData && window.hrmStorage) {
+        try {
+          const cachedTables = await window.hrmStorage.get('hrm_database_full_cache');
+          if (cachedTables && Array.isArray(cachedTables['03_Employees']) && cachedTables['03_Employees'].length >= 50) {
+            json = { success: true, tables: cachedTables };
+            console.log('[Data Store] Đã nạp thành công dữ liệu mới nhất từ bộ nhớ đệm IndexedDB cục bộ.');
+          }
+        } catch(e) {
+          console.warn('IndexedDB cache load error:', e);
+        }
+      }
+
+      // Tier 3: Static sample_database.json Fallback (only if both API and IndexedDB are unavailable)
       const isComplete = json && json.tables && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length >= 50;
       if (!isComplete) {
         try {
@@ -146,20 +160,9 @@ const appData = {
         }
       }
 
-      // Tier 3: IndexedDB Local Cache Fallback
-      const hasValidData = json && json.tables && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length >= 50;
-      if (!hasValidData && window.hrmStorage) {
-        try {
-          const cachedTables = await window.hrmStorage.get('hrm_database_full_cache');
-          if (cachedTables && Array.isArray(cachedTables['03_Employees']) && cachedTables['03_Employees'].length >= 50) {
-            json = { success: true, tables: cachedTables };
-          }
-        } catch(e) {}
-      }
-
       if (json && json.tables) {
-        // Save to IndexedDB cache for future offline / server downtime instant recovery
-        if (window.hrmStorage && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length > 0) {
+        // Save to IndexedDB cache when fresh data is loaded from API
+        if (this.hasServerBackend && window.hrmStorage && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length > 0) {
           window.hrmStorage.set('hrm_database_full_cache', json.tables).catch(() => {});
         }
 
