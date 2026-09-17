@@ -3234,14 +3234,15 @@ const appAttendance = {
     const quota = this.getEmployeeLeaveQuota(empId);
     const currentYear = (this.summaryMonth || new Date().toISOString().substring(0, 7)).substring(0, 4);
     
-    // Lấy danh sách ngày nghỉ phép của nhân sự này
+    // Lấy danh sách ngày nghỉ phép / chế độ của nhân sự này
     const myLeaves = (appData.attendanceRequests || [])
-      .filter(r => r.employee_id === empId && (r.request_type === 'LEAVE' || (r.leave_type || '').includes('PHEP') || (r.leave_type || '').includes('ANNUAL')))
+      .filter(r => r.employee_id === empId && (r.request_type === 'LEAVE' || r.request_type === 'CONG_TAC' || r.leave_type))
       .sort((a, b) => (b.date || b.start_date || '').localeCompare(a.date || a.start_date || ''));
 
     let usedLeaveDays = 0;
     myLeaves.forEach(r => {
-      if (r.status === 'APPROVED') {
+      const isAnnualLeave = (r.leave_type === 'PHEP_NAM') || (!r.leave_type && (r.request_type === 'LEAVE' || (r.reason || '').toLowerCase().includes('phép')));
+      if (r.status === 'APPROVED' && isAnnualLeave) {
         const rYear = (r.date || r.start_date || '').substring(0, 4);
         if (!rYear || rYear === currentYear) {
           usedLeaveDays += parseFloat(r.duration_days || r.days || 1.0) || 1.0;
@@ -3261,18 +3262,27 @@ const appAttendance = {
     setVal('att-portal-emp-name', `${emp.full_name} (${emp.employee_id})`);
     setVal('att-portal-emp-dept', emp.department_name || emp.department_id || 'Công ty');
 
-    // Render bảng danh sách ngày nghỉ phép năm
+    // Render bảng danh sách ngày nghỉ phép / chế độ
     const annualLeavesTbody = document.getElementById('att-portal-annual-leaves-tbody');
     if (annualLeavesTbody) {
       if (myLeaves.length === 0) {
         annualLeavesTbody.innerHTML = `
           <tr>
             <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 22px;">
-              Chưa có ngày nghỉ phép năm nào được ghi nhận cho nhân sự này. Bấm <strong>"Thêm Phép Năm"</strong> hoặc <strong>"Import Phép Năm Excel"</strong> để nhập dữ liệu.
+              Chưa có ngày nghỉ phép / chế độ nào được ghi nhận cho nhân sự này. Bấm <strong>"Thêm Ngày Nghỉ"</strong> hoặc <strong>"Import Phép Năm Excel"</strong> để nhập dữ liệu.
             </td>
           </tr>
         `;
       } else {
+        const badgeMap = {
+          'PHEP_NAM': '<span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-weight: 700; border: 1px solid #BFDBFE;">🏖️ Phép năm (P)</span>',
+          'LE_TET': '<span class="badge" style="background: #FAF5FF; color: #7C3AED; font-weight: 700; border: 1px solid #DDD6FE;">🎆 Nghỉ Lễ/Tết (L)</span>',
+          'CONG_TAC': '<span class="badge" style="background: #F0F9FF; color: #0284C7; font-weight: 700; border: 1px solid #BAE6FD;">💼 Công tác (CT)</span>',
+          'NGHI_HUONG_L': '<span class="badge" style="background: #F0FDFA; color: #0D9488; font-weight: 700; border: 1px solid #99F6E4;">🏥 Nghỉ có lương (CL)</span>',
+          'NGHI_KL': '<span class="badge" style="background: #FEF2F2; color: #DC2626; font-weight: 700; border: 1px solid #FECACA;">🚫 Nghỉ không lương (KL)</span>',
+          'NGHI_BHXH': '<span class="badge" style="background: #FFFBEB; color: #D97706; font-weight: 700; border: 1px solid #FDE68A;">🩺 Nghỉ BHXH (BH)</span>'
+        };
+
         annualLeavesTbody.innerHTML = myLeaves.map((r, idx) => {
           const reqDate = r.date || r.start_date || '-';
           const duration = parseFloat(r.duration_days || r.days || 1.0) || 1.0;
@@ -3287,20 +3297,23 @@ const appAttendance = {
             stBadge = '<span class="badge" style="background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;"><i class="fa-solid fa-clock"></i> Chờ duyệt</span>';
           }
 
+          const lType = r.leave_type || (r.request_type === 'CONG_TAC' ? 'CONG_TAC' : 'PHEP_NAM');
+          const typeBadge = badgeMap[lType] || badgeMap['PHEP_NAM'];
           const reqId = r.request_id || r.id;
+
           return `
             <tr>
               <td style="text-align: center; font-weight: 600; color: #64748B;">${idx + 1}</td>
               <td style="font-family: monospace; font-weight: 700; color: #1E293B;">${reqDate}</td>
               <td style="text-align: center;"><span class="badge" style="background: #EFF6FF; color: #1E40AF; font-weight: 700; border: 1px solid #BFDBFE;">${durationLabel}</span></td>
-              <td><span class="badge" style="background: #ECFDF5; color: #047857; font-weight: 700; border: 1px solid #A7F3D0;">Phép năm (P)</span></td>
-              <td style="color: #475569; font-size: 12px;">${r.reason || 'Nghỉ phép năm'}</td>
+              <td>${typeBadge}</td>
+              <td style="color: #475569; font-size: 12px;">${r.reason || '-'}</td>
               <td style="text-align: center;">${stBadge}</td>
               <td style="text-align: center; white-space: nowrap;">
-                <button type="button" class="btn btn-secondary btn-xs" onclick="appAttendance.openEditAnnualLeaveModal('${reqId}')" title="Chỉnh sửa ngày nghỉ phép" style="padding: 3px 7px; margin-right: 4px; font-size: 11px;">
+                <button type="button" class="btn btn-secondary btn-xs" onclick="appAttendance.openEditAnnualLeaveModal('${reqId}')" title="Chỉnh sửa ngày nghỉ / công" style="padding: 3px 7px; margin-right: 4px; font-size: 11px;">
                   <i class="fa-solid fa-pen-to-square" style="color: #2563EB;"></i> Sửa
                 </button>
-                <button type="button" class="btn btn-secondary btn-xs" onclick="appAttendance.deleteAnnualLeaveRecord('${reqId}')" title="Xóa ngày nghỉ phép" style="padding: 3px 7px; font-size: 11px; color: #DC2626;">
+                <button type="button" class="btn btn-secondary btn-xs" onclick="appAttendance.deleteAnnualLeaveRecord('${reqId}')" title="Xóa ngày nghỉ / công" style="padding: 3px 7px; font-size: 11px; color: #DC2626;">
                   <i class="fa-solid fa-trash-can"></i> Xóa
                 </button>
               </td>
@@ -3375,12 +3388,45 @@ const appAttendance = {
   },
 
   // ========================================================================
-  // ANNUAL LEAVE CRUD & EXCEL IMPORT ACTIONS
+  // LEAVE & ENTITLEMENT ACTIONS (CRUD NGÀY NGHỈ / CÔNG CHẾ ĐỘ)
   // ========================================================================
-  // ========================================================================
-  // ANNUAL LEAVE CRUD & EXCEL IMPORT ACTIONS
-  // ========================================================================
-  openAddAnnualLeaveModal(empId) {
+  onLeaveTypeChange(typeVal) {
+    const hintText = document.getElementById('att-aleave-hint-text');
+    const hintBox = document.getElementById('att-aleave-type-hint');
+    if (!hintText) return;
+
+    switch (typeVal) {
+      case 'PHEP_NAM':
+        hintText.innerHTML = 'Gán ký hiệu <strong>P</strong> vào ngày tương ứng, tính nguyên lương và cộng trực tiếp vào chỉ số <strong>PHEP_NAM</strong> trên Bảng Công Tổng Hợp.';
+        if (hintBox) { hintBox.style.background = '#F0FDF4'; hintBox.style.borderColor = '#BBF7D0'; hintBox.style.color = '#166534'; }
+        break;
+      case 'LE_TET':
+        hintText.innerHTML = 'Gán ký hiệu <strong>L</strong> vào ngày tương ứng, tính 100% nguyên lương lễ Tết và cộng vào chỉ số <strong>LE_TET</strong> trên Bảng Công Tổng Hợp.';
+        if (hintBox) { hintBox.style.background = '#FAF5FF'; hintBox.style.borderColor = '#E9D5FF'; hintBox.style.color = '#6B21A8'; }
+        break;
+      case 'CONG_TAC':
+        hintText.innerHTML = 'Gán ký hiệu <strong>CT</strong> vào ngày tương ứng, tính đủ công hưởng lương và cộng vào chỉ số <strong>CONG_TAC</strong> trên Bảng Công Tổng Hợp.';
+        if (hintBox) { hintBox.style.background = '#F0F9FF'; hintBox.style.borderColor = '#BAE6FD'; hintBox.style.color = '#0369A1'; }
+        break;
+      case 'NGHI_HUONG_L':
+        hintText.innerHTML = 'Gán ký hiệu <strong>CL</strong> (Nghỉ việc riêng có lương / Chế độ kết hôn, hiếu hỉ...) và cộng vào chỉ số <strong>NGHI_HUONG_L</strong> trên Bảng Công Tổng Hợp.';
+        if (hintBox) { hintBox.style.background = '#F0FDFA'; hintBox.style.borderColor = '#99F6E4'; hintBox.style.color = '#0F766E'; }
+        break;
+      case 'NGHI_KL':
+        hintText.innerHTML = 'Gán ký hiệu <strong>KL</strong> (Nghỉ không lương), không tính công hưởng lương và cộng vào chỉ số <strong>NGHI_KL</strong>.';
+        if (hintBox) { hintBox.style.background = '#FEF2F2'; hintBox.style.borderColor = '#FECACA'; hintBox.style.color = '#B91C1C'; }
+        break;
+      case 'NGHI_BHXH':
+        hintText.innerHTML = 'Gán ký hiệu <strong>BH</strong> (Nghỉ ốm đau, thai sản, TNLĐ hưởng trợ cấp BHXH) và cộng vào chỉ số <strong>NGHI_BHXH</strong>.';
+        if (hintBox) { hintBox.style.background = '#FFFBEB'; hintBox.style.borderColor = '#FDE68A'; hintBox.style.color = '#B45309'; }
+        break;
+      default:
+        hintText.innerHTML = 'Cập nhật ngày công / nghỉ phép và tự động đồng bộ vào Bảng Công Tổng Hợp.';
+        if (hintBox) { hintBox.style.background = '#F8FAFC'; hintBox.style.borderColor = '#E2E8F0'; hintBox.style.color = '#334155'; }
+    }
+  },
+
+  openAddAnnualLeaveModal(empId, defaultType = 'PHEP_NAM') {
     const modal = document.getElementById('modal-att-annual-leave-edit');
     if (!modal) return;
 
@@ -3400,9 +3446,16 @@ const appAttendance = {
     }
 
     const titleEl = document.getElementById('modal-att-aleave-title');
-    if (titleEl) titleEl.textContent = 'Thêm Ngày Nghỉ Phép Năm';
+    if (titleEl) titleEl.textContent = 'Thêm Ngày Nghỉ / Công Chế Độ';
     const idInput = document.getElementById('att-aleave-id');
     if (idInput) idInput.value = '';
+
+    const typeSelect = document.getElementById('att-aleave-type');
+    if (typeSelect) {
+      typeSelect.value = defaultType || 'PHEP_NAM';
+      this.onLeaveTypeChange(typeSelect.value);
+    }
+
     const dateInput = document.getElementById('att-aleave-date');
     if (dateInput) dateInput.value = this.selectedDate || new Date().toISOString().substring(0, 10);
     const durInput = document.getElementById('att-aleave-duration');
@@ -3421,7 +3474,7 @@ const appAttendance = {
 
     const req = (appData.attendanceRequests || []).find(r => (r.request_id || r.id) === requestId);
     if (!req) {
-      utils.showToast('Không tìm thấy bản ghi phép năm', 'error');
+      utils.showToast('Không tìm thấy bản ghi nghỉ phép / công', 'error');
       return;
     }
 
@@ -3437,9 +3490,17 @@ const appAttendance = {
     }
 
     const titleEl = document.getElementById('modal-att-aleave-title');
-    if (titleEl) titleEl.textContent = 'Chỉnh Sửa Ngày Nghỉ Phép Năm';
+    if (titleEl) titleEl.textContent = 'Chỉnh Sửa Ngày Nghỉ / Công Chế Độ';
     const idInput = document.getElementById('att-aleave-id');
     if (idInput) idInput.value = req.request_id || req.id;
+
+    const typeSelect = document.getElementById('att-aleave-type');
+    if (typeSelect) {
+      let lType = req.leave_type || (req.request_type === 'CONG_TAC' ? 'CONG_TAC' : 'PHEP_NAM');
+      typeSelect.value = lType;
+      this.onLeaveTypeChange(lType);
+    }
+
     const dateInput = document.getElementById('att-aleave-date');
     if (dateInput) dateInput.value = req.date || req.start_date || '';
     const durInput = document.getElementById('att-aleave-duration');
@@ -3461,19 +3522,30 @@ const appAttendance = {
     if (e && e.preventDefault) e.preventDefault();
     const reqId = document.getElementById('att-aleave-id').value;
     const empId = document.getElementById('att-aleave-emp-id').value;
+    const leaveType = (document.getElementById('att-aleave-type') ? document.getElementById('att-aleave-type').value : 'PHEP_NAM') || 'PHEP_NAM';
     const date = document.getElementById('att-aleave-date').value;
     const duration = parseFloat(document.getElementById('att-aleave-duration').value) || 1.0;
     const reason = (document.getElementById('att-aleave-reason').value || '').trim();
     const status = document.getElementById('att-aleave-status').value || 'APPROVED';
 
     if (!empId || !date) {
-      utils.showToast('Vui lòng chọn nhân viên và ngày nghỉ!', 'warning');
+      utils.showToast('Vui lòng chọn nhân viên và ngày áp dụng!', 'warning');
       return;
     }
 
     const emp = (appData.employees || []).find(x => x.employee_id === empId);
     const fullName = emp ? emp.full_name : empId;
     const deptName = emp ? (emp.department_name || emp.department_id) : '';
+
+    const typeConfigMap = {
+      'PHEP_NAM': { symbol: 'P', name: 'Nghỉ phép năm', status: 'LEAVE', isPaid: true },
+      'LE_TET': { symbol: 'L', name: 'Nghỉ lễ/Tết', status: 'HOLIDAY', isPaid: true },
+      'CONG_TAC': { symbol: 'CT', name: 'Đi công tác', status: 'VALID', isPaid: true },
+      'NGHI_HUONG_L': { symbol: 'CL', name: 'Nghỉ có lương / Chế độ', status: 'LEAVE', isPaid: true },
+      'NGHI_KL': { symbol: 'KL', name: 'Nghỉ không lương', status: 'ABSENT', isPaid: false },
+      'NGHI_BHXH': { symbol: 'BH', name: 'Nghỉ BHXH / Ốm / Thai sản', status: 'LEAVE', isPaid: false }
+    };
+    const config = typeConfigMap[leaveType] || typeConfigMap['PHEP_NAM'];
 
     if (!appData.attendanceRequests) appData.attendanceRequests = [];
 
@@ -3486,14 +3558,14 @@ const appAttendance = {
           employee_id: empId,
           full_name: fullName,
           department_name: deptName,
-          request_type: 'LEAVE',
-          leave_type: 'PHEP_NAM',
+          request_type: leaveType === 'CONG_TAC' ? 'CONG_TAC' : 'LEAVE',
+          leave_type: leaveType,
           date: date,
           start_date: date,
           end_date: date,
           duration_days: duration,
           days: duration,
-          reason: reason || 'Nghỉ phép năm',
+          reason: reason || config.name,
           status: status,
           updated_at: new Date().toISOString()
         };
@@ -3505,14 +3577,14 @@ const appAttendance = {
         employee_id: empId,
         full_name: fullName,
         department_name: deptName,
-        request_type: 'LEAVE',
-        leave_type: 'PHEP_NAM',
+        request_type: leaveType === 'CONG_TAC' ? 'CONG_TAC' : 'LEAVE',
+        leave_type: leaveType,
         date: date,
         start_date: date,
         end_date: date,
         duration_days: duration,
         days: duration,
-        reason: reason || 'Nghỉ phép năm',
+        reason: reason || config.name,
         status: status,
         created_at: new Date().toISOString()
       };
@@ -3523,11 +3595,12 @@ const appAttendance = {
     if (!appData.timesheets) appData.timesheets = [];
     const tsIdx = appData.timesheets.findIndex(t => t.employee_id === empId && t.date === date);
     if (status === 'APPROVED') {
+      const wu = config.isPaid ? duration : 0;
       if (tsIdx >= 0) {
-        appData.timesheets[tsIdx].status = 'LEAVE';
-        appData.timesheets[tsIdx].symbol = 'P';
-        appData.timesheets[tsIdx].work_units = duration;
-        appData.timesheets[tsIdx].note = `Nghỉ phép năm (P): ${reason || 'Hưởng lương'}`;
+        appData.timesheets[tsIdx].status = config.status;
+        appData.timesheets[tsIdx].symbol = config.symbol;
+        appData.timesheets[tsIdx].work_units = wu;
+        appData.timesheets[tsIdx].note = `${config.name} (${config.symbol}): ${reason || (config.isPaid ? 'Hưởng lương' : 'Không hưởng lương')}`;
       } else {
         const dt = new Date(date);
         const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -3537,23 +3610,23 @@ const appAttendance = {
           full_name: fullName,
           department_name: deptName,
           date: date,
-          day_name: dayNames[dt.getDay()],
-          check_in: '',
-          check_out: '',
-          work_units: duration,
+          day_name: isNaN(dt.getDay()) ? 'Thứ 2' : dayNames[dt.getDay()],
+          check_in: leaveType === 'CONG_TAC' ? '08:00' : '',
+          check_out: leaveType === 'CONG_TAC' ? '17:30' : '',
+          work_units: wu,
           late_minutes: 0,
           early_minutes: 0,
           ot_hours: 0,
-          status: 'LEAVE',
-          symbol: 'P',
-          note: `Nghỉ phép năm (P): ${reason || 'Hưởng lương'}`
+          status: config.status,
+          symbol: config.symbol,
+          note: `${config.name} (${config.symbol}): ${reason || (config.isPaid ? 'Hưởng lương' : 'Không hưởng lương')}`
         });
       }
-    } else if (tsIdx >= 0 && appData.timesheets[tsIdx].symbol === 'P') {
+    } else if (tsIdx >= 0) {
       appData.timesheets[tsIdx].status = 'ABSENT';
       appData.timesheets[tsIdx].symbol = 'KP';
       appData.timesheets[tsIdx].work_units = 0;
-      appData.timesheets[tsIdx].note = 'Chờ duyệt phép';
+      appData.timesheets[tsIdx].note = `Chờ duyệt: ${config.name}`;
     }
 
     try {
@@ -3568,14 +3641,24 @@ const appAttendance = {
     this.renderTimesheets();
     this.renderRequests();
 
-    utils.showToast('Đã lưu thông tin phép năm và tự động đồng bộ vào Bảng Công Tổng Hợp!', 'success');
+    utils.showToast(`Đã lưu "${config.name}" và tự động đồng bộ vào Bảng Công Tổng Hợp!`, 'success');
   },
 
   deleteAnnualLeaveRecord(requestId) {
     const req = (appData.attendanceRequests || []).find(r => (r.request_id || r.id) === requestId);
     if (!req) return;
 
-    if (!confirm(`Bạn có chắc chắn muốn xóa ngày nghỉ phép (${req.date || req.start_date}) của nhân sự ${req.full_name || req.employee_id}?`)) {
+    const typeLabels = {
+      'PHEP_NAM': 'phép năm',
+      'LE_TET': 'nghỉ lễ/Tết',
+      'CONG_TAC': 'công tác',
+      'NGHI_HUONG_L': 'nghỉ có lương',
+      'NGHI_KL': 'nghỉ không lương',
+      'NGHI_BHXH': 'nghỉ BHXH'
+    };
+    const tLabel = typeLabels[req.leave_type] || 'nghỉ phép/công';
+
+    if (!confirm(`Bạn có chắc chắn muốn xóa bản ghi ${tLabel} ngày (${req.date || req.start_date}) của nhân sự ${req.full_name || req.employee_id}?`)) {
       return;
     }
 
@@ -3585,7 +3668,7 @@ const appAttendance = {
     const reqDate = req.date || req.start_date;
     if (appData.timesheets) {
       const tsIdx = appData.timesheets.findIndex(t => t.employee_id === empId && t.date === reqDate);
-      if (tsIdx >= 0 && appData.timesheets[tsIdx].symbol === 'P') {
+      if (tsIdx >= 0) {
         appData.timesheets.splice(tsIdx, 1);
       }
     }
@@ -3600,7 +3683,7 @@ const appAttendance = {
     this.renderTimesheets();
     this.renderRequests();
 
-    utils.showToast('Đã xóa bản ghi phép năm thành công!', 'success');
+    utils.showToast(`Đã xóa bản ghi ${tLabel} thành công!`, 'success');
   },
 
   openEditQuotaModal(empId) {
@@ -5586,36 +5669,51 @@ const appAttendance = {
       let nghiKoLuong = 0;
       let nghiBHXH = 0;
 
-      const phepNamDates = new Set();
+      const accountedDates = new Set();
 
       empReqs.forEach(req => {
-        const type = (req.request_type || req.leave_type || req.type || '').toUpperCase();
+        const type = (req.leave_type || req.request_type || req.type || '').toUpperCase();
         const duration = parseFloat(req.duration_days || req.days || req.units || 1.0) || 1.0;
         const reqDate = req.date || req.start_date || '';
-        if (type.includes('ANNUAL') || type.includes('PHEP') || type.includes('PHÉP')) {
+        if (reqDate) accountedDates.add(reqDate);
+
+        if (type === 'PHEP_NAM' || type.includes('ANNUAL') || (type.includes('PHEP') && !type.includes('LE') && !type.includes('BHXH')) || (type.includes('PHÉP') && !type.includes('LỄ'))) {
           phepNam += duration;
-          if (reqDate) phepNamDates.add(reqDate);
-        } else if (type.includes('LE') || type.includes('LỄ') || type.includes('TET') || type.includes('TẾT') || type.includes('HOLIDAY')) {
+        } else if (type === 'LE_TET' || type.includes('LE') || type.includes('LỄ') || type.includes('TET') || type.includes('TẾT') || type.includes('HOLIDAY')) {
           leTet += duration;
-        } else if (type.includes('CONG_TAC') || type.includes('CÔNG TÁC') || type.includes('BUSINESS')) {
+        } else if (type === 'CONG_TAC' || type.includes('CONG_TAC') || type.includes('CÔNG TÁC') || type.includes('BUSINESS')) {
           congTac += duration;
-        } else if (type.includes('PAID') || type.includes('HƯỞNG LƯƠNG') || type.includes('CHẾ ĐỘ')) {
+        } else if (type === 'NGHI_HUONG_L' || type.includes('PAID') || type.includes('HƯỞNG LƯƠNG') || type.includes('CHẾ ĐỘ') || type.includes('CÓ LƯƠNG')) {
           nghiHuongLuong += duration;
-        } else if (type.includes('UNPAID') || type.includes('KHÔNG LƯƠNG') || type.includes('KO LUONG')) {
+        } else if (type === 'NGHI_KL' || type.includes('UNPAID') || type.includes('KHÔNG LƯƠNG') || type.includes('KO LUONG')) {
           nghiKoLuong += duration;
-        } else if (type.includes('BHXH') || type.includes('SICK') || type.includes('ỐM') || type.includes('THAI SẢN') || type.includes('MATERNITY')) {
+        } else if (type === 'NGHI_BHXH' || type.includes('BHXH') || type.includes('SICK') || type.includes('ỐM') || type.includes('THAI SẢN') || type.includes('MATERNITY')) {
           nghiBHXH += duration;
         }
       });
 
       empTs.forEach(t => {
-        const isLeave = t.symbol === 'P' || t.status === 'LEAVE' || (t.note && (t.note.toLowerCase().includes('phép năm') || t.note.toLowerCase().includes('phep nam')));
-        if (isLeave && t.date && !phepNamDates.has(t.date)) {
-          const wu = parseFloat(t.work_units !== undefined ? t.work_units : 1.0) || 1.0;
+        if (!t.date || accountedDates.has(t.date)) return;
+        const wu = parseFloat(t.work_units !== undefined ? t.work_units : 1.0) || 1.0;
+
+        if (t.symbol === 'P' || (t.status === 'LEAVE' && (!t.symbol || t.symbol === 'P'))) {
           phepNam += wu;
-          phepNamDates.add(t.date);
-        } else if (t.status === 'ABSENT' && (!t.work_units || t.work_units === 0)) {
+          accountedDates.add(t.date);
+        } else if (t.symbol === 'L' || t.status === 'HOLIDAY') {
+          leTet += wu;
+          accountedDates.add(t.date);
+        } else if (t.symbol === 'CT') {
+          congTac += wu;
+          accountedDates.add(t.date);
+        } else if (t.symbol === 'CL') {
+          nghiHuongLuong += wu;
+          accountedDates.add(t.date);
+        } else if (t.symbol === 'KL' || (t.status === 'ABSENT' && (!t.work_units || t.work_units === 0))) {
           nghiKoLuong += 1;
+          accountedDates.add(t.date);
+        } else if (t.symbol === 'BH') {
+          nghiBHXH += wu;
+          accountedDates.add(t.date);
         }
       });
 
@@ -5808,16 +5906,31 @@ const appAttendance = {
 
             <!-- CÔNG HƯỞNG NGUYÊN LƯƠNG -->
             <td style="text-align: center; font-weight: 800; color: #047857; background: #F0FDF4; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.cong_tt > 0 ? item.cong_tt : '-'}</td>
-            <td style="text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; cursor: pointer;" onclick="appAttendance.openAddAnnualLeaveModal('${item.employee_id}')" title="Bấm để thêm/chỉnh sửa phép năm cho ${item.full_name}">
-              ${item.phep_nam > 0 ? `<span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-weight: 700; border: 1px solid #BFDBFE;">${item.phep_nam} <i class="fa-solid fa-pen" style="font-size: 8.5px; margin-left: 2px;"></i></span>` : `<span style="color: #94A3B8; font-size: 11px;"><i class="fa-solid fa-plus" title="Thêm phép"></i></span>`}
+            
+            <td style="text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; cursor: pointer;" onclick="appAttendance.openAddAnnualLeaveModal('${item.employee_id}', 'PHEP_NAM')" title="Bấm để thêm/sửa Phép năm (P) cho ${item.full_name}">
+              ${item.phep_nam > 0 ? `<span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-weight: 700; border: 1px solid #BFDBFE;">${item.phep_nam} <i class="fa-solid fa-pen" style="font-size: 8.5px; margin-left: 2px;"></i></span>` : `<span style="color: #94A3B8; font-size: 11px;"><i class="fa-solid fa-plus" title="Thêm phép năm"></i></span>`}
             </td>
-            <td style="text-align: center; color: #7C3AED; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.le_tet > 0 ? item.le_tet : '-'}</td>
-            <td style="text-align: center; color: #0284C7; font-weight: 600; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.cong_tac > 0 ? item.cong_tac : '-'}</td>
-            <td style="text-align: center; color: #0D9488; font-weight: 600; border-right: 1px solid #CBD5E1; padding: 6px 4px;">${item.nghi_huong_l > 0 ? item.nghi_huong_l : '-'}</td>
+            
+            <td style="text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; cursor: pointer;" onclick="appAttendance.openAddAnnualLeaveModal('${item.employee_id}', 'LE_TET')" title="Bấm để thêm/sửa Nghỉ Lễ/Tết (L) cho ${item.full_name}">
+              ${item.le_tet > 0 ? `<span class="badge" style="background: #FAF5FF; color: #7C3AED; font-weight: 700; border: 1px solid #DDD6FE;">${item.le_tet} <i class="fa-solid fa-pen" style="font-size: 8.5px; margin-left: 2px;"></i></span>` : `<span style="color: #CBD5E1; font-size: 11px;"><i class="fa-solid fa-plus" title="Thêm nghỉ Lễ/Tết"></i></span>`}
+            </td>
+            
+            <td style="text-align: center; border-right: 1px solid #E2E8F0; padding: 6px 4px; cursor: pointer;" onclick="appAttendance.openAddAnnualLeaveModal('${item.employee_id}', 'CONG_TAC')" title="Bấm để thêm/sửa Công tác (CT) cho ${item.full_name}">
+              ${item.cong_tac > 0 ? `<span class="badge" style="background: #F0F9FF; color: #0284C7; font-weight: 700; border: 1px solid #BAE6FD;">${item.cong_tac} <i class="fa-solid fa-pen" style="font-size: 8.5px; margin-left: 2px;"></i></span>` : `<span style="color: #CBD5E1; font-size: 11px;"><i class="fa-solid fa-plus" title="Thêm công tác"></i></span>`}
+            </td>
+            
+            <td style="text-align: center; border-right: 1px solid #CBD5E1; padding: 6px 4px; cursor: pointer;" onclick="appAttendance.openAddAnnualLeaveModal('${item.employee_id}', 'NGHI_HUONG_L')" title="Bấm để thêm/sửa Nghỉ có lương / Chế độ (CL) cho ${item.full_name}">
+              ${item.nghi_huong_l > 0 ? `<span class="badge" style="background: #F0FDFA; color: #0D9488; font-weight: 700; border: 1px solid #99F6E4;">${item.nghi_huong_l} <i class="fa-solid fa-pen" style="font-size: 8.5px; margin-left: 2px;"></i></span>` : `<span style="color: #CBD5E1; font-size: 11px;"><i class="fa-solid fa-plus" title="Thêm nghỉ có lương"></i></span>`}
+            </td>
 
             <!-- NGHỈ KHÔNG LƯƠNG / CHẾ ĐỘ -->
-            <td style="text-align: center; color: #DC2626; font-weight: 600; background: #FEF2F2; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.nghi_kl > 0 ? item.nghi_kl : '-'}</td>
-            <td style="text-align: center; color: #D97706; font-weight: 600; background: #FEF2F2; border-right: 1px solid #CBD5E1; padding: 6px 4px;">${item.nghi_bhxh > 0 ? item.nghi_bhxh : '-'}</td>
+            <td style="text-align: center; background: #FEF2F2; border-right: 1px solid #E2E8F0; padding: 6px 4px; cursor: pointer;" onclick="appAttendance.openAddAnnualLeaveModal('${item.employee_id}', 'NGHI_KL')" title="Bấm để thêm/sửa Nghỉ không lương (KL) cho ${item.full_name}">
+              ${item.nghi_kl > 0 ? `<span class="badge" style="background: #FEE2E2; color: #DC2626; font-weight: 700; border: 1px solid #FECACA;">${item.nghi_kl} <i class="fa-solid fa-pen" style="font-size: 8.5px; margin-left: 2px;"></i></span>` : `<span style="color: #FCA5A5; font-size: 11px;"><i class="fa-solid fa-plus" title="Thêm nghỉ không lương"></i></span>`}
+            </td>
+            
+            <td style="text-align: center; background: #FEF2F2; border-right: 1px solid #CBD5E1; padding: 6px 4px; cursor: pointer;" onclick="appAttendance.openAddAnnualLeaveModal('${item.employee_id}', 'NGHI_BHXH')" title="Bấm để thêm/sửa Nghỉ BHXH / Ốm (BH) cho ${item.full_name}">
+              ${item.nghi_bhxh > 0 ? `<span class="badge" style="background: #FEF3C7; color: #D97706; font-weight: 700; border: 1px solid #FDE68A;">${item.nghi_bhxh} <i class="fa-solid fa-pen" style="font-size: 8.5px; margin-left: 2px;"></i></span>` : `<span style="color: #FCD34D; font-size: 11px;"><i class="fa-solid fa-plus" title="Thêm nghỉ BHXH"></i></span>`}
+            </td>
 
             <!-- LÀM THÊM GIỜ - OT -->
             <td style="text-align: center; color: #C2410C; font-weight: 600; background: #FFF7ED; border-right: 1px solid #E2E8F0; padding: 6px 4px;">${item.ot_nt > 0 ? item.ot_nt : '-'}</td>

@@ -5374,16 +5374,16 @@
 </div>
 
 <!-- ==========================================================================
-     MODAL: THÊM / CHỈNH SỬA PHÉP NĂM CÁ NHÂN
+     MODAL: THÊM / CHỈNH SỬA PHÉP & CÔNG CHẾ ĐỘ
      ========================================================================== -->
 <div class="modal-backdrop" id="modal-att-annual-leave-edit">
-  <div class="modal-container" style="max-width: 540px;">
+  <div class="modal-container" style="max-width: 560px;">
     <div class="modal-header" style="background: linear-gradient(135deg, #047857 0%, #059669 100%); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <i class="fa-solid fa-umbrella-beach" style="font-size: 20px; color: #A7F3D0;"></i>
+        <i class="fa-solid fa-calendar-check" style="font-size: 20px; color: #A7F3D0;"></i>
         <div>
-          <h3 id="modal-att-aleave-title" style="margin: 0; font-size: 15px; font-weight: 800; color: #fff;">Thêm Ngày Nghỉ Phép Năm</h3>
-          <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #D1FAE5;">Cập nhật phép năm và tự động đồng bộ vào Bảng Công Tổng Hợp</p>
+          <h3 id="modal-att-aleave-title" style="margin: 0; font-size: 15px; font-weight: 800; color: #fff;">Thêm Ngày Nghỉ / Công Chế Độ</h3>
+          <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #D1FAE5;">Cập nhật phép năm, lễ tết, công tác, nghỉ chế độ và tự động đồng bộ Bảng Công Tổng Hợp</p>
         </div>
       </div>
       <button type="button" class="modal-close" style="color: #fff;" onclick="appAttendance.closeAnnualLeaveModal()">&times;</button>
@@ -5402,17 +5402,35 @@
           </select>
         </div>
 
+        <div class="form-group" style="margin: 0;">
+          <label for="att-aleave-type" style="font-size: 12.5px; font-weight: 700; color: #1E293B; margin-bottom: 6px; display: block;">
+            🏷️ Loại Nghỉ Phép / Công Chế Độ <span style="color: #DC2626;">*</span>
+          </label>
+          <select id="att-aleave-type" class="form-control" required style="width: 100%; height: 38px; font-size: 13px; font-weight: 700; color: #047857; border: 1.5px solid #10B981; border-radius: 6px; padding: 0 10px;" onchange="appAttendance.onLeaveTypeChange(this.value)">
+            <optgroup label="CÔNG HƯỞNG NGUYÊN LƯƠNG (NGÀY)">
+              <option value="PHEP_NAM" selected>🏖️ Nghỉ phép năm (PHEP_NAM - Ký hiệu P)</option>
+              <option value="LE_TET">🎆 Nghỉ Lễ / Tết (LE_TET - Ký hiệu L)</option>
+              <option value="CONG_TAC">💼 Đi công tác (CONG_TAC - Ký hiệu CT)</option>
+              <option value="NGHI_HUONG_L">🏥 Nghỉ có lương / Chế độ (NGHI_HUONG_L - Ký hiệu CL)</option>
+            </optgroup>
+            <optgroup label="NGHỈ KHÔNG LƯƠNG / BHXH">
+              <option value="NGHI_KL">🚫 Nghỉ không lương (NGHI_KL - Ký hiệu KL)</option>
+              <option value="NGHI_BHXH">🩺 Nghỉ BHXH / Ốm / Thai sản (NGHI_BHXH - Ký hiệu BH)</option>
+            </optgroup>
+          </select>
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group" style="margin: 0;">
             <label for="att-aleave-date" style="font-size: 12.5px; font-weight: 700; color: #1E293B; margin-bottom: 6px; display: block;">
-              📅 Ngày Nghỉ <span style="color: #DC2626;">*</span>
+              📅 Ngày Áp Dụng <span style="color: #DC2626;">*</span>
             </label>
             <input type="date" id="att-aleave-date" class="form-control" required style="width: 100%; height: 38px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px; padding: 0 10px;">
           </div>
 
           <div class="form-group" style="margin: 0;">
             <label for="att-aleave-duration" style="font-size: 12.5px; font-weight: 700; color: #1E293B; margin-bottom: 6px; display: block;">
-              ⏱️ Số Ngày Nghỉ (Công) <span style="color: #DC2626;">*</span>
+              ⏱️ Số Ngày (Công) <span style="color: #DC2626;">*</span>
             </label>
             <select id="att-aleave-duration" class="form-control" required style="width: 100%; height: 38px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px; padding: 0 10px;">
               <option value="1.0">1.0 Ngày (Cả ngày - 8h)</option>
@@ -5423,9 +5441,9 @@
 
         <div class="form-group" style="margin: 0;">
           <label for="att-aleave-reason" style="font-size: 12.5px; font-weight: 700; color: #1E293B; margin-bottom: 6px; display: block;">
-            📝 Lý Do Nghỉ / Ghi Chú
+            📝 Lý Do / Ghi Chú
           </label>
-          <input type="text" id="att-aleave-reason" class="form-control" placeholder="Ví dụ: Nghỉ giải quyết việc gia đình, du lịch..." style="width: 100%; height: 38px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px; padding: 0 10px;">
+          <input type="text" id="att-aleave-reason" class="form-control" placeholder="Ví dụ: Nghỉ phép năm cá nhân, nghỉ lễ 30/4, công tác chi nhánh..." style="width: 100%; height: 38px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px; padding: 0 10px;">
         </div>
 
         <div class="form-group" style="margin: 0;">
@@ -5433,21 +5451,21 @@
             ⚡ Trạng Thái Duyệt
           </label>
           <select id="att-aleave-status" class="form-control" style="width: 100%; height: 38px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px; padding: 0 10px;">
-            <option value="APPROVED">Đã Phê Duyệt (Hưởng 100% lương phép &amp; tính vào Bảng Công Tổng Hợp)</option>
+            <option value="APPROVED">Đã Phê Duyệt (Hưởng đúng chế độ &amp; tính vào Bảng Công Tổng Hợp)</option>
             <option value="PENDING">Chờ Phê Duyệt (Tạm chưa tính vào lương)</option>
           </select>
         </div>
 
-        <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #166534; line-height: 1.4;">
+        <div id="att-aleave-type-hint" style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #166534; line-height: 1.4;">
           <i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i>
-          Khi lưu, hệ thống sẽ tự động gán ký hiệu <strong>P</strong> vào bảng công ngày tương ứng và cộng trực tiếp vào chỉ số <strong>PHEP_NAM</strong> trên Bảng Công Tổng Hợp.
+          <span id="att-aleave-hint-text">Gán ký hiệu <strong>P</strong> vào ngày tương ứng và cộng trực tiếp vào chỉ số <strong>PHEP_NAM</strong> trên Bảng Công Tổng Hợp.</span>
         </div>
       </div>
 
       <div class="modal-footer" style="padding: 12px 18px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px;">
         <button type="button" class="btn btn-secondary btn-sm" onclick="appAttendance.closeAnnualLeaveModal()">Hủy Bỏ</button>
         <button type="submit" class="btn btn-sm" style="background: #047857; color: #fff; font-weight: 700; border: none; padding: 8px 16px;">
-          <i class="fa-solid fa-floppy-disk"></i> Lưu Phép Năm
+          <i class="fa-solid fa-floppy-disk"></i> Lưu Bản Ghi
         </button>
       </div>
     </form>
