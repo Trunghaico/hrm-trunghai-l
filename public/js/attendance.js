@@ -23,6 +23,26 @@ const appAttendance = {
   summaryPageSize: 50,
   summaryData: [],
 
+  isResigned(empOrStatus) {
+    if (!empOrStatus) return false;
+    let status = '';
+    if (typeof empOrStatus === 'string') {
+      status = empOrStatus;
+    } else {
+      status = empOrStatus.employment_status || empOrStatus['Trạng thái lao động'] || empOrStatus['Trạng thái làm việc'] || empOrStatus.status || '';
+      if (!status && window.appData && appData.masterProfiles && empOrStatus.employee_id) {
+        const m = appData.masterProfiles.find(x => (x.employee_id === empOrStatus.employee_id || x['Mã nhân viên'] === empOrStatus.employee_id));
+        if (m) status = m['Trạng thái lao động'] || m.employment_status || '';
+      }
+    }
+    const s = String(status || '').toLowerCase().trim();
+    return s === 'đã nghỉ việc' || s === 'nghỉ việc' || s === 'thôi việc' || s === 'đã thôi việc' || s.includes('nghỉ việc') || s.includes('thôi việc') || s === 'resigned' || s === 'terminated' || s === 'nghỉ';
+  },
+
+  getActiveEmployees() {
+    return (appData.employees || []).filter(e => !this.isResigned(e));
+  },
+
   // Tracking deleted items so default templates never re-add them after user deletion
   getDeletedDeviceIds() {
     try {
@@ -710,7 +730,7 @@ const appAttendance = {
   // ========================================================================
   renderDashboard() {
     const date = this.selectedDate || new Date().toISOString().split('T')[0];
-    const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const employees = this.getActiveEmployees();
     const timesheets = (appData.timesheets || []).filter(t => t.date === date);
     const requests = (appData.attendanceRequests || []).filter(r => r.date === date && r.status === 'APPROVED');
 
@@ -763,11 +783,14 @@ const appAttendance = {
 
     this.updateDeptButtonLabel();
 
-    // Filter timesheet entries by date range
+    // Filter timesheet entries by date range and strictly exclude resigned employees
+    const empMap = new Map((appData.employees || []).map(e => [e.employee_id, e]));
     let list = (appData.timesheets || []).filter(t => {
       if (!t.date) return false;
       if (this.fromDate && t.date < this.fromDate) return false;
       if (this.toDate && t.date > this.toDate) return false;
+      const emp = empMap.get(t.employee_id);
+      if (emp && this.isResigned(emp)) return false;
       return true;
     });
 
@@ -777,7 +800,6 @@ const appAttendance = {
         list = [];
       } else {
         const selectedSet = new Set(this.selectedDepts.map(d => d.toLowerCase().trim()));
-        const empMap = new Map((appData.employees || []).map(e => [e.employee_id, e]));
         list = list.filter(t => {
           const emp = empMap.get(t.employee_id);
           const dept = this.getCanonicalDeptName(t.department_name || (emp ? (emp.department_name || emp.department_id) : '')).toLowerCase().trim();
@@ -1043,7 +1065,7 @@ const appAttendance = {
       if (s.shift_code) shiftMap[s.shift_code] = s;
     });
 
-    const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const employees = this.getActiveEmployees();
 
     // Filter employees
     let list = employees.filter(emp => {
@@ -1227,7 +1249,7 @@ const appAttendance = {
     if (!deptSelect || !badge) return;
 
     const selectedDept = deptSelect.value;
-    const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const employees = this.getActiveEmployees();
 
     let count = 0;
     if (selectedDept === 'ALL') {
@@ -1273,7 +1295,7 @@ const appAttendance = {
 
     if (!appData.schedules) appData.schedules = [];
 
-    const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const employees = this.getActiveEmployees();
     let affectedCount = 0;
 
     if (selectedDept === 'ALL') {
@@ -1346,7 +1368,7 @@ const appAttendance = {
     const modal = document.getElementById('modal-att-assign-emp-shift');
     if (!modal) return;
 
-    const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const employees = this.getActiveEmployees();
     const targetEmp = empId ? employees.find(e => e.employee_id === empId) : employees[0];
     if (!targetEmp) return;
 
@@ -1753,8 +1775,7 @@ const appAttendance = {
     }
 
     const deptCanonical = this.getCanonicalDeptName(selectedDept).toLowerCase();
-    const empsInDept = (appData.employees || []).filter(e => {
-      if (e.employment_status === 'Đã nghỉ việc') return false;
+    const empsInDept = this.getActiveEmployees().filter(e => {
       const d = this.getCanonicalDeptName(e.department_name || e.department_id).toLowerCase();
       return d === deptCanonical;
     });
@@ -1855,7 +1876,7 @@ const appAttendance = {
     const rawQuery = (query || '').toLowerCase().trim();
     const cleanQuery = rawQuery.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    const activeEmps = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const activeEmps = this.getActiveEmployees();
 
     let filtered = activeEmps;
     if (cleanQuery) {
@@ -3208,8 +3229,8 @@ const appAttendance = {
 
   renderPortal() {
     const empSelect = document.getElementById('att-portal-emp-select');
+    const emps = this.getActiveEmployees();
     if (empSelect) {
-      const emps = appData.employees || [];
       const currentSelected = this.portalEmployeeId || (emps.length > 0 ? emps[0].employee_id : '');
       if (empSelect.options.length <= 1 || empSelect.getAttribute('data-loaded') !== 'true') {
         empSelect.innerHTML = emps.map(e => `
@@ -3225,10 +3246,10 @@ const appAttendance = {
       }
     }
 
-    const empId = this.portalEmployeeId || (appData.employees && appData.employees.length > 0 ? appData.employees[0].employee_id : '');
+    const empId = this.portalEmployeeId || (emps.length > 0 ? emps[0].employee_id : '');
     this.portalEmployeeId = empId;
     const emp = (appData.employees || []).find(e => e.employee_id === empId);
-    if (!emp) return;
+    if (!emp || this.isResigned(emp)) return;
 
     // Quỹ phép năm & tính số ngày đã sử dụng
     const quota = this.getEmployeeLeaveQuota(empId);
@@ -3434,10 +3455,11 @@ const appAttendance = {
       this.portalEmployeeId = empId;
     }
 
-    const targetEmpId = this.portalEmployeeId || (appData.employees && appData.employees.length > 0 ? appData.employees[0].employee_id : '');
+    const activeEmps = this.getActiveEmployees();
+    const targetEmpId = this.portalEmployeeId || (activeEmps.length > 0 ? activeEmps[0].employee_id : '');
     const empSelect = document.getElementById('att-aleave-emp-id');
     if (empSelect) {
-      empSelect.innerHTML = (appData.employees || []).map(e => `
+      empSelect.innerHTML = activeEmps.map(e => `
         <option value="${e.employee_id}" ${e.employee_id === targetEmpId ? 'selected' : ''}>
           ${e.employee_id} - ${e.full_name} (${e.department_name || e.department_id || 'Công ty'})
         </option>
@@ -3481,7 +3503,7 @@ const appAttendance = {
     this.portalEmployeeId = req.employee_id;
     const empSelect = document.getElementById('att-aleave-emp-id');
     if (empSelect) {
-      empSelect.innerHTML = (appData.employees || []).map(e => `
+      empSelect.innerHTML = this.getActiveEmployees().map(e => `
         <option value="${e.employee_id}" ${e.employee_id === req.employee_id ? 'selected' : ''}>
           ${e.employee_id} - ${e.full_name} (${e.department_name || e.department_id || 'Công ty'})
         </option>
@@ -3774,7 +3796,7 @@ const appAttendance = {
       ['STT', 'Mã Nhân Viên (*)', 'Họ Và Tên', 'Ngày Nghỉ (YYYY-MM-DD) (*)', 'Số Ngày (1.0/0.5) (*)', 'Loại Phép', 'Lý Do Nghỉ']
     ];
 
-    const emps = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const emps = this.getActiveEmployees();
     if (emps.length > 0) {
       dataSheet1.push([1, emps[0].employee_id, emps[0].full_name, `${currentMonthStr}-10`, 1.0, 'PHEP_NAM', 'Nghỉ phép năm theo kế hoạch']);
       if (emps.length > 1) {
@@ -4121,7 +4143,7 @@ const appAttendance = {
 
   recalculateClientSide(silent = false) {
     if (!silent) utils.showToast('Đang nhận diện ca thông minh (Cơ chế 1) và tính toán lại bảng công...', 'info');
-    const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const employees = this.getActiveEmployees();
     const logs = appData.attendanceLogs || appData.rawAttendanceLogs || [];
     const requests = (appData.attendanceRequests || []).filter(r => r.status === 'APPROVED');
     const shifts = appData.shifts || [];
@@ -5590,7 +5612,7 @@ const appAttendance = {
 
     const timesheets = (appData.timesheets || []).filter(t => (t.date || '').startsWith(targetMonth));
     const requests = (appData.attendanceRequests || []).filter(r => r.status === 'APPROVED');
-    const employees = (appData.employees || []).filter(e => e.employment_status !== 'Đã nghỉ việc');
+    const employees = this.getActiveEmployees();
     const masterProfiles = appData.masterProfiles || [];
     const masterMap = new Map(masterProfiles.map(m => [m.employee_id, m]));
     const autoEmpSet = new Set((this.autoAttendanceEmployees || []).filter(a => a.enabled !== false).map(a => a.employee_id));
@@ -5774,7 +5796,7 @@ const appAttendance = {
     const deptSelect = document.getElementById('att-sum-dept-select');
     if (deptSelect && deptSelect.options.length <= 1) {
       const depts = new Set();
-      (appData.employees || []).forEach(e => {
+      this.getActiveEmployees().forEach(e => {
         const d = this.getCanonicalDeptName(e.department_name || e.department_id || '');
         if (d) depts.add(d);
       });
