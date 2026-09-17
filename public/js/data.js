@@ -104,31 +104,65 @@ const appData = {
     return { 'Content-Type': 'application/json' };
   },
 
-  // Fetch all tables from API or local fallback database
+  // Fetch all tables from API, sample_database.json fallback, or local persistent cache
   async init() {
     try {
       let json = null;
+
+      // Tier 1: Try Backend Server API
       try {
         const res = await fetch('/api/data?t=' + Date.now(), { headers: this.getApiHeaders() });
         if (res.ok) {
-          const resData = await res.json();
-          if (resData && (resData.tables || resData.employees)) {
-            json = resData;
-            this.hasServerBackend = true;
+          const cType = res.headers.get('content-type') || '';
+          if (cType.includes('application/json')) {
+            const resData = await res.json();
+            const hasEmps = resData && resData.tables && Array.isArray(resData.tables['03_Employees']) && resData.tables['03_Employees'].length > 0;
+            if (hasEmps) {
+              json = resData;
+              this.hasServerBackend = true;
+            }
           }
         }
       } catch (e) {
-        console.warn('Backend API /api/data not available, trying static fallback:', e);
+        console.warn('Backend API /api/data not reachable, using static/cache fallback:', e);
       }
 
-      if (!json || !json.tables) {
+      // Tier 2: Static sample_database.json Fallback
+      const isComplete = json && json.tables && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length > 0;
+      if (!isComplete) {
         try {
-          const fbRes = await fetch('sample_database.json?t=' + Date.now()).catch(() => fetch('/sample_database.json?t=' + Date.now()));
-          if (fbRes && fbRes.ok) json = await fbRes.json();
-        } catch (e) {}
+          let fbRes = await fetch('sample_database.json?t=' + Date.now()).catch(() => null);
+          if (!fbRes || !fbRes.ok) {
+            fbRes = await fetch('/sample_database.json?t=' + Date.now()).catch(() => null);
+          }
+          if (fbRes && fbRes.ok) {
+            const fbData = await fbRes.json();
+            if (fbData && fbData.tables && Array.isArray(fbData.tables['03_Employees']) && fbData.tables['03_Employees'].length > 0) {
+              json = fbData;
+            }
+          }
+        } catch (e) {
+          console.warn('Static sample_database.json load error:', e);
+        }
+      }
+
+      // Tier 3: IndexedDB Local Cache Fallback
+      const hasValidData = json && json.tables && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length > 0;
+      if (!hasValidData && window.hrmStorage) {
+        try {
+          const cachedTables = await window.hrmStorage.get('hrm_database_full_cache');
+          if (cachedTables && Array.isArray(cachedTables['03_Employees']) && cachedTables['03_Employees'].length > 0) {
+            json = { success: true, tables: cachedTables };
+          }
+        } catch(e) {}
       }
 
       if (json && json.tables) {
+        // Save to IndexedDB cache for future offline / server downtime instant recovery
+        if (window.hrmStorage && Array.isArray(json.tables['03_Employees']) && json.tables['03_Employees'].length > 0) {
+          window.hrmStorage.set('hrm_database_full_cache', json.tables).catch(() => {});
+        }
+
         this.tables = json.tables;
         this.company = json.company || {};
         this.companies = json.tables['00_Companies'] || [];

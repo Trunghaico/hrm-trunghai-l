@@ -165,15 +165,21 @@ const appTrash = {
   async fetchTrashData() {
     try {
       const res = await fetch('/api/trash');
-      const json = await res.json();
-      if (json.success) {
-        this.trashList = json.data || [];
-        appData.trash = this.trashList;
+      if (res.ok) {
+        const cType = res.headers.get('content-type') || '';
+        if (cType.includes('application/json')) {
+          const json = await res.json();
+          if (json && json.success) {
+            this.trashList = json.data || [];
+            appData.trash = this.trashList;
+            return;
+          }
+        }
       }
     } catch (e) {
-      console.error('Error fetching trash data:', e);
-      this.trashList = appData.trash || [];
+      console.warn('Không thể kết nối API /api/trash, dùng dữ liệu cục bộ:', e.message || e);
     }
+    this.trashList = appData.trash || [];
   },
 
   async render() {
