@@ -139,14 +139,6 @@ const appData = {
             const fbData = await fbRes.json();
             if (fbData && fbData.tables && Array.isArray(fbData.tables['03_Employees']) && fbData.tables['03_Employees'].length > 0) {
               json = fbData;
-              // Sync complete data back to Cloudflare D1 if server was empty or had a stub
-              if (this.hasServerBackend || !isComplete) {
-                fetch('/api/setup/restore-sample-data', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ tables: fbData.tables })
-                }).catch(() => {});
-              }
             }
           }
         } catch (e) {

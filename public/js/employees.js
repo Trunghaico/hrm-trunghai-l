@@ -1468,12 +1468,15 @@ const appEmployees = {
 
       // Cập nhật ngay trong bộ nhớ cache client để giao diện luôn tức thì chính xác
       if (typeof appData !== 'undefined' && appData.employees) {
+        const empStatus = payload.employment_status || masterData['Trạng thái lao động'] || 'Đang làm việc';
         const localIdx = appData.employees.findIndex(emp => emp.employee_id === targetIdForUrl || emp.employee_id === empId);
         const updatedLocalEmp = {
           ...(localIdx >= 0 ? appData.employees[localIdx] : {}),
           ...payload,
           employee_id: empId,
           full_name: fullName,
+          employment_status: empStatus,
+          'Trạng thái lao động': empStatus,
           time_attendance_code: timeAttendanceCode,
           attendance_code: timeAttendanceCode,
           'Mã chấm công': timeAttendanceCode,
@@ -1497,6 +1500,8 @@ const appEmployees = {
             ...masterData,
             'Mã nhân viên': empId,
             employee_id: empId,
+            'Trạng thái lao động': empStatus,
+            employment_status: empStatus,
             'Mã chấm công': timeAttendanceCode,
             time_attendance_code: timeAttendanceCode
           };
@@ -1505,6 +1510,9 @@ const appEmployees = {
           } else {
             appData.masterProfiles.push(updatedMaster);
           }
+        }
+        if (window.hrmStorage && appData.tables) {
+          window.hrmStorage.set('hrm_database_full_cache', appData.tables).catch(() => {});
         }
       }
 
