@@ -1,6 +1,6 @@
 ﻿{
     "source":  "DIRECT_11_DEVICES_LIVE",
-    "synced_at":  "2026-09-18T08:42:33.464Z",
+    "synced_at":  "2026-09-18T11:43:53.222Z",
     "total_devices":  11,
     "total_punches":  1371,
     "punches":  [
@@ -2465,10 +2465,10 @@
                         "device_serial":  "AYSH02091522"
                     },
                     {
-                        "log_id":  "SQL-VPSG-636876",
-                        "attendance_code":  "2951",
-                        "employee_id":  "TH-1457",
-                        "employee_name":  "Đào Thị Mai Xuân",
+                        "log_id":  "SQL-VPSG-636877",
+                        "attendance_code":  "3085",
+                        "employee_id":  "TH-2012",
+                        "employee_name":  "Lê Chí Linh",
                         "timestamp":  "2026-09-17 07:46:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "MCC TANG TRET",
@@ -2477,10 +2477,10 @@
                         "device_serial":  "AYSH02091522"
                     },
                     {
-                        "log_id":  "SQL-VPSG-636877",
-                        "attendance_code":  "3085",
-                        "employee_id":  "TH-2012",
-                        "employee_name":  "Lê Chí Linh",
+                        "log_id":  "SQL-VPSG-636876",
+                        "attendance_code":  "2951",
+                        "employee_id":  "TH-1457",
+                        "employee_name":  "Đào Thị Mai Xuân",
                         "timestamp":  "2026-09-17 07:46:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "MCC TANG TRET",
@@ -6149,6 +6149,18 @@
                         "device_serial":  "AYSH02091571"
                     },
                     {
+                        "log_id":  "SQL-VPSG-637098",
+                        "attendance_code":  "3107",
+                        "employee_id":  "TH-1843",
+                        "employee_name":  "La Quang Trà",
+                        "timestamp":  "2026-09-17 07:45:00",
+                        "verify_type":  "Khuon mat",
+                        "device_name":  "MCC T2",
+                        "device_ip":  "113.161.53.133",
+                        "device_port":  5005,
+                        "device_serial":  "AYSH02091571"
+                    },
+                    {
                         "log_id":  "SQL-VPSG-636927",
                         "attendance_code":  "3012",
                         "employee_id":  "TH-1504",
@@ -6370,18 +6382,6 @@
                         "employee_id":  "TH-1843",
                         "employee_name":  "La Quang Trà",
                         "timestamp":  "2026-09-17 17:44:00",
-                        "verify_type":  "Khuon mat",
-                        "device_name":  "MCC T2",
-                        "device_ip":  "113.161.53.133",
-                        "device_port":  5005,
-                        "device_serial":  "AYSH02091571"
-                    },
-                    {
-                        "log_id":  "SQL-VPSG-637098",
-                        "attendance_code":  "3107",
-                        "employee_id":  "TH-1843",
-                        "employee_name":  "La Quang Trà",
-                        "timestamp":  "2026-09-17 17:45:00",
                         "verify_type":  "Khuon mat",
                         "device_name":  "MCC T2",
                         "device_ip":  "113.161.53.133",
