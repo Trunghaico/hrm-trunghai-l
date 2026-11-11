@@ -1,37 +1,36 @@
 @echo off
 chcp 65001 >nul
 :: ============================================================================
-:: TRUNG HAI HRM - INSTALL RONALD JACK BACKGROUND AUTO-SYNC TASK
+:: TRUNG HAI HRM - INSTALL SYNOLOGY NAS AUTO-SYNC BACKGROUND TASK
 :: ============================================================================
 echo ----------------------------------------------------------------------
-echo  CAI DAT TIEN TRINH TU DONG DONG BO MAY CHAM CONG RONALD JACK PRO
+echo  CAI DAT TIEN TRINH TU DONG DONG BO CLOUDFLARE ^<--^> SYNOLOGY NAS
 echo  Chay ngam moi 5 phut qua Windows Task Scheduler
 echo ----------------------------------------------------------------------
 echo.
 
 set SCRIPT_DIR=%~dp0
-set PS_SCRIPT=%SCRIPT_DIR%sync_live_sql.ps1
-set TASK_NAME=TrungHai_RonaldJack_AutoSync
+set NODE_SCRIPT=%SCRIPT_DIR%sync_synology_cloud.js
+set TASK_NAME=TrungHai_Synology_Cloud_Sync
 
-if not exist "%PS_SCRIPT%" (
-    echo [LOI] Khong tim thay file %PS_SCRIPT%
+if not exist "%NODE_SCRIPT%" (
+    echo [LOI] Khong tim thay file %NODE_SCRIPT%
     pause
     exit /b 1
 )
 
 echo Dang dang ky Task: %TASK_NAME%...
-schtasks /create /tn "%TASK_NAME%" /tr "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"%PS_SCRIPT%\"" /sc MINUTE /mo 5 /f
-
+schtasks /create /tn "%TASK_NAME%" /tr "node.exe \"%NODE_SCRIPT%\"" /sc MINUTE /mo 5 /f
 
 if %ERRORLEVEL% equ 0 (
     echo.
     echo ======================================================================
-    echo  [THANH CONG] Da cai dat tien trinh tu dong chay moi 5 phut!
+    echo  [THANH CONG] Da cai dat tien trinh tu dong dong bo chay moi 5 phut!
     echo  Task Name: %TASK_NAME%
-    echo  Tien trinh se chay ngam hoan toan va khong hien thi cua so popup.
+    echo  Tien trinh se tu dong cap nhat CSDL tren Synology NAS va xuat Excel.
     echo ======================================================================
     echo.
-    echo Chay thu nghiem lan dau tien ngay bay gio...
+    echo Chay thu nghiem ngay bay gio...
     schtasks /run /tn "%TASK_NAME%"
 ) else (
     echo.
@@ -41,3 +40,4 @@ if %ERRORLEVEL% equ 0 (
 
 echo.
 pause
+

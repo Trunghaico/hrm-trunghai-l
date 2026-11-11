@@ -151,44 +151,8 @@ const DEFAULT_TABLES = {
       ip_address: "127.0.0.1"
     }
   ],
-  "13_Recycle_Bin": [],
-  "15_Attendance_Shifts": [
-    { shift_id: "CA-HC", shift_code: "HC", shift_name: "Ca Hành Chính", start_time: "08:00", end_time: "17:30", break_start: "12:00", break_end: "13:30", break_hours: 1.5, standard_hours: 8.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: "#2563EB", shift_type: "standard" },
-    { shift_id: "CA-DA-NGAY", shift_code: "DA-NGAY", shift_name: "Ca Ngày (06:00 - 18:00)", start_time: "06:00", end_time: "18:00", break_start: "11:30", break_end: "12:30", break_hours: 1.0, standard_hours: 12.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: "#059669", shift_type: "project_day" },
-    { shift_id: "CA-DA-DEM", shift_code: "DA-DEM", shift_name: "Ca Đêm (18:00 - 06:00)", start_time: "18:00", end_time: "06:00", break_start: "23:30", break_end: "00:30", break_hours: 1.0, standard_hours: 12.0, work_units: 1.0, grace_late_minutes: 15, grace_early_minutes: 15, color: "#7C3AED", shift_type: "night" },
-    { shift_id: "CA-S", shift_code: "S", shift_name: "Ca Sáng", start_time: "08:00", end_time: "12:00", break_start: "", break_end: "", break_hours: 0, standard_hours: 4.0, work_units: 0.5, grace_late_minutes: 15, grace_early_minutes: 15, color: "#10B981", shift_type: "standard" },
-    { shift_id: "CA-C", shift_code: "C", shift_name: "Ca Chiều", start_time: "13:30", end_time: "17:30", break_start: "", break_end: "", break_hours: 0, standard_hours: 4.0, work_units: 0.5, grace_late_minutes: 15, grace_early_minutes: 15, color: "#D97706", shift_type: "standard" }
-  ],
-  "20_Attendance_Devices": [
-    { device_id: "MCC-VPSG-TRET", device_name: "MCC TANG TRET", name: "MCC TANG TRET", ip: "113.161.53.133", port: 5007, serial: "AYSH02091522", location: "VPSG", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công Tầng Trệt VPSG" },
-    { device_id: "MCC-VPSG-T3", device_name: "MCC T3", name: "MCC T3", ip: "113.161.53.133", port: 5006, serial: "AYSH02091575", location: "vpsg", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công Tầng 3 VPSG" },
-    { device_id: "MCC-VPSG-T2", device_name: "MCC T2", name: "MCC T2", ip: "113.161.53.133", port: 5005, serial: "AYSH02091571", location: "vpsg", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công Tầng 2 VPSG" },
-    { device_id: "MCC-TLMT-TP", device_name: "TL-MT TP", name: "TL-MT TP", ip: "113.161.201.71", port: 5005, serial: "AYSB28014633", location: "HCM-TLMT", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công TL-MT TP.HCM" },
-    { device_id: "MCC-TLMT-TH", device_name: "TL-MT TH", name: "TL-MT TH", ip: "14.224.132.5", port: 5005, serial: "ZXRC17014917", location: "TL-MT TH", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công TL-MT Long An" },
-    { device_id: "MCC-NUI-VUNG", device_name: "NUI VUNG", name: "NUI VUNG", ip: "113.161.194.20", port: 5005, serial: "AYSH02091656", location: "NUI VUNG", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công Núi Vung" },
-    { device_id: "MCC-KHBMT-VP", device_name: "KH-BMT VP", name: "KH-BMT VP", ip: "113.161.30.79", port: 5006, serial: "ZXRC17014860", location: "KH-BMT", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công KH-BMT Văn Phòng" },
-    { device_id: "MCC-KHBMT-HAM", device_name: "KH-BMT HẦM", name: "KH-BMT HẦM", ip: "14.224.151.151", port: 5005, serial: "ZXRC17014867", location: "KHBMT", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công KH-BMT Hầm" },
-    { device_id: "MCC-KHBMT-KHUD", device_name: "KH-BMT KHU D", name: "KH-BMT KHU D", ip: "113.161.30.79", port: 5005, serial: "AYSB28014684", location: "KHBMT", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công KH-BMT Khu D" },
-    { device_id: "MCC-CTVP-VP", device_name: "CTVP VP", name: "CTVP VP", ip: "117.2.32.120", port: 5005, serial: "ZXRC17014844", location: "CTVP", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công CTVP Văn Phòng" },
-    { device_id: "MCC-CTVP-DUAN", device_name: "CTVP DU AN", name: "CTVP DU AN", ip: "117.2.32.120", port: 5006, serial: "ZXRC17014905", location: "CTVP", in_out_mode: "AUTO", enabled: true, status: "ONLINE", note: "Máy Chấm Công CTVP Dự Án" }
-  ]
+  "13_Recycle_Bin": []
 };
-
-// Response helper with CORS and Cache-Busting
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization, x-spreadsheet-id, x-google-credentials",
-      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
-      "Pragma": "no-cache",
-      "Expires": "0"
-    }
-  });
-}
 
 // Database helper: ensure store table exists and seed if empty
 async function initD1Store(db) {
@@ -545,6 +509,20 @@ export async function onRequest(context) {
         storage: "cloudflare-d1",
         database: "connected",
         message: "Hệ thống đang hoạt động trên Cloudflare D1 SQL Serverless!"
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Route: GET /api/sync/version (Realtime Change Tracker)
+    // -------------------------------------------------------------
+    if (path === "sync/version" && method === "GET") {
+      await initD1Store(db);
+      const row = await db.prepare("SELECT MAX(updated_at) as last_updated, COUNT(*) as total_keys FROM hrm_store").first().catch(() => null);
+      return jsonResponse({
+        success: true,
+        last_updated: row ? row.last_updated : new Date().toISOString(),
+        total_keys: row ? row.total_keys : 0,
+        timestamp: Date.now()
       });
     }
 

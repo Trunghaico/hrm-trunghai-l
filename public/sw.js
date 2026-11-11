@@ -1,11 +1,11 @@
 // Service Worker for TRUNG HẢI HRM PWA
-const CACHE_NAME = 'trunghai-hrm-cache-v3.9.37';
+const CACHE_NAME = 'trunghai-hrm-cache-v3.9.40';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './css/main.css?v=3.9.37',
+  './css/main.css?v=3.9.40',
   './assets/logo.png',
   './assets/icon-192.png',
   './assets/icon-512.png',
@@ -56,6 +56,10 @@ self.addEventListener('activate', (event) => {
 // Fetch Event - Network-First for Scripts & HTML to avoid stale bugs, Cache fallback for offline
 self.addEventListener('fetch', (event) => {
   const request = event.request;
+  // Bỏ qua các scheme không phải HTTP/HTTPS (ví dụ: chrome-extension://, moz-extension://)
+  if (!request.url.startsWith('http://') && !request.url.startsWith('https://')) {
+    return;
+  }
   const url = new URL(request.url);
 
   // For API endpoints or POST/PUT/DELETE: Always Network-Only (No cache)
