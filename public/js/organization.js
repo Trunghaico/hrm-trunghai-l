@@ -945,7 +945,7 @@ const appOrganization = {
     if (this.chartMode === 'standard') {
       this.renderStandardOrgChart();
     } else {
-      this.renderDynamicTreeChart();
+      this.renderGovernanceModelChart();
     }
   },
 
