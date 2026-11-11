@@ -983,6 +983,12 @@ const appOrganization = {
             </marker>
           </defs>
 
+          <!-- Outer Dashed Frame (Boundary of Operational Structure) -->
+          <rect x="20" y="266" width="1140" height="420" rx="10" fill="none" stroke="#000000" stroke-width="2" stroke-dasharray="6,4" />
+
+          <!-- Inner Solid Frame (Core Executive & Functional Boards Boundary) -->
+          <rect x="32" y="308" width="1116" height="264" rx="10" fill="none" stroke="#000000" stroke-width="2" />
+
           <!-- 1. Chỉ đạo: Chủ tịch HĐQT -> Phó chủ tịch HĐQT -->
           <line x1="590" y1="101" x2="590" y2="131" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
 
@@ -1032,15 +1038,13 @@ const appOrganization = {
           <line x1="1035" y1="575" x2="1035" y2="618" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#org-arr-dotted)" />
 
           <!-- 10. Mũi tên 2 chiều: Các Công Ty Thành Viên <-> Khung vận hành -->
-          <line x1="36" y1="642" x2="381" y2="642" stroke="#000000" stroke-width="2" marker-start="url(#org-arr-solid-left)" marker-end="url(#org-arr-solid)" />
-          <line x1="799" y1="642" x2="1144" y2="642" stroke="#000000" stroke-width="2" marker-start="url(#org-arr-solid-left)" marker-end="url(#org-arr-solid)" />
+          <line x1="20" y1="642" x2="381" y2="642" stroke="#000000" stroke-width="2" marker-start="url(#org-arr-solid-left)" marker-end="url(#org-arr-solid)" />
+          <line x1="799" y1="642" x2="1160" y2="642" stroke="#000000" stroke-width="2" marker-start="url(#org-arr-solid-left)" marker-end="url(#org-arr-solid)" />
         </svg>
 
         <!-- TOP LEFT: LOGO & CORPORATE TITLE -->
-        <div style="position: absolute; left: 30px; top: 16px; display: flex; align-items: center; gap: 8px;">
-          <svg width="24" height="24" viewBox="0 0 24 24">
-            <polygon points="12,2 22,20 2,20" fill="#DC2626" stroke="#991B1B" stroke-width="1.5" />
-          </svg>
+        <div style="position: absolute; left: 30px; top: 16px; display: flex; align-items: center; gap: 10px;">
+          <img src="assets/logo_thg.png" alt="Trung Hải" style="height: 28px; width: auto; object-fit: contain;" />
           <span style="font-size: 14px; font-weight: 700; color: #475569; letter-spacing: 0.5px; text-transform: uppercase;">
             CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI
           </span>
@@ -1245,93 +1249,83 @@ const appOrganization = {
     if (!container) return;
 
     const html = `
-      <div class="org-governance-wrapper" style="background: #FFFFFF; border-radius: 8px; border: 1px solid #CBD5E1; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); width: 1120px; min-width: 1120px; max-width: 1120px; padding: 28px 36px 32px 36px; margin: 0 auto; box-sizing: border-box; text-align: left;">
-        <!-- Header Section -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; border-bottom: 2px solid #F1F5F9; padding-bottom: 16px;">
-          <div>
-            <div style="font-size: 22px; font-weight: 800; color: #DC2626; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px;">
-              <i class="fa-solid fa-network-wired" style="color: #DC2626;"></i>
-              <span>MÔ HÌNH QUẢN TRỊ HỆ THỐNG</span>
+      <div class="org-gov-canvas" style="background: #FFFFFF; border-radius: 8px; border: 1px solid #CBD5E1; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); width: 1060px; min-width: 1060px; max-width: 1060px; padding: 42px 30px 48px 30px; margin: 0 auto; box-sizing: border-box; position: relative; user-select: none;">
+        <!-- Faint Corporate Watermark -->
+        <div style="position: absolute; left: 50%; top: 55%; transform: translate(-50%, -50%); opacity: 0.055; pointer-events: none; z-index: 1;">
+          <img src="assets/logo_thg.png" style="width: 360px; height: auto;" alt="Watermark" />
+        </div>
+
+        <!-- 1. ROOT NODE: TRUNG HẢI GROUP (TOP CENTER) -->
+        <div class="org-node-interactive" style="width: 440px; height: 80px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 8px 18px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 16px; position: relative; z-index: 3;" onclick="appOrganization.filterByCompany('THG')" title="Bấm để xem danh sách nhân sự Trung Hải Group">
+          <img src="assets/logo_thg.png" alt="Trung Hải Group" style="height: 48px; width: auto; object-fit: contain; flex-shrink: 0;" />
+          <div style="text-align: left;">
+            <div style="font-weight: 800; font-size: 19px; color: #1E244F; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2;">TRUNG HẢI GROUP</div>
+            <div style="font-weight: 700; font-size: 13px; color: #DC2626; margin-top: 3px; line-height: 1.2;">
+              Văn Phú Thành - <span style="font-weight: 600;">Chủ tịch Hội đồng quản trị</span>
             </div>
-            <div style="font-size: 13px; color: #64748B; margin-top: 4px;">
-              Cơ cấu sở hữu &amp; quản trị điều hành Trung Hải Group và 3 công ty thành viên (Phú Minh &bull; Thành Phát &bull; Trung Nam)
-            </div>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <a href="assets/mo_hinh_quan_tri_he_thong.png" target="_blank" class="btn btn-sm btn-secondary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Ảnh Gốc
-            </a>
           </div>
         </div>
 
-        <!-- Official Governance Model Chart Image (High Resolution) -->
-        <div style="background: #FFFFFF; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; align-items: center; padding: 6px 0; border: 1px solid #F1F5F9; box-shadow: inset 0 1px 4px rgba(0,0,0,0.03);">
-          <img src="assets/mo_hinh_quan_tri_he_thong.png" alt="Mô Hình Quản Trị Hệ Thống - Trung Hải Group" style="max-width: 100%; height: auto; display: block; border-radius: 6px;" />
+        <!-- 2. SVG VECTOR CONNECTORS -->
+        <div style="width: 1000px; height: 68px; margin: 0 auto; position: relative; z-index: 2;">
+          <svg width="1000" height="68" viewBox="0 0 1000 68" style="overflow: visible;">
+            <defs>
+              <marker id="gov-arr-blue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2B2D68" />
+              </marker>
+            </defs>
+
+            <!-- Vertical stem down from Root Center (x = 500) -->
+            <line x1="500" y1="0" x2="500" y2="34" stroke="#2B2D68" stroke-width="2.5" />
+
+            <!-- Horizontal crossbar bus (x = 157 to x = 843) -->
+            <line x1="157" y1="34" x2="843" y2="34" stroke="#2B2D68" stroke-width="2.5" />
+
+            <!-- 3 Drop arrows into child cards -->
+            <line x1="157" y1="34" x2="157" y2="66" stroke="#2B2D68" stroke-width="2.5" marker-end="url(#gov-arr-blue)" />
+            <line x1="500" y1="34" x2="500" y2="66" stroke="#2B2D68" stroke-width="2.5" marker-end="url(#gov-arr-blue)" />
+            <line x1="843" y1="34" x2="843" y2="66" stroke="#2B2D68" stroke-width="2.5" marker-end="url(#gov-arr-blue)" />
+          </svg>
         </div>
 
-        <!-- Quick Access To Member Companies -->
-        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px dashed #CBD5E1;">
-          <div style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-building"></i> Danh Sách 4 Công Ty Trong Hệ Thống:
+        <!-- 3. 3 CHILD CARDS (ROW) -->
+        <div style="display: flex; justify-content: space-between; gap: 28px; width: 1000px; margin: 0 auto; position: relative; z-index: 3;">
+          <!-- Child 1: PHÚ MINH -->
+          <div class="org-node-interactive" style="width: 314px; min-height: 270px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 22px 14px 20px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;" onclick="appOrganization.filterByCompany('PM')" title="Bấm để xem danh sách nhân sự Phú Minh">
+            <img src="assets/logo_pm.png" alt="Phú Minh" style="height: 60px; width: auto; object-fit: contain; margin-bottom: 12px;" />
+            <div style="font-weight: 800; font-size: 13px; color: #1E244F; line-height: 1.35; text-transform: uppercase;">
+              CÔNG TY CỔ PHẦN XÂY DỰNG GIAO THÔNG<br>PHÚ MINH
+            </div>
+            <div style="margin-top: 18px; line-height: 1.45; width: 100%;">
+              <div style="font-size: 11.5px; color: #0F172A;"><strong style="font-weight: 700;">Nguyễn Anh Minh</strong> - <span style="color: #334155;">Chủ tịch HĐQT Phú Minh</span></div>
+              <div style="font-size: 11.5px; color: #0F172A; margin-top: 3px;"><strong style="font-weight: 700;">Lê Hồng Thạch</strong> - <span style="color: #334155;">Giám đốc</span></div>
+              <div style="font-size: 10.5px; color: #475569; margin-top: 10px;">Lĩnh vực hoạt động: <span style="font-style: italic;">Thi công xây dựng công trình giao thông đường bộ.</span></div>
+            </div>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
-            <!-- THG -->
-            <div class="org-node-interactive" style="background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 14px; cursor: pointer; transition: all 0.2s ease;" onclick="appOrganization.filterByCompany('THG')" title="Xem nhân sự Trung Hải Group">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <span class="badge" style="background: #1E3A8A; color: #FFF; font-weight: 800; font-size: 11px; padding: 3px 8px;">THG</span>
-                <span style="font-weight: 700; font-size: 13px; color: #0F172A;">TRUNG HẢI GROUP</span>
-              </div>
-              <div style="font-size: 11.5px; color: #475569; line-height: 1.45;">
-                Chủ tịch HĐQT: <strong style="color: #DC2626;">Văn Phú Thành</strong>
-              </div>
-              <div style="font-size: 11px; color: #2563EB; font-weight: 600; margin-top: 10px; display: flex; align-items: center; gap: 4px;">
-                <span>Xem nhân sự</span> <i class="fa-solid fa-arrow-right" style="font-size: 10px;"></i>
-              </div>
-            </div>
 
-            <!-- Phú Minh -->
-            <div class="org-node-interactive" style="background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 14px; cursor: pointer; transition: all 0.2s ease;" onclick="appOrganization.filterByCompany('PM')" title="Xem nhân sự Phú Minh">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <span class="badge" style="background: #DC2626; color: #FFF; font-weight: 800; font-size: 11px; padding: 3px 8px;">PM</span>
-                <span style="font-weight: 700; font-size: 12.5px; color: #0F172A;">CTCP XDGT PHÚ MINH</span>
-              </div>
-              <div style="font-size: 11.5px; color: #475569; line-height: 1.45;">
-                CT HĐQT: <strong>Nguyễn Anh Minh</strong><br>
-                Giám đốc: <strong>Lê Hồng Thạch</strong>
-              </div>
-              <div style="font-size: 11px; color: #2563EB; font-weight: 600; margin-top: 10px; display: flex; align-items: center; gap: 4px;">
-                <span>Xem nhân sự</span> <i class="fa-solid fa-arrow-right" style="font-size: 10px;"></i>
-              </div>
+          <!-- Child 2: THÀNH PHÁT -->
+          <div class="org-node-interactive" style="width: 314px; min-height: 270px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 22px 14px 20px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;" onclick="appOrganization.filterByCompany('TP')" title="Bấm để xem danh sách nhân sự Thành Phát">
+            <img src="assets/logo_tp.png" alt="Thành Phát" style="height: 60px; width: auto; object-fit: contain; margin-bottom: 12px;" />
+            <div style="font-weight: 800; font-size: 13px; color: #1E244F; line-height: 1.35; text-transform: uppercase;">
+              CÔNG TY CỔ PHẦN XÂY DỰNG CẦU ĐƯỜNG<br>THÀNH PHÁT
             </div>
-
-            <!-- Thành Phát -->
-            <div class="org-node-interactive" style="background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 14px; cursor: pointer; transition: all 0.2s ease;" onclick="appOrganization.filterByCompany('TP')" title="Xem nhân sự Thành Phát">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <span class="badge" style="background: #0284C7; color: #FFF; font-weight: 800; font-size: 11px; padding: 3px 8px;">TP</span>
-                <span style="font-weight: 700; font-size: 12.5px; color: #0F172A;">CTCP CẦU ĐƯỜNG THÀNH PHÁT</span>
-              </div>
-              <div style="font-size: 11.5px; color: #475569; line-height: 1.45;">
-                TGĐ: <strong>Lê Việt Anh</strong><br>
-                Phó TGĐ: <strong>Ngô Hữu Khoa</strong>
-              </div>
-              <div style="font-size: 11px; color: #2563EB; font-weight: 600; margin-top: 10px; display: flex; align-items: center; gap: 4px;">
-                <span>Xem nhân sự</span> <i class="fa-solid fa-arrow-right" style="font-size: 10px;"></i>
-              </div>
+            <div style="margin-top: 18px; line-height: 1.45; width: 100%;">
+              <div style="font-size: 11.5px; color: #0F172A;"><strong style="font-weight: 700;">Lê Việt Anh</strong> - <span style="color: #334155;">Tổng Giám đốc</span></div>
+              <div style="font-size: 11.5px; color: #0F172A; margin-top: 3px;"><strong style="font-weight: 700;">Ngô Hữu Khoa</strong>- <span style="color: #334155;">Phó Tổng Giám đốc</span></div>
+              <div style="font-size: 10.5px; color: #475569; margin-top: 10px;">Lĩnh vực hoạt động: <span style="font-style: italic;">Thi công xây dựng công trình giao thông đường bộ.</span></div>
             </div>
+          </div>
 
-            <!-- Trung Nam -->
-            <div class="org-node-interactive" style="background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 14px; cursor: pointer; transition: all 0.2s ease;" onclick="appOrganization.filterByCompany('TN')" title="Xem nhân sự Trung Nam">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <span class="badge" style="background: #059669; color: #FFF; font-weight: 800; font-size: 11px; padding: 3px 8px;">TN</span>
-                <span style="font-weight: 700; font-size: 12.5px; color: #0F172A;">TNHH ĐT&amp;KD TRUNG NAM</span>
-              </div>
-              <div style="font-size: 11.5px; color: #475569; line-height: 1.45;">
-                TGĐ: <strong>Nguyễn Thị Tuyết Nhung</strong><br>
-                Phó TGĐ: <strong>Lê Trần Bội Uyên</strong>
-              </div>
-              <div style="font-size: 11px; color: #2563EB; font-weight: 600; margin-top: 10px; display: flex; align-items: center; gap: 4px;">
-                <span>Xem nhân sự</span> <i class="fa-solid fa-arrow-right" style="font-size: 10px;"></i>
-              </div>
+          <!-- Child 3: TRUNG NAM -->
+          <div class="org-node-interactive" style="width: 314px; min-height: 270px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 22px 14px 20px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;" onclick="appOrganization.filterByCompany('TN')" title="Bấm để xem danh sách nhân sự Trung Nam">
+            <img src="assets/logo_tn.png" alt="Trung Nam" style="height: 60px; width: auto; object-fit: contain; margin-bottom: 12px;" />
+            <div style="font-weight: 800; font-size: 13px; color: #1E244F; line-height: 1.35; text-transform: uppercase;">
+              CÔNG TY TNHH ĐẦU TƯ VÀ KINH DOANH<br>TRUNG NAM
+            </div>
+            <div style="margin-top: 18px; line-height: 1.45; width: 100%;">
+              <div style="font-size: 11.5px; color: #0F172A;"><strong style="font-weight: 700;">Nguyễn Thị Tuyết Nhung</strong> - <span style="color: #334155;">Tổng Giám đốc</span></div>
+              <div style="font-size: 11.5px; color: #0F172A; margin-top: 3px;"><strong style="font-weight: 700;">Lê Trần Bội Uyên</strong>- <span style="color: #334155;">Phó Tổng Giám đốc</span></div>
+              <div style="font-size: 10.5px; color: #475569; margin-top: 10px;">Lĩnh vực hoạt động: <span style="font-style: italic;">Thương mại, Dịch vụ</span></div>
             </div>
           </div>
         </div>
