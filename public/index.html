@@ -40,7 +40,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <!-- Core App Stylesheet -->
-  <link rel="stylesheet" href="css/main.css?v=3.9.37">
+  <link rel="stylesheet" href="css/main.css?v=3.9.41">
 
   <script>
     // Kiểm tra phiên đăng nhập tức thì trước khi render để chống nháy màn hình Dashboard
@@ -645,15 +645,25 @@
           <div class="card-header" style="background: #FFFFFF; border-bottom: 1px solid var(--border-color); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
               <div class="card-title" style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--primary-navy);">
-                <i class="fa-solid fa-diagram-project" style="color: #2563EB;"></i>
-                <span>Sơ Đồ Phân Cấp &amp; Phân Nhánh Cây Tổ Chức Doanh Nghiệp</span>
+                <i class="fa-solid fa-sitemap" style="color: #2563EB;"></i>
+                <span>Sơ Đồ Cơ Cấu Tổ Chức Nhân Sự Tập Đoàn</span>
               </div>
               <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">
-                Phân cấp liên kết: <span class="badge" style="background: #FEE2E2; color: #991B1B; font-size: 11px;">👑 Ban Tổng Giám Đốc</span> &rarr; <span class="badge" style="background: #EEF2FF; color: #3730A3; font-size: 11px;">🏛️ Ban Giám Đốc</span> &rarr; <span class="badge" style="background: #E0F2FE; color: #0369A1; font-size: 11px;">🏢 Các Ban Chuyên Môn</span> &rarr; <span class="badge" style="background: #ECFDF5; color: #065F46; font-size: 11px;">📁 Phòng Ban Chức Năng</span> &rarr; <span class="badge" style="background: #F0FDFA; color: #0F766E; font-size: 11px;">🏗️ Ban ĐHDA &amp; Khối</span>
+                Tập đoàn Trung Hải &bull; Sơ đồ quan hệ chỉ đạo, giám sát &amp; phối hợp điều hành
               </div>
             </div>
             
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <!-- Switch Mode -->
+              <div class="btn-group" style="display: inline-flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; background: #FFF;">
+                <button class="btn btn-sm btn-primary" id="btn-org-mode-standard" onclick="appOrganization.switchChartMode('standard')" style="border: none; border-radius: 0; padding: 5px 12px; font-size: 12px; font-weight: 700; background: var(--primary-navy); border-color: var(--primary-navy); color: #FFF;">
+                  <i class="fa-solid fa-crown" style="color: #FBBF24;"></i> Sơ Đồ Chuẩn Tập Đoàn
+                </button>
+                <button class="btn btn-sm btn-secondary" id="btn-org-mode-tree" onclick="appOrganization.switchChartMode('tree')" style="border: none; border-radius: 0; padding: 5px 12px; font-size: 12px; font-weight: 600;">
+                  <i class="fa-solid fa-network-wired"></i> Cây Đơn Vị &amp; Vị Trí
+                </button>
+              </div>
+
               <!-- Zoom Controls -->
               <div class="btn-group" style="display: inline-flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; background: #FFF;">
                 <button class="btn btn-sm btn-secondary" onclick="appOrganization.changeZoom(-0.1)" title="Thu nhỏ sơ đồ" style="border: none; border-radius: 0; padding: 4px 10px;">
@@ -667,10 +677,10 @@
                 </button>
               </div>
 
-              <button class="btn btn-sm btn-secondary" onclick="appOrganization.expandAllNodes(true)" title="Mở rộng tất cả vị trí chức danh">
+              <button class="btn btn-sm btn-secondary" id="btn-org-expand-all" onclick="appOrganization.expandAllNodes(true)" title="Mở rộng tất cả vị trí chức danh" style="display: none;">
                 <i class="fa-solid fa-arrows-up-down"></i> Mở rộng
               </button>
-              <button class="btn btn-sm btn-secondary" onclick="appOrganization.expandAllNodes(false)" title="Thu gọn danh sách chức danh">
+              <button class="btn btn-sm btn-secondary" id="btn-org-collapse-all" onclick="appOrganization.expandAllNodes(false)" title="Thu gọn danh sách chức danh" style="display: none;">
                 <i class="fa-solid fa-compress"></i> Thu gọn
               </button>
               <button class="btn btn-sm btn-secondary" onclick="appOrganization.printOrgChart()" title="In sơ đồ tổ chức">
@@ -682,8 +692,8 @@
             </div>
           </div>
 
-          <!-- Company Tabs Selector -->
-          <div style="background: #F1F5F9; padding: 10px 20px; border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; overflow-x: auto; align-items: center;" id="org-company-tabs-container">
+          <!-- Company Tabs Selector (Shown in tree mode only) -->
+          <div style="background: #F1F5F9; padding: 10px 20px; border-bottom: 1px solid var(--border-color); display: none; gap: 8px; overflow-x: auto; align-items: center;" id="org-company-tabs-container">
             <!-- Rendered by JS: All Companies, THG, TP, TN, PM -->
           </div>
 
@@ -3449,7 +3459,7 @@
 <script src="js/template-trunghai.js?v=3.9.39"></script>
 <script src="js/contract-merge.js?v=3.9.39"></script>
 <script src="js/contracts.js?v=3.9.39"></script>
-<script src="js/organization.js?v=3.9.39"></script>
+<script src="js/organization.js?v=3.9.41"></script>
 <script src="js/org-import.js?v=3.9.39"></script>
 <script src="js/reports.js?v=3.9.39"></script>
 <script src="js/accounts.js?v=3.9.39"></script>

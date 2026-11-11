@@ -3810,8 +3810,198 @@ tr.row-selected {
   border-bottom: none;
 }
 
+/* ==========================================================================
+   OFFICIAL CORPORATE ORGANIZATION CHART (SƠ ĐỒ TỔ CHỨC TẬP ĐOÀN TRUNG HẢI)
+   Thiết kế 1:1 theo chuẩn biểu đồ quản trị HĐQT - Ban TGĐ - Ban Chuyên Môn
+   ========================================================================== */
+.org-standard-wrapper {
+  background: #FFFFFF;
+  border-radius: 8px;
+  border: 1px solid #CBD5E1;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  width: 1180px;
+  min-width: 1180px;
+  max-width: 1180px;
+  height: 755px;
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+  margin: 0 auto;
+  user-select: none;
+  overflow: hidden;
+}
+
+.org-standard-svg-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1180px;
+  height: 755px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.org-node-interactive {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.org-node-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+  filter: brightness(1.02);
+  z-index: 10 !important;
+}
+
+/* Card Themes */
+.org-hdqt-chair {
+  width: 250px;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.18);
+}
+.org-hdqt-chair .org-hdr {
+  background: #EF4444;
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 12.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 7px 10px;
+  text-align: center;
+}
+.org-hdqt-chair .org-body {
+  background: #0D47A1;
+  color: #FDE047;
+  font-weight: 800;
+  font-size: 16px;
+  padding: 10px 12px;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.org-hdqt-vice {
+  width: 350px;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.14);
+}
+.org-hdqt-vice .org-hdr {
+  background: #EF4444;
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 12.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  text-align: center;
+}
+.org-hdqt-vice .org-body {
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  border-top: none;
+  padding: 8px 10px;
+  display: flex;
+}
+
+.org-wing-card {
+  width: 180px;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+}
+.org-wing-card .org-hdr {
+  background: #06B6D4;
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  padding: 6px 8px;
+  text-align: center;
+}
+.org-wing-card .org-body {
+  background: #ECFEFF;
+  border: 1px solid #A5F3FC;
+  border-top: none;
+  padding: 8px 8px;
+  text-align: center;
+}
+
+.org-tgd-card {
+  width: 196px;
+  background: #38BDF8;
+  border: 1.5px solid #0284C7;
+  border-radius: 3px;
+  padding: 6px 14px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+}
+
+.org-ptgd-card {
+  width: 240px;
+  background: #7DD3FC;
+  border: 1.5px solid #0284C7;
+  border-radius: 3px;
+  padding: 6px 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(125, 211, 252, 0.2);
+}
+
+.org-ban-card {
+  width: 160px;
+  min-height: 94px;
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 3px 10px rgba(234, 179, 8, 0.14);
+}
+.org-ban-card .org-hdr {
+  background: #FDE047;
+  color: #0F172A;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  padding: 6px 4px;
+  text-align: center;
+  border: 1px solid #EAB308;
+  border-bottom: none;
+}
+.org-ban-card .org-body {
+  background: #FEFCE8;
+  border: 1px solid #EAB308;
+  padding: 6px 4px 8px 4px;
+  text-align: center;
+  font-size: 11px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.org-subsidiaries-bar {
+  width: 410px;
+  height: 40px;
+  background: #FDE047;
+  border: 1.5px solid #000000;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13.5px;
+  color: #000000;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.25);
+}
+
 @media print {
-  .sidebar, .top-header, .filter-bar, .btn, #org-company-tabs-container {
+  .sidebar, .top-header, .filter-bar, .btn, #org-company-tabs-container, .card-header {
     display: none !important;
   }
   .main-content, .view-panel, .card, .card-body {
@@ -3820,12 +4010,13 @@ tr.row-selected {
     box-shadow: none !important;
     border: none !important;
     overflow: visible !important;
+    background: transparent !important;
   }
-  .org-company-block {
-    page-break-inside: avoid;
-    margin-bottom: 24px;
+  .org-standard-wrapper {
     box-shadow: none !important;
-    border: 1px solid #CBD5E1 !important;
+    border: none !important;
+    margin: 0 auto !important;
   }
 }
+
 

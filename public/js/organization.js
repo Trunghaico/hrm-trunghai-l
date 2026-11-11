@@ -832,8 +832,102 @@ const appOrganization = {
   // 4. SƠ ĐỒ CƠ CẤU TỔ CHỨC CÂY PHÂN NHÁNH CHUẨN QUỐC TẾ (4 CÔNG TY)
   // ========================================================================
   selectedCompanyTab: 'ALL', // 'ALL' | 'THG' | 'TP' | 'TN' | 'PM'
+  chartMode: 'standard', // 'standard' (Sơ đồ Chuẩn Tập Đoàn) | 'tree' (Cây Phân Nhánh Chi Tiết)
   expandedDeptNodes: new Set(),
   zoomLevel: 1.0,
+
+  switchChartMode(mode) {
+    this.chartMode = mode;
+    const btnStandard = document.getElementById('btn-org-mode-standard');
+    const btnTree = document.getElementById('btn-org-mode-tree');
+    const companyTabs = document.getElementById('org-company-tabs-container');
+    const btnExpand = document.getElementById('btn-org-expand-all');
+    const btnCollapse = document.getElementById('btn-org-collapse-all');
+
+    if (btnStandard && btnTree) {
+      if (mode === 'standard') {
+        btnStandard.className = 'btn btn-sm btn-primary';
+        btnStandard.style.background = 'var(--primary-navy)';
+        btnStandard.style.borderColor = 'var(--primary-navy)';
+        btnStandard.style.color = '#FFFFFF';
+
+        btnTree.className = 'btn btn-sm btn-secondary';
+        btnTree.style.background = '#FFFFFF';
+        btnTree.style.borderColor = 'var(--border-color)';
+        btnTree.style.color = 'var(--text-primary)';
+
+        if (companyTabs) companyTabs.style.display = 'none';
+        if (btnExpand) btnExpand.style.display = 'none';
+        if (btnCollapse) btnCollapse.style.display = 'none';
+      } else {
+        btnTree.className = 'btn btn-sm btn-primary';
+        btnTree.style.background = 'var(--primary-navy)';
+        btnTree.style.borderColor = 'var(--primary-navy)';
+        btnTree.style.color = '#FFFFFF';
+
+        btnStandard.className = 'btn btn-sm btn-secondary';
+        btnStandard.style.background = '#FFFFFF';
+        btnStandard.style.borderColor = 'var(--border-color)';
+        btnStandard.style.color = 'var(--text-primary)';
+
+        if (companyTabs) companyTabs.style.display = 'flex';
+        if (btnExpand) btnExpand.style.display = 'inline-flex';
+        if (btnCollapse) btnCollapse.style.display = 'inline-flex';
+      }
+    }
+    this.renderOrgChart();
+  },
+
+  searchEmployeeByName(name) {
+    if (!name) return;
+    const cleanName = name.split('-')[0].trim();
+    const empNavBtn = document.querySelector('[data-view="employees"]');
+    if (empNavBtn) {
+      empNavBtn.click();
+      setTimeout(() => {
+        const searchInput = document.getElementById('emp-search-input');
+        if (searchInput) {
+          searchInput.value = cleanName;
+          searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (window.utils && utils.showToast) {
+          utils.showToast(`Đang mở hồ sơ: ${cleanName}`, 'info');
+        }
+      }, 120);
+    }
+  },
+
+  filterByDeptKeyword(keyword, deptTitle) {
+    const empNavBtn = document.querySelector('[data-view="employees"]');
+    if (empNavBtn) {
+      empNavBtn.click();
+      setTimeout(() => {
+        const deptSelect = document.getElementById('emp-filter-dept');
+        if (deptSelect) {
+          let matchedVal = '';
+          for (let i = 0; i < deptSelect.options.length; i++) {
+            if (deptSelect.options[i].text.toLowerCase().includes(keyword.toLowerCase())) {
+              matchedVal = deptSelect.options[i].value;
+              break;
+            }
+          }
+          if (matchedVal) {
+            deptSelect.value = matchedVal;
+            deptSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            const searchInput = document.getElementById('emp-search-input');
+            if (searchInput) {
+              searchInput.value = deptTitle || keyword;
+              searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }
+        }
+        if (window.utils && utils.showToast) {
+          utils.showToast(`Đang lọc nhân sự: ${deptTitle || keyword}`, 'info');
+        }
+      }, 120);
+    }
+  },
 
   selectCompanyTab(compId) {
     this.selectedCompanyTab = compId;
@@ -961,9 +1055,312 @@ const appOrganization = {
   },
 
   renderOrgChart() {
+    if (this.chartMode === 'standard') {
+      this.renderStandardOrgChart();
+    } else {
+      this.renderDynamicTreeChart();
+    }
+  },
+
+  renderStandardOrgChart() {
     const container = document.getElementById('org-chart-tree-container');
     const tabsContainer = document.getElementById('org-company-tabs-container');
     if (!container) return;
+
+    if (tabsContainer) {
+      tabsContainer.style.display = 'none';
+    }
+
+    const html = `
+      <div class="org-standard-wrapper">
+        <!-- SVG Vector Connector Layer -->
+        <svg class="org-standard-svg-layer" viewBox="0 0 1180 755">
+          <defs>
+            <marker id="org-arr-solid" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
+            </marker>
+            <marker id="org-arr-solid-left" viewBox="0 0 10 10" refX="3" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#000000" />
+            </marker>
+            <marker id="org-arr-dotted" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
+            </marker>
+            <marker id="org-arr-dotted-left" viewBox="0 0 10 10" refX="3" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#000000" />
+            </marker>
+            <marker id="org-arr-dashed-up" viewBox="0 0 10 10" refX="5" refY="3" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 1.5 8 L 5 0 L 8.5 8 z" fill="#000000" />
+            </marker>
+            <marker id="org-arr-dashed-down" viewBox="0 0 10 10" refX="5" refY="7" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 1.5 0 L 5 8 L 8.5 0 z" fill="#000000" />
+            </marker>
+          </defs>
+
+          <!-- 1. Chỉ đạo: Chủ tịch HĐQT -> Phó chủ tịch HĐQT -->
+          <line x1="590" y1="101" x2="590" y2="131" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+
+          <!-- 2. Nhánh ngang từ HĐQT sang 2 cánh: Văn phòng HĐQT & Ban kiểm soát -->
+          <path d="M 590 118 L 175 118 L 175 164" fill="none" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+          <path d="M 590 118 L 1005 118 L 1005 164" fill="none" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+
+          <!-- 3. Phối hợp: Văn phòng HĐQT <-> Khung vận hành -->
+          <line x1="175" y1="244" x2="175" y2="266" stroke="#000000" stroke-width="2" stroke-dasharray="4,3" marker-start="url(#org-arr-dashed-up)" marker-end="url(#org-arr-dashed-down)" />
+
+          <!-- 4. Giám sát: Ban kiểm soát nội bộ -> Tổng Giám Đốc -->
+          <line x1="915" y1="205" x2="594" y2="205" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#org-arr-dotted-left)" />
+
+          <!-- 5. Giám sát: Ban kiểm soát nội bộ -> Khung vận hành -->
+          <line x1="1005" y1="244" x2="1005" y2="266" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#org-arr-dotted)" />
+
+          <!-- 6. Chỉ đạo: Phó chủ tịch HĐQT -> Tổng Giám Đốc -->
+          <line x1="590" y1="221" x2="590" y2="284" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+
+          <!-- 7. Chỉ đạo: Tổng Giám Đốc -> Phó Tổng Giám Đốc Thi Công -->
+          <line x1="590" y1="334" x2="590" y2="350" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+
+          <!-- 8. Chỉ đạo: Phó TGĐ Thi Công -> 6 Ban chuyên môn (Bus ngang & 6 drop arrows) -->
+          <line x1="590" y1="400" x2="590" y2="420" stroke="#000000" stroke-width="2" />
+          <line x1="145" y1="420" x2="1035" y2="420" stroke="#000000" stroke-width="2" />
+          <line x1="145" y1="420" x2="145" y2="438" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+          <line x1="323" y1="420" x2="323" y2="438" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+          <line x1="501" y1="420" x2="501" y2="438" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+          <line x1="679" y1="420" x2="679" y2="438" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+          <line x1="857" y1="420" x2="857" y2="438" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+          <line x1="1035" y1="420" x2="1035" y2="438" stroke="#000000" stroke-width="2" marker-end="url(#org-arr-solid)" />
+
+          <!-- 9. Giám sát & liên kết: Dưới 6 Ban -> Các Công Ty Thành Viên -->
+          <line x1="145" y1="575" x2="1035" y2="575" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" />
+          <line x1="145" y1="540" x2="145" y2="575" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" />
+          <line x1="323" y1="540" x2="323" y2="575" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" />
+          <line x1="501" y1="548" x2="501" y2="575" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" />
+          <line x1="679" y1="540" x2="679" y2="575" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" />
+          <line x1="857" y1="548" x2="857" y2="575" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" />
+          <line x1="1035" y1="540" x2="1035" y2="575" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" />
+
+          <!-- Drop dotted arrows into bottom level -->
+          <line x1="145" y1="575" x2="145" y2="618" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#org-arr-dotted)" />
+          <line x1="501" y1="575" x2="501" y2="618" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#org-arr-dotted)" />
+          <line x1="679" y1="575" x2="679" y2="618" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#org-arr-dotted)" />
+          <line x1="857" y1="575" x2="857" y2="618" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#org-arr-dotted)" />
+          <line x1="1035" y1="575" x2="1035" y2="618" stroke="#000000" stroke-width="1.8" stroke-dasharray="3,3" marker-end="url(#org-arr-dotted)" />
+
+          <!-- 10. Mũi tên 2 chiều: Các Công Ty Thành Viên <-> Khung vận hành -->
+          <line x1="36" y1="642" x2="381" y2="642" stroke="#000000" stroke-width="2" marker-start="url(#org-arr-solid-left)" marker-end="url(#org-arr-solid)" />
+          <line x1="799" y1="642" x2="1144" y2="642" stroke="#000000" stroke-width="2" marker-start="url(#org-arr-solid-left)" marker-end="url(#org-arr-solid)" />
+        </svg>
+
+        <!-- TOP LEFT: LOGO & CORPORATE TITLE -->
+        <div style="position: absolute; left: 30px; top: 16px; display: flex; align-items: center; gap: 8px;">
+          <svg width="24" height="24" viewBox="0 0 24 24">
+            <polygon points="12,2 22,20 2,20" fill="#DC2626" stroke="#991B1B" stroke-width="1.5" />
+          </svg>
+          <span style="font-size: 14px; font-weight: 700; color: #475569; letter-spacing: 0.5px; text-transform: uppercase;">
+            CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI
+          </span>
+        </div>
+
+        <!-- TOP LEFT BADGE -->
+        <div style="position: absolute; left: 30px; top: 48px; display: inline-flex; flex-direction: column; border-radius: 2px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
+          <div style="background: #1E1B4B; color: #FFFFFF; font-weight: 800; font-size: 16px; padding: 4px 18px; letter-spacing: 0.5px; text-transform: uppercase;">
+            THÔNG TIN CHUNG
+          </div>
+          <div style="background: #020617; color: #FFFFFF; font-weight: 800; font-size: 17px; padding: 4px 18px; letter-spacing: 0.5px; text-transform: uppercase;">
+            SƠ ĐỒ TỔ CHỨC NHÂN SỰ
+          </div>
+        </div>
+
+        <!-- TOP RIGHT LEGEND (CHÚ THÍCH) -->
+        <div style="position: absolute; right: 35px; top: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: #1E293B;">
+          <div style="display: flex; align-items: center; gap: 12px; justify-content: flex-end;">
+            <svg width="36" height="12"><line x1="3" y1="6" x2="33" y2="6" stroke="#000" stroke-width="1.8" stroke-dasharray="4,3" marker-start="url(#org-arr-dotted-left)" marker-end="url(#org-arr-dotted)"/></svg>
+            <span style="min-width: 60px;">Phối hợp</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; justify-content: flex-end;">
+            <svg width="36" height="12"><line x1="3" y1="6" x2="33" y2="6" stroke="#000" stroke-width="1.8" marker-end="url(#org-arr-solid)"/></svg>
+            <span style="min-width: 60px;">Chỉ đạo</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; justify-content: flex-end;">
+            <svg width="36" height="12"><line x1="3" y1="6" x2="33" y2="6" stroke="#000" stroke-width="1.8" stroke-dasharray="2.5,2.5" marker-end="url(#org-arr-dotted)"/></svg>
+            <span style="min-width: 60px;">Giám sát</span>
+          </div>
+        </div>
+
+        <!-- 1. CHỦ TỊCH HĐQT TRUNG HẢI GROUP -->
+        <div class="org-hdqt-chair org-node-interactive" style="position: absolute; left: 465px; top: 35px; z-index: 3;" onclick="appOrganization.searchEmployeeByName('Văn Phú Thành')" title="Bấm để xem hồ sơ Chủ tịch HĐQT Văn Phú Thành">
+          <div class="org-hdr">CHỦ TỊCH HĐQT TRUNG HẢI GROUP</div>
+          <div class="org-body">Văn Phú Thành</div>
+        </div>
+
+        <!-- 2. PHÓ CHỦ TỊCH HĐQT -->
+        <div class="org-hdqt-vice org-node-interactive" style="position: absolute; left: 415px; top: 135px; z-index: 3;">
+          <div class="org-hdr">PHÓ CHỦ TỊCH HĐQT</div>
+          <div class="org-body">
+            <div style="width: 50%; padding-right: 8px; border-right: 1px solid #FCA5A5; text-align: center; cursor: pointer;" onclick="appOrganization.searchEmployeeByName('Lê Việt Anh')" title="Bấm để xem hồ sơ Lê Việt Anh">
+              <div style="font-weight: 800; font-size: 13px; color: #0F172A;">Lê Việt Anh</div>
+              <div style="font-size: 10.5px; color: #334155; line-height: 1.3; margin-top: 2px;">Phụ trách tài chính kiêm TGĐ Thành Phát</div>
+            </div>
+            <div style="width: 50%; padding-left: 8px; text-align: center; cursor: pointer;" onclick="appOrganization.searchEmployeeByName('Trần Minh Tuấn')" title="Bấm để xem hồ sơ Trần Minh Tuấn">
+              <div style="font-weight: 800; font-size: 13px; color: #0F172A;">Trần Minh Tuấn</div>
+              <div style="font-size: 10.5px; color: #334155; line-height: 1.3; margin-top: 2px;">Phụ trách thi công cầu, đường kiêm Giám đốc BĐH DA Ngọc Hồi</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LEFT WING: VĂN PHÒNG HĐQT -->
+        <div class="org-wing-card org-node-interactive" style="position: absolute; left: 85px; top: 168px; z-index: 3;" onclick="appOrganization.searchEmployeeByName('Đào Phước Minh Thông')" title="Bấm để xem hồ sơ Chánh Văn phòng Đào Phước Minh Thông">
+          <div class="org-hdr">VĂN PHÒNG HĐQT</div>
+          <div class="org-body">
+            <div style="font-weight: 800; font-size: 13px; color: #0F172A;">Đào Phước Minh Thông</div>
+            <div style="font-size: 11px; color: #334155; margin-top: 2px;">Chánh Văn phòng</div>
+          </div>
+        </div>
+
+        <!-- RIGHT WING: BAN KIỂM SOÁT NỘI BỘ -->
+        <div class="org-wing-card org-node-interactive" style="position: absolute; left: 915px; top: 168px; z-index: 3;" onclick="appOrganization.searchEmployeeByName('Nguyễn Tấn Minh')" title="Bấm để xem hồ sơ Trưởng ban Kiểm soát Nguyễn Tấn Minh">
+          <div class="org-hdr">BAN KIỂM SOÁT NỘI BỘ</div>
+          <div class="org-body">
+            <div style="font-weight: 800; font-size: 13px; color: #0F172A;">Nguyễn Tấn Minh</div>
+            <div style="font-size: 11px; color: #334155; margin-top: 2px;">Trưởng ban</div>
+          </div>
+        </div>
+
+        <!-- OPERATIONAL BOUNDARY (KHUNG VIỀN NÉT ĐỨT PHỐI HỢP) -->
+        <div style="position: absolute; left: 30px; top: 270px; width: 1120px; height: 425px; border: 2px dashed #000000; border-radius: 4px; pointer-events: none; z-index: 1;"></div>
+
+        <!-- 3. TỔNG GIÁM ĐỐC -->
+        <div class="org-tgd-card org-node-interactive" style="position: absolute; left: 492px; top: 288px; z-index: 3;" onclick="appOrganization.searchEmployeeByName('Nguyễn Anh Minh')" title="Bấm để xem hồ sơ Tổng Giám Đốc Nguyễn Anh Minh">
+          <div style="font-weight: 800; font-size: 12px; color: #DC2626; text-transform: uppercase;">TỔNG GIÁM ĐỐC</div>
+          <div style="font-weight: 800; font-size: 14.5px; color: #0F172A; margin-top: 1px;">Nguyễn Anh Minh</div>
+        </div>
+
+        <!-- 4. PHÓ TỔNG GIÁM ĐỐC THI CÔNG -->
+        <div class="org-ptgd-card org-node-interactive" style="position: absolute; left: 470px; top: 354px; z-index: 3;" onclick="appOrganization.filterByDeptKeyword('TỔNG GIÁM ĐỐC', 'Ban TGĐ')" title="Bấm để xem nhân sự Ban TGĐ">
+          <div style="font-weight: 800; font-size: 11.5px; color: #0F172A; text-transform: uppercase;">PHÓ TỔNG GIÁM ĐỐC THI CÔNG</div>
+          <div style="font-weight: 800; font-size: 13px; color: #0F172A; margin-top: 1px;">Lê Hồng Thạch - Trương Công Đạt</div>
+        </div>
+
+        <!-- 5. 6 BAN CHUYÊN MÔN -->
+        <!-- Ban 1: Kế hoạch tổng hợp -->
+        <div class="org-ban-card org-node-interactive" style="position: absolute; left: 65px; top: 442px; z-index: 3;" onclick="appOrganization.filterByDeptKeyword('KẾ HOẠCH', 'Ban Kế Hoạch Tổng Hợp')" title="Xem nhân sự Ban Kế Hoạch Tổng Hợp">
+          <div class="org-hdr">BAN KẾ HOẠCH TỔNG HỢP</div>
+          <div class="org-body">
+            <div>
+              <div style="font-weight: 700; color: #0F172A;">Nguyễn Văn Đạo</div>
+              <div style="font-size: 10px; color: #475569;">Trưởng ban</div>
+            </div>
+            <div>
+              <div style="font-weight: 700; color: #0F172A;">Dương Thái Thịnh</div>
+              <div style="font-size: 10px; color: #475569;">Phó ban</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ban 2: Quản lý thiết bị -->
+        <div class="org-ban-card org-node-interactive" style="position: absolute; left: 243px; top: 442px; z-index: 3;" onclick="appOrganization.filterByDeptKeyword('THIẾT BỊ', 'Ban Quản Lý Thiết Bị')" title="Xem nhân sự Ban Quản Lý Thiết Bị">
+          <div class="org-hdr">BAN QUẢN LÝ THIẾT BỊ</div>
+          <div class="org-body">
+            <div>
+              <div style="font-weight: 700; color: #0F172A;">Đào Phước Minh Thông</div>
+              <div style="font-size: 10px; color: #475569;">Trưởng ban</div>
+            </div>
+            <div>
+              <div style="font-weight: 700; color: #0F172A;">Trần Nguyên Hải</div>
+              <div style="font-size: 10px; color: #475569;">Phó ban</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ban 3: Điều hành dự án -->
+        <div class="org-ban-card org-node-interactive" style="position: absolute; left: 421px; top: 442px; z-index: 3;" onclick="appOrganization.filterByDeptKeyword('ĐIỀU HÀNH', 'Ban Điều Hành Dự Án')" title="Xem nhân sự Ban Điều Hành Dự Án">
+          <div class="org-hdr">BAN ĐIỀU HÀNH DỰ ÁN</div>
+          <div class="org-body" style="gap: 2px;">
+            <div style="font-size: 10.5px; line-height: 1.25;">
+              <span style="font-weight: 700; color: #0F172A;">Lê Hồng Thạch</span>
+              <div style="font-size: 9.5px; color: #475569;">Giám đốc BĐH Núi Vung</div>
+            </div>
+            <div style="font-size: 10.5px; line-height: 1.25;">
+              <span style="font-weight: 700; color: #0F172A;">Trương Công Đạt</span>
+              <div style="font-size: 9.5px; color: #475569;">Giám đốc BĐH CTVP, KHBMT</div>
+            </div>
+            <div style="font-size: 10.5px; line-height: 1.25;">
+              <span style="font-weight: 700; color: #0F172A;">Nguyễn Vũ Anh</span>
+              <div style="font-size: 9.5px; color: #475569;">Giám đốc BĐH TLMT</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ban 4: Tổ chức hành chính -->
+        <div class="org-ban-card org-node-interactive" style="position: absolute; left: 599px; top: 442px; z-index: 3;" onclick="appOrganization.filterByDeptKeyword('HÀNH CHÍNH', 'Ban Tổ Chức Hành Chính')" title="Xem nhân sự Ban Tổ Chức Hành Chính">
+          <div class="org-hdr">BAN TỔ CHỨC HÀNH CHÍNH</div>
+          <div class="org-body">
+            <div>
+              <div style="font-weight: 700; color: #0F172A;">Hoàng Văn Chung</div>
+              <div style="font-size: 10.5px; color: #475569; margin-top: 2px;">Trưởng ban</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ban 5: Tài chính - Kế toán -->
+        <div class="org-ban-card org-node-interactive" style="position: absolute; left: 777px; top: 442px; z-index: 3;" onclick="appOrganization.filterByDeptKeyword('KẾ TOÁN', 'Ban Tài Chính - Kế Toán')" title="Xem nhân sự Ban Tài Chính - Kế Toán">
+          <div class="org-hdr">BAN TÀI CHÍNH - KẾ TOÁN</div>
+          <div class="org-body" style="gap: 2px;">
+            <div style="font-size: 10.5px; line-height: 1.2;">
+              <span style="font-weight: 700; color: #0F172A;">Phan Thành Trung</span>
+              <div style="font-size: 9.5px; color: #475569;">Kế toán trưởng</div>
+            </div>
+            <div style="font-size: 10.5px; line-height: 1.2;">
+              <span style="font-weight: 700; color: #0F172A;">Nguyễn Thị Quỳnh Hương</span>
+              <div style="font-size: 9.5px; color: #475569;">Phó ban</div>
+            </div>
+            <div style="font-size: 10.5px; line-height: 1.2;">
+              <span style="font-weight: 700; color: #0F172A;">Vũ Thị Thanh Hoa</span>
+              <div style="font-size: 9.5px; color: #475569;">Phó ban</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ban 6: Pháp chế -->
+        <div class="org-ban-card org-node-interactive" style="position: absolute; left: 955px; top: 442px; z-index: 3;" onclick="appOrganization.filterByDeptKeyword('PHÁP CHẾ', 'Ban Pháp Chế')" title="Xem nhân sự Ban Pháp Chế">
+          <div class="org-hdr">BAN PHÁP CHẾ</div>
+          <div class="org-body">
+            <div>
+              <div style="font-weight: 700; color: #0F172A;">Hoàng Văn Chung</div>
+              <div style="font-size: 10px; color: #475569;">Trưởng ban</div>
+            </div>
+            <div>
+              <div style="font-weight: 700; color: #0F172A;">Nguyễn Hữu Tiên</div>
+              <div style="font-size: 10px; color: #475569;">Phó ban</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. CÁC CÔNG TY THÀNH VIÊN/ĐƠN VỊ TRỰC THUỘC -->
+        <div class="org-subsidiaries-bar org-node-interactive" style="position: absolute; left: 385px; top: 622px; z-index: 3;" onclick="appOrganization.switchChartMode('tree')" title="Bấm để xem danh sách chi tiết các công ty & đơn vị trực thuộc">
+          CÁC CÔNG TY THÀNH VIÊN/ĐƠN VỊ TRỰC THUỘC
+        </div>
+
+        <!-- FOOTER: LƯU HÀNH NỘI BỘ & TRANG 5 -->
+        <div style="position: absolute; left: 30px; bottom: 12px; font-size: 12px; font-style: italic; color: #64748B;">
+          Lưu hành nội bộ
+        </div>
+        <div style="position: absolute; right: 35px; bottom: 10px; font-size: 16px; font-weight: 700; color: #0F172A;">
+          5
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+    this.applyZoom();
+  },
+
+  renderDynamicTreeChart() {
+    const container = document.getElementById('org-chart-tree-container');
+    const tabsContainer = document.getElementById('org-company-tabs-container');
+    if (!container) return;
+
+    if (tabsContainer) {
+      tabsContainer.style.display = 'flex';
+    }
 
     const companies = appData.companies || [];
     const departments = appData.departments || [];
