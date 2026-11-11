@@ -1,15 +1,16 @@
 // Service Worker for TRUNG HẢI HRM PWA
-const CACHE_NAME = 'trunghai-hrm-cache-v3.9.41';
+const CACHE_NAME = 'trunghai-hrm-cache-v3.9.42';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './css/main.css?v=3.9.41',
+  './css/main.css?v=3.9.42',
   './assets/logo.png',
   './assets/icon-192.png',
   './assets/icon-512.png',
-  './assets/apple-touch-icon.png'
+  './assets/apple-touch-icon.png',
+  './assets/mo_hinh_quan_tri_he_thong.png'
 ];
 
 // Listen for messages from client (e.g. skipWaiting, clearCache)
