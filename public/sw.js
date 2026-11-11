@@ -1,11 +1,11 @@
 // Service Worker for TRUNG HẢI HRM PWA
-const CACHE_NAME = 'trunghai-hrm-cache-v3.9.45';
+const CACHE_NAME = 'trunghai-hrm-cache-v3.9.46';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './css/main.css?v=3.9.45',
+  './css/main.css?v=3.9.46',
   './assets/logo.png',
   './assets/icon-192.png',
   './assets/icon-512.png',

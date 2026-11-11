@@ -1044,7 +1044,7 @@ const appOrganization = {
 
         <!-- TOP LEFT: LOGO & CORPORATE TITLE -->
         <div style="position: absolute; left: 30px; top: 16px; display: flex; align-items: center; gap: 10px;">
-          <img src="assets/logo_thg.png" alt="Trung Hải" style="height: 28px; width: auto; object-fit: contain;" />
+          <img src="assets/logo_thg.png?v=3.9.46" alt="Trung Hải" style="height: 32px; width: auto; object-fit: contain;" />
           <span style="font-size: 14px; font-weight: 700; color: #475569; letter-spacing: 0.5px; text-transform: uppercase;">
             CÔNG TY CỔ PHẦN XÂY DỰNG VÀ ĐẦU TƯ TRUNG HẢI
           </span>
@@ -1252,12 +1252,12 @@ const appOrganization = {
       <div class="org-gov-canvas" style="background: #FFFFFF; border-radius: 8px; border: 1px solid #CBD5E1; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); width: 1060px; min-width: 1060px; max-width: 1060px; padding: 42px 30px 48px 30px; margin: 0 auto; box-sizing: border-box; position: relative; user-select: none;">
         <!-- Faint Corporate Watermark -->
         <div style="position: absolute; left: 50%; top: 55%; transform: translate(-50%, -50%); opacity: 0.055; pointer-events: none; z-index: 1;">
-          <img src="assets/logo_thg.png" style="width: 360px; height: auto;" alt="Watermark" />
+          <img src="assets/logo_thg.png?v=3.9.46" style="width: 360px; height: auto;" alt="Watermark" />
         </div>
 
         <!-- 1. ROOT NODE: TRUNG HẢI GROUP (TOP CENTER) -->
-        <div class="org-node-interactive" style="width: 440px; height: 80px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 8px 18px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 16px; position: relative; z-index: 3;" onclick="appOrganization.filterByCompany('THG')" title="Bấm để xem danh sách nhân sự Trung Hải Group">
-          <img src="assets/logo_thg.png" alt="Trung Hải Group" style="height: 48px; width: auto; object-fit: contain; flex-shrink: 0;" />
+        <div class="org-node-interactive" style="width: 440px; height: 84px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 8px 20px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 16px; position: relative; z-index: 3;" onclick="appOrganization.filterByCompany('THG')" title="Bấm để xem danh sách nhân sự Trung Hải Group">
+          <img src="assets/logo_thg.png?v=3.9.46" alt="Trung Hải Group" style="height: 52px; width: auto; object-fit: contain; flex-shrink: 0;" />
           <div style="text-align: left;">
             <div style="font-weight: 800; font-size: 19px; color: #1E244F; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2;">TRUNG HẢI GROUP</div>
             <div style="font-weight: 700; font-size: 13px; color: #DC2626; margin-top: 3px; line-height: 1.2;">
@@ -1291,8 +1291,8 @@ const appOrganization = {
         <!-- 3. 3 CHILD CARDS (ROW) -->
         <div style="display: flex; justify-content: space-between; gap: 28px; width: 1000px; margin: 0 auto; position: relative; z-index: 3;">
           <!-- Child 1: PHÚ MINH -->
-          <div class="org-node-interactive" style="width: 314px; min-height: 270px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 22px 14px 20px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;" onclick="appOrganization.filterByCompany('PM')" title="Bấm để xem danh sách nhân sự Phú Minh">
-            <img src="assets/logo_pm.png" alt="Phú Minh" style="height: 60px; width: auto; object-fit: contain; margin-bottom: 12px;" />
+          <div class="org-node-interactive" style="width: 314px; min-height: 275px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 22px 14px 20px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;" onclick="appOrganization.filterByCompany('PM')" title="Bấm để xem danh sách nhân sự Phú Minh">
+            <img src="assets/logo_pm.png?v=3.9.46" alt="Phú Minh" style="height: 65px; width: auto; object-fit: contain; margin-bottom: 12px;" />
             <div style="font-weight: 800; font-size: 13px; color: #1E244F; line-height: 1.35; text-transform: uppercase;">
               CÔNG TY CỔ PHẦN XÂY DỰNG GIAO THÔNG<br>PHÚ MINH
             </div>
@@ -1304,8 +1304,8 @@ const appOrganization = {
           </div>
 
           <!-- Child 2: THÀNH PHÁT -->
-          <div class="org-node-interactive" style="width: 314px; min-height: 270px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 22px 14px 20px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;" onclick="appOrganization.filterByCompany('TP')" title="Bấm để xem danh sách nhân sự Thành Phát">
-            <img src="assets/logo_tp.png" alt="Thành Phát" style="height: 60px; width: auto; object-fit: contain; margin-bottom: 12px;" />
+          <div class="org-node-interactive" style="width: 314px; min-height: 275px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 22px 14px 20px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;" onclick="appOrganization.filterByCompany('TP')" title="Bấm để xem danh sách nhân sự Thành Phát">
+            <img src="assets/logo_tp.png?v=3.9.46" alt="Thành Phát" style="height: 65px; width: auto; object-fit: contain; margin-bottom: 12px;" />
             <div style="font-weight: 800; font-size: 13px; color: #1E244F; line-height: 1.35; text-transform: uppercase;">
               CÔNG TY CỔ PHẦN XÂY DỰNG CẦU ĐƯỜNG<br>THÀNH PHÁT
             </div>
@@ -1317,8 +1317,8 @@ const appOrganization = {
           </div>
 
           <!-- Child 3: TRUNG NAM -->
-          <div class="org-node-interactive" style="width: 314px; min-height: 270px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 22px 14px 20px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;" onclick="appOrganization.filterByCompany('TN')" title="Bấm để xem danh sách nhân sự Trung Nam">
-            <img src="assets/logo_tn.png" alt="Trung Nam" style="height: 60px; width: auto; object-fit: contain; margin-bottom: 12px;" />
+          <div class="org-node-interactive" style="width: 314px; min-height: 275px; border: 2.5px solid #2B2D68; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(43,45,104,0.08); padding: 22px 14px 20px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;" onclick="appOrganization.filterByCompany('TN')" title="Bấm để xem danh sách nhân sự Trung Nam">
+            <img src="assets/logo_tn.png?v=3.9.46" alt="Trung Nam" style="height: 65px; width: auto; object-fit: contain; margin-bottom: 12px;" />
             <div style="font-weight: 800; font-size: 13px; color: #1E244F; line-height: 1.35; text-transform: uppercase;">
               CÔNG TY TNHH ĐẦU TƯ VÀ KINH DOANH<br>TRUNG NAM
             </div>
