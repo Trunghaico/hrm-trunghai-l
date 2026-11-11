@@ -529,20 +529,6 @@ export async function onRequest(context) {
     }
 
     // -------------------------------------------------------------
-    // Route: GET /api/sync/version (Realtime Change Tracker)
-    // -------------------------------------------------------------
-    if (path === "sync/version" && method === "GET") {
-      await initD1Store(db);
-      const row = await db.prepare("SELECT MAX(updated_at) as last_updated, COUNT(*) as total_keys FROM hrm_store").first().catch(() => null);
-      return jsonResponse({
-        success: true,
-        last_updated: row ? row.last_updated : new Date().toISOString(),
-        total_keys: row ? row.total_keys : 0,
-        timestamp: Date.now()
-      });
-    }
-
-    // -------------------------------------------------------------
     // Route: POST /api/setup/init-d1 (Force re-initialization)
     // -------------------------------------------------------------
     if (path === "setup/init-d1" && method === "POST") {

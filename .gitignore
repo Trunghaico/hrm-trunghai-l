@@ -14,3 +14,4 @@ sheets.key.json
 .env
 .env.local
 *.log
+backups/
